@@ -11,6 +11,8 @@ import org.princehouse.mica.base.net.model.Address;
 import org.princehouse.mica.base.net.tcpip.TCPAddress;
 import org.princehouse.mica.base.runtime.Runtime;
 import org.princehouse.mica.base.runtime.implementation.SimpleRuntime;
+import org.princehouse.mica.example.DemoCompositeProtocol;
+import org.princehouse.mica.test.TestStackCorr3;
 
 import com.beust.jcommander.JCommander;
 import com.beust.jcommander.Parameter;
@@ -22,7 +24,7 @@ import fj.P2;
 
 public class TestHarness<Q extends Protocol> {
 	
-	public static class Options {
+	public static class TestHarnessOptions {
 		 
 		  @Parameter(names = { "-log" }, description = "Log file location")
 		  public String logfile = "mica.log";
@@ -30,6 +32,9 @@ public class TestHarness<Q extends Protocol> {
 		  @Parameter(names = "-n", description = "Number of nodes to run")
 		  public Integer n = 1;
 		 
+		  @Parameter(names = "-rdegree", description = "Degree of nodes in random graph. (Currently must be even)")
+		  public Integer rdegree = 6;
+		  
 		  @Parameter(names = "-port", description = "Starting port")
 		  public Integer port = 8000;
 		  
@@ -40,7 +45,10 @@ public class TestHarness<Q extends Protocol> {
 		  public Long seed = 0L;
 		  
 		  @Parameter(names = "-round", description = "Round length (ms)")
-		  public long roundLength = 0L;
+		  public long roundLength = 1000L;
+		  
+		  @Parameter(names = "-stopAfter", description = "Halt simulation after this many rounds (0 = run forever)")
+		  public double stopAfter = 0;
 		}
 	
 	
@@ -51,12 +59,21 @@ public class TestHarness<Q extends Protocol> {
 		timers.add(P.p(time,task));
 	}
 	
+	private int getRoundMS() {
+		return SimpleRuntime.DEFAULT_INTERVAL;
+	}
+	
+	public void addTimerRounds(double rounds, TimerTask task) {
+		addTimer((long) (rounds * getRoundMS()), task );
+	}
+	
+	private static int BASE_ADDRESS = 8000;
 	
 	public static F<Integer, Address> defaultAddressFunc = new F<Integer, Address>() {
 		public Address f(Integer i) {
 			try {
 				return TCPAddress.valueOf(String.format("localhost:%d",
-						8000 + i));
+						BASE_ADDRESS + i));
 			} catch (UnknownHostException e) {
 				throw new RuntimeException(e);
 			}
@@ -165,9 +182,17 @@ public class TestHarness<Q extends Protocol> {
 		stopRuntimes();
 	}
 	
-	public static void main(String[] argv) {
-		Options options = new Options();
-		new JCommander(options, argv);
+	public static <ProtocolClass extends Protocol> void main(String[] argv, F3<Integer, Address, List<Address>, ProtocolClass> createNodeFunc) {
+		TestHarnessOptions options = new TestHarnessOptions();
+		new JCommander(options, argv); // parse command line options
 		
+		SimpleRuntime.DEFAULT_INTERVAL = (int) options.roundLength;
+		TestHarness.BASE_ADDRESS = options.port;
+		TestHarness<ProtocolClass> harness = new TestHarness<ProtocolClass>();
+		if(options.stopAfter > 0) {
+			harness.addTimerRounds(options.stopAfter, harness.taskStop());
+		}
+		harness.runRandomGraph(options.seed, options.n, options.rdegree, createNodeFunc);
 	}
+
 }

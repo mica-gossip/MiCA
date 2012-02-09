@@ -37,9 +37,12 @@ public class MergeCorrelated extends BaseProtocol {
 		this.p2 = p2;
 	}
 
+	public MergeCorrelated() {
+		p1 = null; p2 = null;
+	}
+
 	@GossipFrequency
 	public double mergedFrequency() {
-		// FIXME dobule check
 		Distribution<Address> d1 = p1.getSelectDistribution().copynormalize();
 		Distribution<Address> d2 = p2.getSelectDistribution().copynormalize();
 		double c = 	Distribution.convolve(d1, d2, new F2<Double,Double,Double>() {

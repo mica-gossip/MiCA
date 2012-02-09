@@ -42,6 +42,8 @@ public abstract class Aggregator<AgClass extends BaseProtocol, Summary, Aggregat
 	}
 	
 	public Aggregate getAggregate() {
+		if(aggregate == null)
+			aggregate = computeAggregate(getSummaries());
 		return aggregate;
 	}
 	
