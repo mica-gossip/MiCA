@@ -1,4 +1,4 @@
-package org.princehouse.mica.test;
+package org.princehouse.mica.example;
 
 import java.net.UnknownHostException;
 import java.util.ArrayList;
@@ -28,7 +28,7 @@ public class TestStack3DisruptSmallCorrelated extends TestHarness<MergeCorrelate
 
 	/**
 	 * @param args
-	 * @throws UnknownHostException 
+	 * @throws UnknownHostException .org	
 	 */
 	public static void main(String[] args) {
 
