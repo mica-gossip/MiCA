@@ -21,7 +21,7 @@ public abstract class Aggregator<AgClass extends BaseProtocol, Summary, Aggregat
 	private Aggregate aggregate = null;
 	
 	@SelectUniformRandom
-	private Overlay overlay = null;
+	public Overlay overlay = null;
 	
 	public Overlay getOverlay() {
 		return overlay;
