@@ -125,8 +125,6 @@ public class SimpleRuntimeAgent<P extends Protocol> extends RuntimeAgent<P> {
 
 		ObjectInputStream ois;
 		try {
-			// connection reset exception here ?!
-
 			try {
 				ois = new ObjectInputStream(connection.getInputStream());
 			} catch (SocketException e) {
@@ -143,7 +141,6 @@ public class SimpleRuntimeAgent<P extends Protocol> extends RuntimeAgent<P> {
 				((BaseProtocol) rpm.protocolInstance).logstate();
 
 				// Update runtime state
-
 				rt.getRuntimeState().update(rpm.runtimeState);
 
 			} catch (ClassNotFoundException e) {
@@ -172,7 +169,7 @@ public class SimpleRuntimeAgent<P extends Protocol> extends RuntimeAgent<P> {
 					"Failure to identify protocol select", e);
 		} catch (NotFoundException e) {
 			throw new CPGCompileException(
-					"Failure to identify protocol select", e);
+					String.format("Failure to identify protocol select for %s", pclass.getName()), e);
 		}
 
 		try {

@@ -6,7 +6,7 @@ import java.util.Map;
 import org.princehouse.mica.base.BaseProtocol;
 import org.princehouse.mica.base.Protocol;
 import org.princehouse.mica.base.annotations.GossipUpdate;
-import org.princehouse.mica.base.annotations.Select;
+import org.princehouse.mica.base.annotations.SelectUniformRandom;
 import org.princehouse.mica.base.net.model.Address;
 import org.princehouse.mica.util.Functional;
 
@@ -20,7 +20,7 @@ public abstract class Aggregator<AgClass extends BaseProtocol, Summary, Aggregat
 	
 	private Aggregate aggregate = null;
 	
-	@Select
+	@SelectUniformRandom
 	private Overlay overlay = null;
 	
 	public Overlay getOverlay() {
