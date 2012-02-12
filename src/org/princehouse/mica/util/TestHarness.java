@@ -30,7 +30,7 @@ public class TestHarness<Q extends Protocol> {
 		  public String logfile = "mica.log";
 		 
 		  @Parameter(names = "-n", description = "Number of nodes to run")
-		  public Integer n = 1;
+		  public Integer n = 25;
 		 
 		  @Parameter(names = "-rdegree", description = "Degree of nodes in random graph. (Currently must be even)")
 		  public Integer rdegree = 6;

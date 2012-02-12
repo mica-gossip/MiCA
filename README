@@ -2,4 +2,6 @@ Welcome to MiCA.
 
 Please see the homepage at http://lonnie.princehouse.org/mica
 
+Example of protocol composition simulation in org.princehouse.mica.example.DemoCompositeProtocol.main
+
 MiCA is pre-alpha software under active development.  Email lonnie@cs.cornell.edu with bugs or questions.
