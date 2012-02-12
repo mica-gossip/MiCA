@@ -11,9 +11,6 @@ public interface Tree extends Overlay {
 
 	public static class ChildOverlay implements Overlay, Serializable {
 
-		/**
-		 * 
-		 */
 		private static final long serialVersionUID = 1L;
 		private Tree tree;
 		public ChildOverlay(Tree t) {

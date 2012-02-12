@@ -33,7 +33,7 @@ public class TestHarness<Q extends Protocol> {
 		  public Integer n = 25;
 		 
 		  @Parameter(names = "-rdegree", description = "Degree of nodes in random graph. (Currently must be even)")
-		  public Integer rdegree = 6;
+		  public Integer rdegree = 4;
 		  
 		  @Parameter(names = "-port", description = "Starting port")
 		  public Integer port = 8000;

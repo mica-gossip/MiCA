@@ -42,7 +42,7 @@ import fj.P2;
 public class SimpleRuntimeAgent<P extends Protocol> extends RuntimeAgent<P> {
 
 	protected static class RequestMessage<P extends Protocol> implements
-			Serializable {
+	Serializable {
 		private static final long serialVersionUID = 1L;
 
 		public RequestMessage(P protocolInstance, RuntimeState runtimeState) {
@@ -64,7 +64,7 @@ public class SimpleRuntimeAgent<P extends Protocol> extends RuntimeAgent<P> {
 	}
 
 	protected static class ResponseMessage<P extends Protocol> implements
-			Serializable {
+	Serializable {
 		private static final long serialVersionUID = 1L;
 		private P protocolInstance;
 		private RuntimeState runtimeState;
@@ -129,7 +129,7 @@ public class SimpleRuntimeAgent<P extends Protocol> extends RuntimeAgent<P> {
 				ois = new ObjectInputStream(connection.getInputStream());
 			} catch (SocketException e) {
 				((BaseProtocol) pinstance)
-						.log("gossip-init-connection-failure");
+				.log("gossip-init-connection-failure");
 				return;
 			}
 			try {
@@ -163,7 +163,7 @@ public class SimpleRuntimeAgent<P extends Protocol> extends RuntimeAgent<P> {
 		// TODO needs sanity check that protocol implements serializable
 
 		try {
-			locateSelectMethod();
+			locateSelectMethod(pclass);
 		} catch (TooManyException e) {
 			throw new CPGCompileException(
 					"Failure to identify protocol select", e);
@@ -193,19 +193,19 @@ public class SimpleRuntimeAgent<P extends Protocol> extends RuntimeAgent<P> {
 		}
 
 		Runtime.debug
-				.printf("SimpleRuntimeAgent processing for %s:\n   select = %s\n   update = %s\n   freq = %s\n",
-						pclass.getName(), selector, updateMethod,
-						frequencyMethod);
+		.printf("SimpleRuntimeAgent processing for %s:\n   select = %s\n   update = %s\n   freq = %s\n",
+				pclass.getName(), selector, updateMethod,
+				frequencyMethod);
 	}
 
 	private void locateUpdateMethod() throws TooManyException,
-			NotFoundException {
+	NotFoundException {
 		// TODO sanity check that update has the right signature
 		try {
 			updateMethod = Functional.findExactlyOne(
 					(Iterable<Method>) FunctionalReflection.getMethods(pclass),
 					FunctionalReflection
-							.<Method> hasAnnotation(GossipUpdate.class));
+					.<Method> hasAnnotation(GossipUpdate.class));
 		} catch (TooManyException e) {
 			// If multiple options are found, see if one overrides the others by
 			// sorting by declaring class subclass relation
@@ -226,17 +226,17 @@ public class SimpleRuntimeAgent<P extends Protocol> extends RuntimeAgent<P> {
 	}
 
 	private void locateFrequencyMethod() throws TooManyException,
-			NotFoundException {
+	NotFoundException {
 		// TODO sanity check that freq has the right signature
 		try {
 			frequencyMethod = Functional.findExactlyOne(
 					(Iterable<Method>) FunctionalReflection.getMethods(pclass),
 					FunctionalReflection
-							.<Method> hasAnnotation(GossipFrequency.class));
+					.<Method> hasAnnotation(GossipFrequency.class));
 		} catch (TooManyException e) {
 			@SuppressWarnings({ "unchecked", "rawtypes" })
 			List<Method> options = (List) e.getOptions();// Functional.mapcast(
-															// e.getOptions().get(0));
+			// e.getOptions().get(0));
 			HashMap<Class<?>, List<Method>> groups = Functional.groupBy(
 					options, FunctionalReflection.getOriginatingClassMethod);
 			List<P2<Class<?>, List<Method>>> items = Functional.items(groups);
@@ -251,28 +251,37 @@ public class SimpleRuntimeAgent<P extends Protocol> extends RuntimeAgent<P> {
 		}
 	}
 
-	private void locateSelectMethod() throws NotFoundException,
-			TooManyException {
-		
+	private void locateSelectMethod(Class<?> klass) throws NotFoundException,
+	TooManyException {
+
+		// first class functions for finding select and select uniform random annotations
 		F<AnnotatedElement,Boolean> hasSelect = FunctionalReflection
 				.<AnnotatedElement> hasAnnotation(Select.class);
 		F<AnnotatedElement,Boolean> hasSelectUniformRandom = FunctionalReflection
 				.<AnnotatedElement> hasAnnotation(SelectUniformRandom.class);
-		
+
 		AnnotatedElement selectElement = null;
 		try {
-			selectElement = Functional
-					.findExactlyOne(
-							(Iterable<AnnotatedElement>) FunctionalReflection
-									.getAnnotatedElements(pclass),
-							Functional.or(
-									hasSelect,
-									hasSelectUniformRandom));
-			
+			// search for annotated element in the given class
+			try {
+				selectElement = Functional
+						.findExactlyOne(
+								(Iterable<AnnotatedElement>) FunctionalReflection
+								.getAnnotatedElements(klass),
+								Functional.or(
+										hasSelect,
+										hasSelectUniformRandom));
+			} catch(NotFoundException nf) {
+				Class<?> base = klass.getSuperclass();
+				if(base == null) 
+					throw nf;
+				else
+					locateSelectMethod(base);
+			}
 		} catch (TooManyException e) {
+			// we found too many.  sort them by order of declaring class w.r.t. inheritance hierarchy
 			@SuppressWarnings({ "unchecked", "rawtypes" })
-			List<AnnotatedElement> options = (List) e.getOptions();// Functional.mapcast(
-															// e.getOptions().get(0));
+			List<AnnotatedElement> options = (List) e.getOptions();
 			HashMap<Class<?>, List<AnnotatedElement>> groups = Functional.groupBy(
 					options, FunctionalReflection.<AnnotatedElement>getOriginatingClass());
 			List<P2<Class<?>, List<AnnotatedElement>>> items = Functional.items(groups);
@@ -285,7 +294,7 @@ public class SimpleRuntimeAgent<P extends Protocol> extends RuntimeAgent<P> {
 				selectElement = elements.get(0);
 			}
 		}
-		
+
 		if(hasSelect.f(selectElement) && !hasSelectUniformRandom.f(selectElement)) {
 			if(selectElement instanceof Method) {
 				selector = new SelectMethodSelector<P>((Method)selectElement);
@@ -303,7 +312,7 @@ public class SimpleRuntimeAgent<P extends Protocol> extends RuntimeAgent<P> {
 		} else {
 			throw new TooManyException(String.format("Element has multiple select annotations %s",selectElement)); // two annotations on the same element
 		}
-		
+
 	}
 
 	@SuppressWarnings("unchecked")
@@ -343,7 +352,7 @@ public class SimpleRuntimeAgent<P extends Protocol> extends RuntimeAgent<P> {
 					rqm.runtimeState);
 			oos.writeObject(rpm);
 			oos.close();
-			
+
 		} catch (ClassNotFoundException e) {
 			e.printStackTrace();
 		}
