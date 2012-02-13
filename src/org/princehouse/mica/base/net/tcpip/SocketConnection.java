@@ -4,9 +4,15 @@ package org.princehouse.mica.base.net.tcpip;
 import java.io.IOException;
 import java.net.Socket;
 
-import org.princehouse.mica.base.net.base.BaseConnection;
+import org.princehouse.mica.base.net.BaseConnection;
 
 
+/**
+ * TCP/IP implementation of Connection
+ * 
+ * @author lonnie
+ *
+ */
 public class SocketConnection extends BaseConnection {
 
 	private Socket sock;

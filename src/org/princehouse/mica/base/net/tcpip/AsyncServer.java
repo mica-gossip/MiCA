@@ -1,10 +1,15 @@
 package org.princehouse.mica.base.net.tcpip;
 
 import java.io.IOException;
-import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.LinkedList;
 
+/**
+ * TCP/IP communication facilitator
+ * 
+ * @author lonnie
+ *
+ */
 public class AsyncServer {
 
 	private static class SocketThread extends Thread {

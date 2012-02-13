@@ -4,9 +4,7 @@ import java.util.List;
 
 import org.princehouse.mica.base.net.model.Address;
 import org.princehouse.mica.lib.MinAddressLeaderElection;
-import org.princehouse.mica.lib.SpanningTree;
-import org.princehouse.mica.lib.TreeCountNodes;
-import org.princehouse.mica.lib.TreeLabelNodes;
+import org.princehouse.mica.lib.SpanningTreeOverlay;
 import org.princehouse.mica.lib.abstractions.MergeCorrelated;
 import org.princehouse.mica.lib.abstractions.Overlay;
 import org.princehouse.mica.lib.abstractions.StaticOverlay;
@@ -32,36 +30,34 @@ import fj.F3;
  * Protocol includes a main() method that can be used to run an experiment on the local machine.
  * See TestHarness.TestHarnessOptions for command line options.
  * 
+ * The test harness will generate a log file named log.csv
+ * 
  * @author lonnie
  * 
  */
 public class DemoCompositeProtocol extends MergeCorrelated {
 	private static final long serialVersionUID = 1L;
-
-	private Overlay view;
 	
-	// four sub-protocols
+	// Four sub-protocols
 	private MinAddressLeaderElection leaderElection;
-	private SpanningTree tree;
+	private SpanningTreeOverlay tree;
 	private TreeCountNodes counting;
 	private TreeLabelNodes labeling;
 	
 	/**
-	 * 
+	 * Initialize a demo protocol instance.  Bootstrap parameters are a view and a unique node id used for logging.
 	 * @param view An overlay instance.  StaticOverlay can be used to run on a fixed network graph.
 	 * @param nodeID A unique id used for logging.
 	 */
 	public DemoCompositeProtocol(Overlay view, int nodeID) {
 		super();
-
-		this.view = view;
 		
 		// Instantiate the four sub-protocols.  setName() is optional, but having named protocols makes the 
 		// logs easier to read
 		leaderElection = new MinAddressLeaderElection(view);
 		leaderElection.setName(String.format("leader-%d", nodeID));
 
-		tree = new SpanningTree(leaderElection, view);
+		tree = new SpanningTreeOverlay(leaderElection, view);
 		tree.setName(String.format("tree-%d", nodeID));
 
 		counting = new TreeCountNodes(tree);
@@ -96,8 +92,9 @@ public class DemoCompositeProtocol extends MergeCorrelated {
 		@Override
 		public DemoCompositeProtocol f(Integer i, Address address,
 				List<Address> neighbors) {
-			Overlay view = new StaticOverlay(neighbors);
-			return new DemoCompositeProtocol(view, i);
+			// Create a static overlay to bootstrap our set of neighbors
+			Overlay bootstrapView = new StaticOverlay(neighbors);
+			return new DemoCompositeProtocol(bootstrapView, i);
 		}
 	};
 }

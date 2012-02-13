@@ -3,34 +3,66 @@ package org.princehouse.mica.lib.abstractions;
 import static org.princehouse.mica.util.Randomness.weightedChoice;
 
 import org.princehouse.mica.base.BaseProtocol;
-import org.princehouse.mica.base.Protocol;
-import org.princehouse.mica.base.annotations.GossipFrequency;
+import org.princehouse.mica.base.annotations.GossipRate;
 import org.princehouse.mica.base.annotations.GossipUpdate;
 import org.princehouse.mica.base.annotations.Select;
+import org.princehouse.mica.base.model.Protocol;
 import org.princehouse.mica.base.net.model.Address;
 import org.princehouse.mica.util.Distribution;
 
+/**
+ * Merge two protocols so that they make independent gossip choices.
+ * Individual subprotocol select distributions are preserved.
+ * Merged rate is <= sum of the rates of the two subprotocols.
+ *
+ * @author lonnie
+ *
+ */
 public class MergeIndependent extends BaseProtocol {
 
 	private Protocol p1;
 	private Protocol p2;
 
+	/**
+	 * Get first subprotocol
+	 * 
+	 * @return
+	 */
 	public Protocol getP1() {
 		return p1;
 	}
 
+	/**
+	 * Set first subprotocol
+	 * 
+	 * @param p1
+	 */
 	public void setP1(Protocol p1) {
 		this.p1 = p1;
 	}
 
+	/**
+	 * Get second subprotocol
+	 * 
+	 * @return
+	 */
 	public Protocol getP2() {
 		return p2;
 	}
 
+	/**
+	 * Set second subprotocol
+	 * @param p2
+	 */
 	public void setP2(Protocol p2) {
 		this.p2 = p2;
 	}
 
+	/**
+	 * Constructor to create independent merged p1 + p2
+	 * @param p1 First subprotocol
+	 * @param p2 Second subprotocol
+	 */
 	public MergeIndependent(Protocol p1, Protocol p2) {
 		this.p1 = p1;
 		this.p2 = p2;
@@ -42,6 +74,11 @@ public class MergeIndependent extends BaseProtocol {
 		((BaseProtocol) p2).logstate();
 	}
 
+	/**
+	 * Composite select distribution
+	 * 
+	 * @return
+	 */
 	@Select
 	public Distribution<Address> select() {
 
@@ -56,8 +93,12 @@ public class MergeIndependent extends BaseProtocol {
 		return d1.add(d2).add(d1.multiply(d2));
 	}
 
-	@GossipFrequency
-	public double mergedFrequency() {
+	/**
+	 * Composite rate function
+	 * 
+	 */
+	@GossipRate
+	public double mergedRate() {
 		Distribution<Address> d1 = p1.getSelectDistribution();
 		Distribution<Address> d2 = p2.getSelectDistribution();
 		double c = d1.multiply(d2).getSum();
@@ -65,6 +106,11 @@ public class MergeIndependent extends BaseProtocol {
 		return (p1.getFrequency() + p2.getFrequency()) * (2.0 - c) / 2.0;
 	}
 	
+	/**
+	 * Composite update function
+	 * 
+	 * @param other
+	 */
 	@GossipUpdate
 	public void update(MergeIndependent other) {
 		Address x = other.getAddress();
@@ -119,6 +165,14 @@ public class MergeIndependent extends BaseProtocol {
 				((BaseProtocol) p2).getName());
 	}
 
+	/**
+	 * Convenient static method for merging p1+p2.  Same as 
+	 *   "new MergeIndependent(p1,p2)"
+	 *   
+	 * @param p1
+	 * @param p2
+	 * @return
+	 */
 	public static MergeIndependent merge(Protocol p1, Protocol p2) {
 		return new MergeIndependent(p1,p2);
 	}

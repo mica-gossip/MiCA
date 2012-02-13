@@ -1,15 +1,24 @@
 package org.princehouse.mica.lib.abstractions;
 
 import org.princehouse.mica.base.BaseProtocol;
-import org.princehouse.mica.base.Protocol;
 import org.princehouse.mica.base.annotations.GossipUpdate;
 import org.princehouse.mica.base.annotations.Select;
+import org.princehouse.mica.base.model.Protocol;
 import org.princehouse.mica.base.net.model.Address;
 import org.princehouse.mica.util.Distribution;
 
 import fj.F2;
 import static org.princehouse.mica.util.Randomness.weightedChoice;
 
+/**
+ * 
+ * Not used
+ * 
+ * @author lonnie
+ *
+ * @param <P1>
+ * @param <P2>
+ */
 public class MergeGeneric<P1 extends Protocol, P2 extends Protocol> extends
 		BaseProtocol {
 

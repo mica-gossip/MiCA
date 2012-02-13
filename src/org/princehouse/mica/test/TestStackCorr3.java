@@ -6,10 +6,10 @@ import java.net.UnknownHostException;
 import java.util.List;
 
 import org.princehouse.mica.base.net.model.Address;
+import org.princehouse.mica.example.TreeCountNodes;
+import org.princehouse.mica.example.TreeLabelNodes;
 import org.princehouse.mica.lib.MinAddressLeaderElection;
-import org.princehouse.mica.lib.SpanningTree;
-import org.princehouse.mica.lib.TreeCountNodes;
-import org.princehouse.mica.lib.TreeLabelNodes;
+import org.princehouse.mica.lib.SpanningTreeOverlay;
 import org.princehouse.mica.lib.abstractions.MergeCorrelated;
 import org.princehouse.mica.lib.abstractions.Overlay;
 import org.princehouse.mica.lib.abstractions.StaticOverlay;
@@ -39,7 +39,7 @@ public class TestStackCorr3 extends TestHarness<MergeCorrelated> {
 				MinAddressLeaderElection leaderElection = new MinAddressLeaderElection(view);
 				leaderElection.setName(String.format("leader-%d",i));
 
-				SpanningTree tree = new SpanningTree(leaderElection,view);
+				SpanningTreeOverlay tree = new SpanningTreeOverlay(leaderElection,view);
 				tree.setName(String.format("tree-%d",i));
 
 				TreeCountNodes counting = new TreeCountNodes(tree);

@@ -2,25 +2,33 @@ package org.princehouse.mica.base.net.tcpip;
 
 import java.io.Externalizable;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
-import java.io.OutputStream;
 import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.UnknownHostException;
 
-import org.princehouse.mica.base.net.base.BaseConnection;
+import org.princehouse.mica.base.net.BaseConnection;
 import org.princehouse.mica.base.net.model.AcceptConnectionHandler;
 import org.princehouse.mica.base.net.model.Address;
 import org.princehouse.mica.base.net.model.Connection;
 
 
-
+/**
+ * TCP/IP Address implementation.
+ * 
+ * See TCPAddress.valueOf to create a TCPAddress from a "host:port" string
+ * 
+ * @author lonnie
+ *
+ */
 public class TCPAddress implements Address, Externalizable {
 	
-	public static final int DEFAULT_PORT = 8005; 
+	/**
+	 * Used when interpreting an address from a String if no port is specified
+	 */
+	public static final int DEFAULT_PORT = 8000; 
 	
 	private AcceptConnectionHandler receiveCallback;
 	
@@ -28,6 +36,7 @@ public class TCPAddress implements Address, Externalizable {
 	protected ServerSocket sock;
 	int port;
 	
+	@Override
 	public boolean equals(Object o) {
 		if(!(o instanceof TCPAddress)) {
 			return false;
@@ -38,14 +47,28 @@ public class TCPAddress implements Address, Externalizable {
 		
 	}
 	
+	/**
+	 * Return the port associated with the address
+	 * @return
+	 */
 	public int getPort() {
 		return port;
 	}
 	
+	/**
+	 * Get the IP address as a Java InetAddress
+	 * @return An InetAddress that can be used with Java's built-in networking
+	 */
 	public InetAddress getInetAddressAddress() {
 		return address;
 	}
 	
+	/**
+	 * Constructor from IP address and port number
+	 *  
+	 * @param address
+	 * @param port
+	 */
 	public TCPAddress(InetAddress address, int port) {
 		this.address = address;
 		this.port = port;
@@ -71,15 +94,16 @@ public class TCPAddress implements Address, Externalizable {
 
 	@Override
 	public void unbind() {
-		// not implemented
+		// TODO not implemented
 	}
-		
+	
+	@Override
 	public String toString() {
 		return String.format("%s:%d",address,port);
 	}
 	
 	/** 
-	 * Convert a host:port string into a TCPIPAddress instance
+	 * Convert a "host:port" string into a TCPIPAddress instance
 	 * 
 	 * @param addr
 	 * @return
@@ -134,6 +158,9 @@ public class TCPAddress implements Address, Externalizable {
 		out.writeObject((Integer)port);
 	}
 
+	/**
+	 * Default constructor
+	 */
 	public TCPAddress() {}
 
 	@Override
@@ -141,6 +168,7 @@ public class TCPAddress implements Address, Externalizable {
 		return toString().compareTo(o.toString());
 	}
 	
+	@Override
 	public int hashCode() {
 		return toString().hashCode();
 	}

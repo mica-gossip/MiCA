@@ -1,4 +1,4 @@
-package org.princehouse.mica.base.compiler.impl;
+package org.princehouse.mica.base.simple;
 
 import java.io.IOException;
 import java.io.ObjectInputStream;
@@ -14,21 +14,17 @@ import java.util.HashMap;
 import java.util.List;
 
 import org.princehouse.mica.base.BaseProtocol;
-import org.princehouse.mica.base.Protocol;
-import org.princehouse.mica.base.annotations.GossipFrequency;
+import org.princehouse.mica.base.annotations.GossipRate;
 import org.princehouse.mica.base.annotations.GossipUpdate;
 import org.princehouse.mica.base.annotations.Select;
 import org.princehouse.mica.base.annotations.SelectUniformRandom;
-import org.princehouse.mica.base.compiler.model.RuntimeAgent;
+import org.princehouse.mica.base.model.CompilerException;
+import org.princehouse.mica.base.model.Protocol;
+import org.princehouse.mica.base.model.Runtime;
+import org.princehouse.mica.base.model.RuntimeAgent;
+import org.princehouse.mica.base.model.RuntimeState;
 import org.princehouse.mica.base.net.model.Address;
 import org.princehouse.mica.base.net.model.Connection;
-import org.princehouse.mica.base.runtime.Runtime;
-import org.princehouse.mica.base.runtime.RuntimeState;
-import org.princehouse.mica.base.runtime.SelectFieldSelector;
-import org.princehouse.mica.base.runtime.SelectMethodSelector;
-import org.princehouse.mica.base.runtime.Selector;
-import org.princehouse.mica.base.runtime.UniformRandomCollectionFieldSelector;
-import org.princehouse.mica.base.runtime.implementation.SimpleRuntime;
 import org.princehouse.mica.util.Distribution;
 import org.princehouse.mica.util.Functional;
 import org.princehouse.mica.util.FunctionalReflection;
@@ -39,10 +35,25 @@ import org.princehouse.mica.util.TooManyException;
 import fj.F;
 import fj.P2;
 
-public class SimpleRuntimeAgent<P extends Protocol> extends RuntimeAgent<P> {
+/**
+ * RuntimeAgent for the simple runtime.
+ * 
+ * @author lonnie
+ * 
+ * @param <P> Top-level Protocol class
+ */
+class SimpleRuntimeAgent<P extends Protocol> extends RuntimeAgent<P> {
 
+	/**
+	 * Utility class representing the message sent by the gossip initiator to the 
+	 * gossip receiver.  RequestMessage instances are serialized and sent over the network.
+	 * 
+	 * @author lonnie
+	 *
+	 * @param <P> Top-level protocol class
+	 */
 	protected static class RequestMessage<P extends Protocol> implements
-	Serializable {
+			Serializable {
 		private static final long serialVersionUID = 1L;
 
 		public RequestMessage(P protocolInstance, RuntimeState runtimeState) {
@@ -63,8 +74,17 @@ public class SimpleRuntimeAgent<P extends Protocol> extends RuntimeAgent<P> {
 		private RuntimeState runtimeState;
 	}
 
+	/**
+	 * Utility class representing the response message sent by the gossip receiver to the 
+	 * initiator after receiving a RequestMessage. ResponseMessages are serialized and sent
+	 * over the network.
+	 * 
+	 * @author lonnie
+	 *
+	 * @param <P> Top-level Protocol class
+	 */
 	protected static class ResponseMessage<P extends Protocol> implements
-	Serializable {
+			Serializable {
 		private static final long serialVersionUID = 1L;
 		private P protocolInstance;
 		private RuntimeState runtimeState;
@@ -91,13 +111,20 @@ public class SimpleRuntimeAgent<P extends Protocol> extends RuntimeAgent<P> {
 
 	private Method frequencyMethod;
 
-	public SimpleRuntimeAgent(Class<P> pclass) throws CPGCompileException {
+	/**
+	 * Initialize Runtime Agent, including searching for select, update, rate
+	 * annotated elements.
+	 * 
+	 * @param pclass Top-level Protocol class
+	 * @throws CompilerException
+	 */
+	public SimpleRuntimeAgent(Class<P> pclass) throws CompilerException {
 		this.pclass = pclass;
 		process();
 	}
 
 	@Override
-	public Address select(Runtime<?> rt, P pinstance, double nextDouble) {
+	public Address select(Runtime<?> rt, P pinstance, double randomValue) {
 		Distribution<Address> dist = getSelectDistribution(rt, pinstance);
 		if (dist == null)
 			return null;
@@ -109,9 +136,7 @@ public class SimpleRuntimeAgent<P extends Protocol> extends RuntimeAgent<P> {
 	public void gossip(Runtime<P> rt, P pinstance, Connection connection) {
 		// 1. serialize local state, send over connection
 		// 2. receive updated state
-
 		// prerequisite of this agent: protocols implement serializable
-
 		RequestMessage<P> msg = new RequestMessage<P>(pinstance,
 				rt.getRuntimeState());
 
@@ -129,7 +154,7 @@ public class SimpleRuntimeAgent<P extends Protocol> extends RuntimeAgent<P> {
 				ois = new ObjectInputStream(connection.getInputStream());
 			} catch (SocketException e) {
 				((BaseProtocol) pinstance)
-				.log("gossip-init-connection-failure");
+						.log("gossip-init-connection-failure");
 				return;
 			}
 			try {
@@ -158,54 +183,59 @@ public class SimpleRuntimeAgent<P extends Protocol> extends RuntimeAgent<P> {
 		}
 	}
 
-	// validate the supplied class
-	private void process() throws CPGCompileException {
+	/**
+	 * Validate the Protocol class and locate its select, update, rate methods.
+	 * 
+	 * @throws CompilerException
+	 */
+	private void process() throws CompilerException {
 		// TODO needs sanity check that protocol implements serializable
 
 		try {
 			locateSelectMethod(pclass);
 		} catch (TooManyException e) {
-			throw new CPGCompileException(
-					"Failure to identify protocol select", e);
+			throw new CompilerException("Failure to identify protocol select",
+					e);
 		} catch (NotFoundException e) {
-			throw new CPGCompileException(
-					String.format("Failure to identify protocol select for %s", pclass.getName()), e);
+			throw new CompilerException(String.format(
+					"Failure to identify protocol select for %s",
+					pclass.getName()), e);
 		}
 
 		try {
 			locateUpdateMethod();
 		} catch (TooManyException e) {
-			throw new CPGCompileException(
-					"Failure to identify protocol update", e);
+			throw new CompilerException("Failure to identify protocol update",
+					e);
 		} catch (NotFoundException e) {
-			throw new CPGCompileException(
-					"Failure to identify protocol update", e);
+			throw new CompilerException("Failure to identify protocol update",
+					e);
 		}
 
 		try {
 			locateFrequencyMethod();
 		} catch (TooManyException e) {
-			throw new CPGCompileException(
+			throw new CompilerException(
 					"Failure to identify protocol frequency", e);
 		} catch (NotFoundException e) {
-			throw new CPGCompileException(
+			throw new CompilerException(
 					"Failure to identify protocol frequency", e);
 		}
 
 		Runtime.debug
-		.printf("SimpleRuntimeAgent processing for %s:\n   select = %s\n   update = %s\n   freq = %s\n",
-				pclass.getName(), selector, updateMethod,
-				frequencyMethod);
+				.printf("SimpleRuntimeAgent processing for %s:\n   select = %s\n   update = %s\n   freq = %s\n",
+						pclass.getName(), selector, updateMethod,
+						frequencyMethod);
 	}
 
 	private void locateUpdateMethod() throws TooManyException,
-	NotFoundException {
+			NotFoundException {
 		// TODO sanity check that update has the right signature
 		try {
 			updateMethod = Functional.findExactlyOne(
 					(Iterable<Method>) FunctionalReflection.getMethods(pclass),
 					FunctionalReflection
-					.<Method> hasAnnotation(GossipUpdate.class));
+							.<Method> hasAnnotation(GossipUpdate.class));
 		} catch (TooManyException e) {
 			// If multiple options are found, see if one overrides the others by
 			// sorting by declaring class subclass relation
@@ -226,13 +256,13 @@ public class SimpleRuntimeAgent<P extends Protocol> extends RuntimeAgent<P> {
 	}
 
 	private void locateFrequencyMethod() throws TooManyException,
-	NotFoundException {
+			NotFoundException {
 		// TODO sanity check that freq has the right signature
 		try {
 			frequencyMethod = Functional.findExactlyOne(
 					(Iterable<Method>) FunctionalReflection.getMethods(pclass),
 					FunctionalReflection
-					.<Method> hasAnnotation(GossipFrequency.class));
+							.<Method> hasAnnotation(GossipRate.class));
 		} catch (TooManyException e) {
 			@SuppressWarnings({ "unchecked", "rawtypes" })
 			List<Method> options = (List) e.getOptions();// Functional.mapcast(
@@ -252,39 +282,40 @@ public class SimpleRuntimeAgent<P extends Protocol> extends RuntimeAgent<P> {
 	}
 
 	private void locateSelectMethod(Class<?> klass) throws NotFoundException,
-	TooManyException {
+			TooManyException {
 
-		// first class functions for finding select and select uniform random annotations
-		F<AnnotatedElement,Boolean> hasSelect = FunctionalReflection
+		// first class functions for finding select and select uniform random
+		// annotations
+		F<AnnotatedElement, Boolean> hasSelect = FunctionalReflection
 				.<AnnotatedElement> hasAnnotation(Select.class);
-		F<AnnotatedElement,Boolean> hasSelectUniformRandom = FunctionalReflection
+		F<AnnotatedElement, Boolean> hasSelectUniformRandom = FunctionalReflection
 				.<AnnotatedElement> hasAnnotation(SelectUniformRandom.class);
 
 		AnnotatedElement selectElement = null;
 		try {
 			// search for annotated element in the given class
 			try {
-				selectElement = Functional
-						.findExactlyOne(
-								(Iterable<AnnotatedElement>) FunctionalReflection
-								.getAnnotatedElements(klass),
-								Functional.or(
-										hasSelect,
-										hasSelectUniformRandom));
-			} catch(NotFoundException nf) {
+				selectElement = Functional.findExactlyOne(
+						(Iterable<AnnotatedElement>) FunctionalReflection
+								.getAnnotatedElements(klass), Functional.or(
+								hasSelect, hasSelectUniformRandom));
+			} catch (NotFoundException nf) {
 				Class<?> base = klass.getSuperclass();
-				if(base == null) 
+				if (base == null)
 					throw nf;
 				else
 					locateSelectMethod(base);
 			}
 		} catch (TooManyException e) {
-			// we found too many.  sort them by order of declaring class w.r.t. inheritance hierarchy
+			// we found too many. sort them by order of declaring class w.r.t.
+			// inheritance hierarchy
 			@SuppressWarnings({ "unchecked", "rawtypes" })
 			List<AnnotatedElement> options = (List) e.getOptions();
-			HashMap<Class<?>, List<AnnotatedElement>> groups = Functional.groupBy(
-					options, FunctionalReflection.<AnnotatedElement>getOriginatingClass());
-			List<P2<Class<?>, List<AnnotatedElement>>> items = Functional.items(groups);
+			HashMap<Class<?>, List<AnnotatedElement>> groups = Functional
+					.groupBy(options, FunctionalReflection
+							.<AnnotatedElement> getOriginatingClass());
+			List<P2<Class<?>, List<AnnotatedElement>>> items = Functional
+					.items(groups);
 			Collections.sort(items, Functional
 					.pcomparator(FunctionalReflection.subclassComparator));
 			List<AnnotatedElement> elements = items.get(0)._2();
@@ -295,28 +326,46 @@ public class SimpleRuntimeAgent<P extends Protocol> extends RuntimeAgent<P> {
 			}
 		}
 
-		if(hasSelect.f(selectElement) && !hasSelectUniformRandom.f(selectElement)) {
-			if(selectElement instanceof Method) {
-				selector = new SelectMethodSelector<P>((Method)selectElement);
-			} else if(selectElement instanceof Field) {
-				selector = new SelectFieldSelector<P>((Field)selectElement);
+		if (hasSelect.f(selectElement)
+				&& !hasSelectUniformRandom.f(selectElement)) {
+			if (selectElement instanceof Method) {
+				selector = new SelectMethodSelector<P>((Method) selectElement);
+			} else if (selectElement instanceof Field) {
+				selector = new SelectFieldSelector<P>((Field) selectElement);
 			} else {
-				throw new RuntimeException("Select annotation attached to invalid entity");
+				throw new RuntimeException(
+						"Select annotation attached to invalid entity");
 			}
-		} else if(!hasSelect.f(selectElement) && hasSelectUniformRandom.f(selectElement)) {
-			if(selectElement instanceof Field) {
-				selector = new UniformRandomCollectionFieldSelector<P>((Field)selectElement);
+		} else if (!hasSelect.f(selectElement)
+				&& hasSelectUniformRandom.f(selectElement)) {
+			if (selectElement instanceof Field) {
+				selector = new UniformRandomCollectionFieldSelector<P>(
+						(Field) selectElement);
 			} else {
-				throw new RuntimeException("Select annotation attached to invalid entity");
+				throw new RuntimeException(
+						"Select annotation attached to invalid entity");
 			}
 		} else {
-			throw new TooManyException(String.format("Element has multiple select annotations %s",selectElement)); // two annotations on the same element
+			throw new TooManyException(
+					String.format("Element has multiple select annotations %s",
+							selectElement)); // two annotations on the same
+												// element
 		}
 
 	}
 
+	/**
+	 * Callback executed when a gossip request arrives.
+	 * Deserializes a RequestMessage from the incoming connection and  
+	 * sends back  a ResponseMessage.
+	 * 
+	 * @param runtime Current Runtime
+	 * @param pinstance Protocol instance 
+	 * @param connection
+	 * @throws IOException
+	 */
 	@SuppressWarnings("unchecked")
-	public void acceptConnection(Runtime<?> rt, P pinstance, Address recipient,
+	public void acceptConnection(Runtime<?> runtime, P pinstance,
 			Connection connection) throws IOException {
 
 		MarkingObjectInputStream ois = null; // can distinguish deserialized
@@ -325,7 +374,7 @@ public class SimpleRuntimeAgent<P extends Protocol> extends RuntimeAgent<P> {
 		try {
 			ois = new MarkingObjectInputStream(connection.getInputStream());
 		} catch (java.io.EOFException e) {
-			rt.tolerate(e);
+			runtime.tolerate(e);
 			return;
 		}
 		try {
@@ -334,15 +383,15 @@ public class SimpleRuntimeAgent<P extends Protocol> extends RuntimeAgent<P> {
 
 			// foreign state is used by the visiting node to access remote
 			// runtime state data
-			SimpleRuntime<?> srt = (SimpleRuntime<?>) rt;
+			SimpleRuntime<?> srt = (SimpleRuntime<?>) runtime;
 
 			srt.setForeignState(ois.getForeignObjectSet(), rqm.runtimeState);
 			try {
-				runGossipUpdate(rt, p1, pinstance);
+				runGossipUpdate(runtime, p1, pinstance);
 				((BaseProtocol) pinstance).logstate();
 
 			} catch (RuntimeException e) {
-				rt.handleUpdateException(e);
+				runtime.handleUpdateException(e);
 			}
 			srt.clearForeignState();
 
@@ -358,15 +407,22 @@ public class SimpleRuntimeAgent<P extends Protocol> extends RuntimeAgent<P> {
 		}
 		// rt.setProtocolInstance(pinstance);
 	}
-
-	private void runGossipUpdate(Runtime<?> rt, P p1, P p2) {
+	
+	/**
+	 * Executes the gossip update function on two local instances.
+	 * 
+	 * @param runtime Current runtime
+	 * @param pinit Initiating instance
+	 * @param precv Receiving instance
+	 */
+	private void runGossipUpdate(Runtime<?> runtime, P pinit, P precv) {
 		// imperative update of p1 and p2 states
 		try {
-			updateMethod.invoke(p1, p2);
+			updateMethod.invoke(pinit, precv);
 		} catch (IllegalArgumentException e) {
-			rt.fatal(e);
+			runtime.fatal(e);
 		} catch (IllegalAccessException e) {
-			rt.fatal(e);
+			runtime.fatal(e);
 		} catch (InvocationTargetException e) {
 			Throwable tgt = e.getTargetException();
 			if (tgt instanceof RuntimeException)
@@ -374,9 +430,9 @@ public class SimpleRuntimeAgent<P extends Protocol> extends RuntimeAgent<P> {
 			else {
 				throw new RuntimeException(e); // shouldn't happen --- update
 				// doesn't declare any
-				// exceptions, so anything
-				// thrown should be a
-				// runtimeexception
+				// exceptions; anything
+				// thrown must be a
+				// RuntimeException
 			}
 		}
 
@@ -393,7 +449,7 @@ public class SimpleRuntimeAgent<P extends Protocol> extends RuntimeAgent<P> {
 	}
 
 	@Override
-	public double getFrequency(Runtime<?> rt, P pinstance) {
+	public double getRate(Runtime<?> rt, P pinstance) {
 		try {
 			return (Double) frequencyMethod.invoke(pinstance);
 		} catch (IllegalArgumentException e) {

@@ -6,11 +6,11 @@ import java.util.Random;
 import java.util.Timer;
 import java.util.TimerTask;
 
-import org.princehouse.mica.base.Protocol;
+import org.princehouse.mica.base.model.Protocol;
+import org.princehouse.mica.base.model.Runtime;
 import org.princehouse.mica.base.net.model.Address;
 import org.princehouse.mica.base.net.tcpip.TCPAddress;
-import org.princehouse.mica.base.runtime.Runtime;
-import org.princehouse.mica.base.runtime.implementation.SimpleRuntime;
+import org.princehouse.mica.base.simple.SimpleRuntime;
 import org.princehouse.mica.example.DemoCompositeProtocol;
 import org.princehouse.mica.test.TestStackCorr3;
 
@@ -22,6 +22,15 @@ import fj.F3;
 import fj.P;
 import fj.P2;
 
+/**
+ * TestHarness is used for running local experiments with many nodes on a randomly-generated graph
+ * See examples.DemoCompositeProtocol for an example
+ * 
+ * Command line options for TestHarness are in the TestHarnessOptions inner class
+ * @author lonnie
+ *
+ * @param <Q>
+ */
 public class TestHarness<Q extends Protocol> {
 	
 	public static class TestHarnessOptions {
@@ -114,7 +123,7 @@ public class TestHarness<Q extends Protocol> {
 			List<Address> neighbors = Functional.list(Functional.map(
 					neighborsFunc.f(i), addressFunc));
 			Q pinstance = createNodeFunc.f(i, address, neighbors);
-			Runtime<Q> rt = SimpleRuntime.launch(pinstance, address);
+			Runtime<Q> rt = SimpleRuntime.launchDaemon(pinstance, address);
 			runtimes.add(rt);
 		}
 

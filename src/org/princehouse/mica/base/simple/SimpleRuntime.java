@@ -1,4 +1,4 @@
-package org.princehouse.mica.base.runtime.implementation;
+package org.princehouse.mica.base.simple;
 
 
 import java.io.IOException;
@@ -8,33 +8,26 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.ReentrantLock;
 
 import org.princehouse.mica.base.BaseProtocol;
-import org.princehouse.mica.base.Protocol;
-import org.princehouse.mica.base.compiler.impl.SimpleCompiler;
-import org.princehouse.mica.base.compiler.impl.SimpleRuntimeAgent;
-import org.princehouse.mica.base.compiler.model.Compiler;
-import org.princehouse.mica.base.compiler.model.RuntimeAgent;
+import org.princehouse.mica.base.model.Compiler;
+import org.princehouse.mica.base.model.Protocol;
+import org.princehouse.mica.base.model.Runtime;
+import org.princehouse.mica.base.model.RuntimeAgent;
+import org.princehouse.mica.base.model.RuntimeState;
 import org.princehouse.mica.base.net.model.AcceptConnectionHandler;
 import org.princehouse.mica.base.net.model.Address;
 import org.princehouse.mica.base.net.model.Connection;
-import org.princehouse.mica.base.runtime.Runtime;
-import org.princehouse.mica.base.runtime.RuntimeState;
 import org.princehouse.mica.util.Distribution;
 import org.princehouse.mica.util.WeakHashSet;
 
 
 /**
- * Demo runtime implementation
+ * Basic Runtime implementation.
+ * 
+ * Nothing fancy: It just serializes and exchanges complete node state.
  * 
  */
 public class SimpleRuntime<P extends Protocol> extends Runtime<P> implements
 AcceptConnectionHandler {
-
-	/**
-	 * Entry point for simple runtime basic usage
-	 * 
-	 * @param pinstance
-	 * @return
-	 */
 
 	private ReentrantLock lock = new ReentrantLock();
 
@@ -45,13 +38,21 @@ AcceptConnectionHandler {
 
 	public Address address;
 
-	public SimpleRuntime(Address address) {
+	protected SimpleRuntime(Address address) {
 		super();
 		this.address = address;
 	}
 
+	/**
+	 * Entry point for SimpleRuntime.  Starts a protocol in a new thread. 
+	 * 
+	 * @param pinstance Local protocol instance
+	 * @param address Local address
+	 * @param daemon Launch thread as a daemon
+	 * @return New Runtime instance
+	 */
 	public static <T extends Protocol> Runtime<T> launch(final T pinstance,
-			final Address address) {
+			final Address address, final boolean daemon) {
 		final Runtime<T> rt = new SimpleRuntime<T>(address);
 		Thread t = new Thread() {
 			public void run() {
@@ -63,11 +64,24 @@ AcceptConnectionHandler {
 				}
 			}
 		};
-		t.setDaemon(true);
+		t.setDaemon(daemon);
 		t.start();
 		return rt;
 	}
 
+	/**
+ 	 * Entry point for SimpleRuntime.  Starts a protocol in a new thread. 
+	 * (Calls through to launch(), with the daemon flag true)
+	 * 
+	 * @param pinstance Local protocol instance
+	 * @param address Local address
+	 * @return New Runtime instance
+	 */
+	public static <T extends Protocol> Runtime<T> launchDaemon(final T pinstance,
+			final Address address) {
+		return launch(pinstance,address,true);
+	}
+	
 	private P pinstance;
 
 	@Override
@@ -77,7 +91,7 @@ AcceptConnectionHandler {
 			if (lock.tryLock(LOCK_WAIT_MS, TimeUnit.MILLISECONDS)) {
 				setRuntime(this);
 				((SimpleRuntimeAgent<P>) compile(pinstance)).acceptConnection(
-						this, getProtocolInstance(), recipient, connection);
+						this, getProtocolInstance(), connection);
 				clearRuntime(this);
 				lock.unlock();
 			} else {
@@ -119,11 +133,11 @@ AcceptConnectionHandler {
 		((BaseProtocol) pinstance).logstate();
 
 		while (running) {
-			double rate = getFrequency(pinstance);
+			double rate = getRate(pinstance);
 			((BaseProtocol) pinstance).log("rate,%g",rate);
 			int intervalLength = (int) (((double) intervalMS) / rate);
 			if(intervalLength <= 0) {
-				System.err.printf("%s error: Frequency * intervalMS <= 0.  Resetting to default.\n", this);
+				System.err.printf("%s error: Rate * intervalMS <= 0.  Resetting to default.\n", this);
 				intervalLength  = intervalMS;
 			}
 			Thread.sleep(Math.max(0L, intervalLength - lastElapsedMS));
@@ -168,6 +182,7 @@ AcceptConnectionHandler {
 		}
 	}
 
+	@Override
 	public String toString() {
 		return String.format("<rt %s>", getAddress());
 	}
@@ -200,14 +215,14 @@ AcceptConnectionHandler {
 	private WeakHashSet<Object> foreignObjects = null;
 	private RuntimeState foreignState = null;
 
-	public void setForeignState(WeakHashSet<Object> foreignObjects,
+	protected void setForeignState(WeakHashSet<Object> foreignObjects,
 			RuntimeState foreignState) {
 		// only knows about foreign BaseProtocol subclasses for now
 		this.foreignObjects = foreignObjects;
 		this.foreignState = foreignState;
 	}
 
-	public void clearForeignState() {
+	protected void clearForeignState() {
 		foreignObjects = null;
 		foreignState = null;
 	}
@@ -241,8 +256,8 @@ AcceptConnectionHandler {
 	}
 
 	@Override
-	public double getFrequency(Protocol protocol) {
-		return compile(protocol).getFrequency(this,protocol);
+	public double getRate(Protocol protocol) {
+		return compile(protocol).getRate(this,protocol);
 	}
 
 	@Override

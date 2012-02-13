@@ -1,4 +1,4 @@
-package org.princehouse.mica.base.runtime;
+package org.princehouse.mica.base.model;
 
 
 import java.io.Serializable;

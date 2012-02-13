@@ -4,7 +4,7 @@ import java.net.UnknownHostException;
 import java.util.List;
 
 import org.princehouse.mica.base.net.model.Address;
-import org.princehouse.mica.lib.FindMinSymmetric;
+import org.princehouse.mica.example.FindMinSymmetric;
 import org.princehouse.mica.util.Functional;
 import org.princehouse.mica.util.TestHarness;
 

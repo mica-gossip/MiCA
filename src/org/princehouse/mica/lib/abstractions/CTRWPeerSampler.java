@@ -13,11 +13,17 @@ import org.princehouse.mica.base.annotations.SelectUniformRandom;
 import org.princehouse.mica.base.net.model.Address;
 
 
-public class CTRWPeerSampler extends BaseProtocol {
-
-	/**
-	 * 
-	 */
+/**
+ * Peer sampling protocol based on the paper
+ * 
+ * "Peer counting and sampling in overlay networks based on random walks" 
+ * by Ganesh, Kermarrec, Merrer, Massoulie
+ * 
+ * 
+ * @author lonnie
+ *
+ */
+abstract public class CTRWPeerSampler extends BaseProtocol {
 	private static final long serialVersionUID = 1L;
 
 	public static class SamplingMessage {
@@ -67,9 +73,10 @@ public class CTRWPeerSampler extends BaseProtocol {
 		}
 	}
 	
-	public void samplePeer(CTRWPeerSampler peer) {
-		// TODO client application should do something with this 
-	}
+	/**
+	 * Compute a sample from the peer determined by the random walk
+	 */
+	abstract public void samplePeer(CTRWPeerSampler peer);
 	
 	public int getDegree() {
 		return view.size();

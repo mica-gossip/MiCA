@@ -1,4 +1,4 @@
-package org.princehouse.mica.lib;
+package org.princehouse.mica.example;
 
 
 import java.util.Collections;
@@ -8,25 +8,27 @@ import org.princehouse.mica.base.BaseProtocol;
 import org.princehouse.mica.base.annotations.GossipUpdate;
 import org.princehouse.mica.base.annotations.Select;
 import org.princehouse.mica.base.net.model.Address;
-import org.princehouse.mica.lib.abstractions.Tree;
+import org.princehouse.mica.lib.abstractions.RootedTree;
 import org.princehouse.mica.util.Distribution;
 import org.princehouse.mica.util.Functional;
 
 
-
+/**
+ * Use the subtree node count protocol to assign unique numbers to every node in DFS order.
+ * 
+ * @author lonnie
+ *
+ */
 public class TreeLabelNodes extends BaseProtocol {
 
-	/**
-	 * 
-	 */
 	private static final long serialVersionUID = 1L;
 	
-	private Tree tree;
+	private RootedTree tree;
 	private TreeCountNodes count;
 
 	private int label = 1;
 
-	public TreeLabelNodes(Tree t, TreeCountNodes count) {
+	public TreeLabelNodes(RootedTree t, TreeCountNodes count) {
 		this.tree = t;
 		this.count = count;
 	}

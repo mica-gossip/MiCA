@@ -3,11 +3,11 @@ package org.princehouse.mica.test;
 
 import java.net.UnknownHostException;
 
+import org.princehouse.mica.base.model.Runtime;
 import org.princehouse.mica.base.net.model.Address;
 import org.princehouse.mica.base.net.tcpip.TCPAddress;
-import org.princehouse.mica.base.runtime.Runtime;
-import org.princehouse.mica.base.runtime.implementation.SimpleRuntime;
-import org.princehouse.mica.lib.FindMinPush;
+import org.princehouse.mica.base.simple.SimpleRuntime;
+import org.princehouse.mica.example.FindMinPush;
 import org.princehouse.mica.util.Functional;
 
 
@@ -28,8 +28,8 @@ public class TestFindMinPushProtocol {
 		FindMinPush node2 = new FindMinPush(3, Functional.set(a1));
 
 		
-		Runtime<FindMinPush> rt1 = SimpleRuntime.launch(node1, a1);
-		Runtime<FindMinPush> rt2 = SimpleRuntime.launch(node2, a2);
+		Runtime<FindMinPush> rt1 = SimpleRuntime.launchDaemon(node1, a1);
+		Runtime<FindMinPush> rt2 = SimpleRuntime.launchDaemon(node2, a2);
 
 		
 		try {

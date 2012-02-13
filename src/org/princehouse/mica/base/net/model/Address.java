@@ -3,6 +3,13 @@ package org.princehouse.mica.base.net.model;
 import java.io.IOException;
 import java.io.Serializable;
 
+/**
+ * Interface representing the general concept of an Address.
+ * See TCPAddress for a TCP/IP specific address.
+ * 
+ * @author lonnie
+ *
+ */
 public interface Address extends Serializable, Comparable<Address> {
 
 	/**

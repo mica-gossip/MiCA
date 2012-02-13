@@ -14,11 +14,17 @@ import org.princehouse.mica.base.annotations.SelectUniformRandom;
 import org.princehouse.mica.base.net.model.Address;
 import org.princehouse.mica.lib.abstractions.LeaderElection;
 import org.princehouse.mica.lib.abstractions.Overlay;
-import org.princehouse.mica.lib.abstractions.Tree;
+import org.princehouse.mica.lib.abstractions.RootedTree;
 import org.princehouse.mica.util.Functional;
 
 
-public class SpanningTree extends BaseProtocol implements Tree {
+/**
+ * Construct a rooted Spanning Tree overlay by using a leader election protocol to decide the root.
+ * 
+ * @author lonnie
+ *
+ */
+public class SpanningTreeOverlay extends BaseProtocol implements RootedTree {
 
 	private static final long serialVersionUID = 1L;
 
@@ -35,9 +41,15 @@ public class SpanningTree extends BaseProtocol implements Tree {
 	@SelectUniformRandom
 	public Overlay overlay;
 
-	public SpanningTree(LeaderElection leaderElection, Overlay overlay) {
+	/**
+	 * Create a new instance
+	 * 
+	 * @param leaderElection  LeaderElection protocol instance
+	 * @param sourceOverlay The overlay this algorithm gossips on
+	 */
+	public SpanningTreeOverlay(LeaderElection leaderElection, Overlay sourceOverlay) {
 		this.leaderElection = leaderElection;
-		this.overlay = overlay;
+		this.overlay = sourceOverlay;
 	}
 
 	@Override
@@ -50,17 +62,25 @@ public class SpanningTree extends BaseProtocol implements Tree {
 		return parent;
 	}
 
-	private static final int MAXDIST = 1000;
+	// FIXME arbitrary big number? real professional.
+	private static final int MAXDIST = 1000000;
 	
-	public Collection<Address> getKnown() {
+	private Collection<Address> getKnown() {
 		return distanceFromRoot.keySet();
 	}
 	
-	public int distanceFromRoot(Address a) {
-		if(isRoot() && a.equals(getAddress())) {
+	/**
+	 * Get distance of a specified node to the root node
+	 * Returns MAXDIST if unknown. 
+	 * 
+	 * @param address 
+	 * @return
+	 */
+	public int distanceFromRoot(Address address) {
+		if(address.equals(leaderElection.getLeader())) {
 			return 0;
 		} else {
-			if(a.equals(getAddress())) {
+			if(address.equals(getAddress())) {
 				// compute my address from root:  nearest neighbor + 1
 				int d = Integer.MAX_VALUE / 2;
 				for(Address v : getKnown()) {
@@ -68,8 +88,8 @@ public class SpanningTree extends BaseProtocol implements Tree {
 				}
 				return Math.min(MAXDIST,d);
 			} else {
-				if(distanceFromRoot.containsKey(a)) {
-					return distanceFromRoot.get(a);
+				if(distanceFromRoot.containsKey(address)) {
+					return distanceFromRoot.get(address);
 				} else {
 					return MAXDIST;
 				}
@@ -77,12 +97,17 @@ public class SpanningTree extends BaseProtocol implements Tree {
 		}
 	}
 
+	/**
+	 * Local node's distance from root
+	 * 
+	 * @return
+	 */
 	public int distanceFromRoot() {
 		// what is MY distance from root?
 		return distanceFromRoot(getAddress());
 	}
 
-	public Address computeParent() {
+	private Address computeParent() {
 		if(isRoot()) 
 			return null;
 
@@ -124,14 +149,20 @@ public class SpanningTree extends BaseProtocol implements Tree {
 	}
 
 
+	/**
+	 * Gossip update function
+	 * 
+	 * @param other
+	 */
 	@GossipUpdate
-	public void update(SpanningTree other) {
+	public void update(SpanningTreeOverlay other) {
 		// record our neighbor's distance from the root
 		subup(other);
 		other.subup(this);
 	}
 		
-	public void subup(SpanningTree other) {
+	// update helper function
+	private void subup(SpanningTreeOverlay other) {
 		distanceFromRoot.put(other.getAddress(), other.getDistanceFromRoot());
 		
 		parent = computeParent();
@@ -170,7 +201,7 @@ public class SpanningTree extends BaseProtocol implements Tree {
 
 	@Override
 	public Overlay getChildrenAsOverlay() {
-		return new Tree.ChildOverlay(this);
+		return new RootedTree.ChildOverlay(this);
 	}
 
 }

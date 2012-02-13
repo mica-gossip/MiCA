@@ -14,15 +14,18 @@ import org.princehouse.mica.base.annotations.SelectUniformRandom;
 import org.princehouse.mica.base.net.model.Address;
 
 
+/**
+ * TODO (unfinished)
+ * 
+ * @author lonnie
+ *
+ */
 public class CTRWSamplerOverlay extends BaseProtocol {
 
 	/**
 	 * 
 	 */
 	private static final long serialVersionUID = 1L;
-
-	// TODO implement
-	private	List<Address> overlayView = new LinkedList<Address>();
 	
 	public static class SamplingMessage {
 		public Address source;

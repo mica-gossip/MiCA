@@ -5,10 +5,10 @@ import fj.F3;
 import java.net.UnknownHostException;
 import java.util.List;
 
-import org.princehouse.mica.base.Protocol;
+import org.princehouse.mica.base.model.Protocol;
 import org.princehouse.mica.base.net.model.Address;
 import org.princehouse.mica.lib.MinAddressLeaderElection;
-import org.princehouse.mica.lib.SpanningTree;
+import org.princehouse.mica.lib.SpanningTreeOverlay;
 import org.princehouse.mica.lib.abstractions.MergeIndependent;
 import org.princehouse.mica.lib.abstractions.Overlay;
 import org.princehouse.mica.lib.abstractions.StaticOverlay;
@@ -39,7 +39,7 @@ public class TestStack1 extends TestHarness<MergeIndependent> {
 				MinAddressLeaderElection leaderElection = new MinAddressLeaderElection(view);
 				leaderElection.setName(String.format("leader-%d",i));
 				
-				Protocol tree = new SpanningTree(leaderElection,view).setName(String.format("tree-%d",i));
+				Protocol tree = new SpanningTreeOverlay(leaderElection,view).setName(String.format("tree-%d",i));
 				
 				return new MergeIndependent(
 						leaderElection,

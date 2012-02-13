@@ -1,4 +1,4 @@
-package org.princehouse.mica.base.net.base;
+package org.princehouse.mica.base.net;
 
 
 import java.io.IOException;
@@ -8,7 +8,11 @@ import java.io.OutputStream;
 import org.princehouse.mica.base.net.model.Connection;
 import org.princehouse.mica.util.NotImplementedException;
 
-
+/**
+ * Base class for Connection implementations
+ * @author lonnie
+ *
+ */
 public class BaseConnection extends Connection {
 
 	private InputStream inputStream;

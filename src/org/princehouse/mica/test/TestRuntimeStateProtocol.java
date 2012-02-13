@@ -7,10 +7,10 @@ import java.util.Set;
 import org.princehouse.mica.base.BaseProtocol;
 import org.princehouse.mica.base.annotations.GossipUpdate;
 import org.princehouse.mica.base.annotations.SelectUniformRandom;
+import org.princehouse.mica.base.model.Runtime;
 import org.princehouse.mica.base.net.model.Address;
 import org.princehouse.mica.base.net.tcpip.TCPAddress;
-import org.princehouse.mica.base.runtime.Runtime;
-import org.princehouse.mica.base.runtime.implementation.SimpleRuntime;
+import org.princehouse.mica.base.simple.SimpleRuntime;
 import org.princehouse.mica.util.Functional;
 
 
@@ -64,8 +64,8 @@ public class TestRuntimeStateProtocol extends BaseProtocol {
 		TestRuntimeStateProtocol node1 = new TestRuntimeStateProtocol(a1, Functional.set(a2));
 		TestRuntimeStateProtocol node2 = new TestRuntimeStateProtocol(a2, Functional.set(a1));
 
-		Runtime<TestRuntimeStateProtocol> rt1 = SimpleRuntime.launch(node1, a1);
-		Runtime<TestRuntimeStateProtocol> rt2 = SimpleRuntime.launch(node2, a2);
+		Runtime<TestRuntimeStateProtocol> rt1 = SimpleRuntime.launchDaemon(node1, a1);
+		Runtime<TestRuntimeStateProtocol> rt2 = SimpleRuntime.launchDaemon(node2, a2);
 
 		try {
 			Thread.sleep(10000);

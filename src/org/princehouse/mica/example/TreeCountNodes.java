@@ -1,25 +1,29 @@
-package org.princehouse.mica.lib;
+package org.princehouse.mica.example;
 
 
 import java.util.Map;
 
-import org.princehouse.mica.base.Protocol;
+import org.princehouse.mica.base.model.Protocol;
 import org.princehouse.mica.base.net.model.Address;
 import org.princehouse.mica.lib.abstractions.Aggregator;
-import org.princehouse.mica.lib.abstractions.Tree;
+import org.princehouse.mica.lib.abstractions.RootedTree;
 
 
+/**
+ * Count the nodes in each subtree of a rooted spanning tree.  
+ * Demonstration of the Aggregator class
+ * 
+ * @author lonnie
+ *
+ */
 public class TreeCountNodes extends Aggregator<TreeCountNodes, Integer, Integer> {
 	
-	/**
-	 * 
-	 */
 	private static final long serialVersionUID = 1L;
 	
-	private Tree tree;
+	private RootedTree tree;
 	
-	public TreeCountNodes(Tree t) {
-		super(t.getChildrenAsOverlay(), Protocol.Direction.PULL);
+	public TreeCountNodes(RootedTree t) {
+		super(t.getChildrenAsOverlay(), Protocol.Direction.PULL, 1);
 		this.tree = t;
 	}
 
@@ -54,7 +58,7 @@ public class TreeCountNodes extends Aggregator<TreeCountNodes, Integer, Integer>
 
 	@Override
 	public Integer computeSummary(TreeCountNodes child) {
-		return child.getSubtreeSize();
+		return getSubtreeSize();
 	}
 	
 	@Override

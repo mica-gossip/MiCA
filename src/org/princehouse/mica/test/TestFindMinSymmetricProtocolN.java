@@ -5,11 +5,11 @@ import java.net.UnknownHostException;
 import java.util.List;
 import java.util.Set;
 
+import org.princehouse.mica.base.model.Runtime;
 import org.princehouse.mica.base.net.model.Address;
 import org.princehouse.mica.base.net.tcpip.TCPAddress;
-import org.princehouse.mica.base.runtime.Runtime;
-import org.princehouse.mica.base.runtime.implementation.SimpleRuntime;
-import org.princehouse.mica.lib.FindMinSymmetric;
+import org.princehouse.mica.base.simple.SimpleRuntime;
+import org.princehouse.mica.example.FindMinSymmetric;
 import org.princehouse.mica.util.Functional;
 
 
@@ -38,7 +38,7 @@ public class TestFindMinSymmetricProtocolN {
 			view.add(addresses[(i+3)%n]);
 			view.add(addresses[(i+n/2)%n]);
 			FindMinSymmetric node = new FindMinSymmetric(i+1, view);
-			rts.add(SimpleRuntime.launch(node,addresses[i]));
+			rts.add(SimpleRuntime.launchDaemon(node,addresses[i]));
 		}
 		
 		try {
