@@ -1,0 +1,10 @@
+org.princehouse.mica.base
+org.princehouse.mica.base.annotations
+org.princehouse.mica.base.model
+org.princehouse.mica.base.net
+org.princehouse.mica.base.net.model
+org.princehouse.mica.base.net.tcpip
+org.princehouse.mica.base.simple
+org.princehouse.mica.lib
+org.princehouse.mica.lib.abstractions
+org.princehouse.mica.util
