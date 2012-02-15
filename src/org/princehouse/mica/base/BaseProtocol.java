@@ -54,6 +54,7 @@ public abstract class BaseProtocol implements Protocol, Serializable {
 		return Runtime.getRuntime().getSelectDistribution(this);
 	}
 	
+	
 	/**
 	 * Get the current node's address. This is part of Runtime state.
 	 * @return Current node's address

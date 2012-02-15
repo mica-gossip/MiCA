@@ -192,16 +192,21 @@ public class TestHarness<Q extends Protocol> {
 	}
 	
 	public static <ProtocolClass extends Protocol> void main(String[] argv, F3<Integer, Address, List<Address>, ProtocolClass> createNodeFunc) {
+		TestHarness<ProtocolClass> harness = new TestHarness<ProtocolClass>();
+		harness.runMain(argv, createNodeFunc);
+	}
+
+	public void runMain(String[] argv, F3<Integer, Address, List<Address>, Q> createNodeFunc) {
 		TestHarnessOptions options = new TestHarnessOptions();
 		new JCommander(options, argv); // parse command line options
 		
 		SimpleRuntime.DEFAULT_INTERVAL = (int) options.roundLength;
 		TestHarness.BASE_ADDRESS = options.port;
-		TestHarness<ProtocolClass> harness = new TestHarness<ProtocolClass>();
+		//TestHarness<ProtocolClass> harness = new TestHarness<ProtocolClass>();
 		if(options.stopAfter > 0) {
-			harness.addTimerRounds(options.stopAfter, harness.taskStop());
+			addTimerRounds(options.stopAfter, taskStop());
 		}
-		harness.runRandomGraph(options.seed, options.n, options.rdegree, createNodeFunc);
+		runRandomGraph(options.seed, options.n, options.rdegree, createNodeFunc);
 	}
 
 }
