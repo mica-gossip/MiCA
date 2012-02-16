@@ -11,8 +11,6 @@ import org.princehouse.mica.base.model.Runtime;
 import org.princehouse.mica.base.net.model.Address;
 import org.princehouse.mica.base.net.tcpip.TCPAddress;
 import org.princehouse.mica.base.simple.SimpleRuntime;
-import org.princehouse.mica.example.DemoCompositeProtocol;
-import org.princehouse.mica.test.TestStackCorr3;
 
 import com.beust.jcommander.JCommander;
 import com.beust.jcommander.Parameter;
