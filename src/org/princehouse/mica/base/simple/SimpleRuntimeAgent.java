@@ -8,6 +8,7 @@ import java.lang.reflect.AnnotatedElement;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.net.ConnectException;
 import java.net.SocketException;
 import java.util.Collections;
 import java.util.HashMap;
@@ -427,7 +428,7 @@ class SimpleRuntimeAgent<P extends Protocol> extends RuntimeAgent<P> {
 			Throwable tgt = e.getTargetException();
 			if (tgt instanceof RuntimeException)
 				throw (RuntimeException) tgt;
-			else {
+			else {					
 				throw new RuntimeException(e); // shouldn't happen --- update
 				// doesn't declare any
 				// exceptions; anything
@@ -470,4 +471,17 @@ class SimpleRuntimeAgent<P extends Protocol> extends RuntimeAgent<P> {
 		}
 
 	}
+
+	@Override
+	public void handleNullSelect(Runtime<?> runtime, P pinstance) {
+	}
+
+	@Override
+	public void handleConnectException(Runtime<?> runtime, P pinstance,
+			Address partner, ConnectException ce) {
+		((BaseProtocol) pinstance).log("connect-exception,%s", partner);
+		// TODO add hook for user defined connect error handlers
+	}
+
+	
 }

@@ -2,6 +2,7 @@ package org.princehouse.mica.base.simple;
 
 
 import java.io.IOException;
+import java.net.ConnectException;
 import java.util.Date;
 import java.util.Random;
 import java.util.concurrent.TimeUnit;
@@ -151,22 +152,36 @@ AcceptConnectionHandler {
 
 			try {
 				if (lock.tryLock(LOCK_WAIT_MS, TimeUnit.MILLISECONDS)) {
-					partner = compile(pinstance).select(this,
+					
+					RuntimeAgent<P> agent = compile(pinstance);
+
+					partner = agent.select(this,
 							pinstance, rng.nextDouble());
 
 					Runtime.debug.printf("%s select %s\n", this, partner);
 
 					((BaseProtocol) pinstance).log("select,%s", partner);
 
-					if (partner == null)
+					if (partner == null) {
+						agent.handleNullSelect(this, pinstance);
 						continue;
+					}
 
 
-					connection = partner.openConnection();
+					try {
+						connection = partner.openConnection();
+					} catch(ConnectException ce) {
+						agent.handleConnectException(this, pinstance, partner,ce);
+						continue;
+					}
+					
 					if (!running)
 						break;
-					compile(pinstance).gossip(this, getProtocolInstance(),
+					
+					
+					agent.gossip(this, getProtocolInstance(),
 							connection);
+					
 					lock.unlock();
 				} else {
 					// failed to acquire lock within time limit; gossip again

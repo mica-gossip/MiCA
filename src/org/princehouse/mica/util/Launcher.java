@@ -8,7 +8,9 @@ import org.princehouse.mica.base.model.Protocol;
 import org.princehouse.mica.base.net.model.Address;
 import org.princehouse.mica.base.net.tcpip.TCPAddress;
 import org.princehouse.mica.base.simple.SimpleRuntime;
+import org.princehouse.mica.util.jconverters.ArgsConverterFactory;
 
+import com.beust.jcommander.IStringConverterFactory;
 import com.beust.jcommander.JCommander;
 import com.beust.jcommander.Parameter;
 
@@ -18,8 +20,12 @@ public class Launcher {
 	private Class<?> protocolClass = null;
 	private Protocol protocolInstance = null;
 	
-	@Parameter(names = {"-address"}, description = "Address")
-	public String addressString = "localhost:8000";
+	@Parameter(names = "-address", description = "Address")
+	private Address address = new TCPAddress("localhost:8000"); 
+	
+	// not working... jcommander bug?  implement as exceptional case
+	@Parameter(names = "-usage", description = "Print usage", arity=0)
+	public boolean printUsage = false;
 	
 	/**
 	 * Usage: Launcher <protocol class name> [launcher arguments] [protocol arguments]
@@ -43,12 +49,32 @@ public class Launcher {
 	
 	private void fail(Throwable cause, String fmt, Object... args) {
 		System.err.println(String.format(fmt,args));
-		cause.printStackTrace(System.err);
+		if(cause != null) {
+			cause.printStackTrace(System.err);
+		}
 		System.exit(1);
 	}
 	
+	private void failPrintUsage() {
+		System.err.println("Usage: Launcher <protocol class> [launcher args] [protocol args]");
+		if(jc != null) {
+			jc.usage();
+		} else {
+			jc = new JCommander(this);
+			jc.addConverterFactory(new ArgsConverterFactory());
+			jc.usage();
+		}
+		System.exit(1);
+	}
+	
+	private JCommander jc = null;
+	
 	private void runMain(String[] args) {
-		// TODO args length check
+	
+		if(args.length < 1) {
+			failPrintUsage();
+		}
+		
 		protocolClassString = args[0];
 		
 		try {
@@ -57,28 +83,35 @@ public class Launcher {
 			fail("Class not found: %s", protocolClassString);
 		}
 		
+		
+			
 		// instantiate class
 		try {
 			protocolInstance = (Protocol) protocolClass.newInstance();
 		} catch (InstantiationException e) {
-			fail(e.getCause(),"Exception while instantiating %s:",protocolClassString);
+			fail(e,"Exception while instantiating %s:",protocolClassString);
 		} catch (IllegalAccessException e) {
 			fail("Illegal accesss exception: Is the default constructor for %s public?",protocolClassString);
 		}
 		
-		new JCommander(new Object[]{this,protocolInstance}, Array.subArray(args, 1, args.length-1));
-
+		jc = new JCommander(new Object[]{this,protocolInstance}); 
+		jc.addConverterFactory(new ArgsConverterFactory());
 		
-		Address address = null;
-		try {
-			address = TCPAddress.valueOf(addressString);
-		} catch (UnknownHostException e) {
-			fail("Cannot interpret address \"%s\".  Addresses should be of the form \"host:port\"", addressString);
+		String[] subargs = Array.subArray(args, 1, args.length-1);
+
+		for(String s : subargs) {
+			if(s.equals("-usage")) // workaround for jcommander brokenness
+				printUsage = true;
 		}
 		
-		// Attempt to run the initialize method
-		runInitialize(protocolClass, protocolInstance);
+		if(printUsage) {
+			failPrintUsage();
+		}
 		
+		
+		jc.parse(subargs);
+		// Attempt to run the initialize method
+		runInitialize(protocolClass, protocolInstance);		
 		SimpleRuntime.launch(protocolInstance, address, false);
 	}
 	

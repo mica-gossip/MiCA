@@ -46,7 +46,11 @@ public abstract class BaseProtocol implements Protocol, Serializable {
 
 	@Override
 	public String toString() {
+		try {
 		return String.format("[%s@%s]", getName(), getRuntimeState().getAddress());  
+		} catch (RuntimeException e) {
+			return "[!]";
+		}
 	}
 	
 	@Override

@@ -1,7 +1,5 @@
 package org.princehouse.mica.util;
 
-import java.lang.reflect.AnnotatedElement;
-import java.lang.reflect.Method;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -27,6 +25,11 @@ import fj.data.Option;
 
 public class Functional {
 
+	public static <T> List<T> append(List<T> list, T obj) {
+		list.add(obj);
+		return list;
+	}
+	
 	/**
 	 * Concatenate one or more lists Always creates a new list
 	 * 
@@ -514,5 +517,10 @@ public class Functional {
 
 	public static <K,V> Map<K,V> map() {
 		return new HashMap<K,V>();
+	}
+
+	public static <T> List<T> list(T t) {
+		List<T> l = list();
+		return append(l,t);
 	}
 }
