@@ -138,5 +138,10 @@ public abstract class BaseProtocol implements Protocol, Serializable {
 	public double rate() {
 		return 1.0;
 	}
-	
+
+	@Override
+	public Object getLogState() {
+		return this;
+	}
+
 }

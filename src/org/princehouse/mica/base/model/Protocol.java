@@ -48,4 +48,12 @@ public interface Protocol {
 	public static enum Direction {
 		PUSH, PULL, PUSHPULL
 	};
+	
+	/**
+	 * Returns an object that represents local node state.  By default, the instance itself.
+	 * This will be JSON-serialized into the log.  Circular references cause serialization to break;
+	 * in that case, this function will need to be overridden or the offending fields marked as transient.
+	 * @return JSON-serializable object representing node state for logging purposes
+	 */
+	public Object getLogState();
 }

@@ -97,4 +97,11 @@ public class DemoCompositeProtocol extends MergeCorrelated {
 			return new DemoCompositeProtocol(bootstrapView, i);
 		}
 	};
+	
+	@Override 
+	public Object getLogState() {
+//		return leaderElection; // bork
+		// return tree; bork
+		return leaderElection;
+	}
 }
