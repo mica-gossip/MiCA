@@ -30,11 +30,10 @@ public class TCPAddress implements Address, Externalizable {
 	 */
 	public static final int DEFAULT_PORT = 8000; 
 	
-	private AcceptConnectionHandler receiveCallback;
-	
-	protected InetAddress address;
-	protected ServerSocket sock;
-	int port;
+	transient private AcceptConnectionHandler receiveCallback;
+	transient protected InetAddress address;
+	transient protected ServerSocket sock;
+	transient int port;
 	
 	@Override
 	public boolean equals(Object o) {

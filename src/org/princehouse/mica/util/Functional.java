@@ -30,6 +30,11 @@ public class Functional {
 		return list;
 	}
 	
+	public static <T> List<T> prepend(List<T> list, T obj) {
+		list.add(0,obj);
+		return list;
+	}
+	
 	/**
 	 * Concatenate one or more lists Always creates a new list
 	 * 

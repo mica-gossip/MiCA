@@ -10,6 +10,7 @@ import java.util.Random;
 import java.util.concurrent.locks.ReentrantLock;
 
 import org.princehouse.mica.base.net.model.Address;
+import org.princehouse.mica.util.ClassUtils;
 import org.princehouse.mica.util.Distribution;
 
 import com.google.gson.Gson;
@@ -27,6 +28,11 @@ import com.google.gson.Gson;
  */
 public abstract class Runtime<P extends Protocol> {
 
+	// If true, enable the "old style" .csv file logging 
+	public static boolean LOGGING_CSV = true;
+	// Enable new JSON logs
+	public static boolean LOGGING_JSON = true;
+	
 	/**
 	 * Universal debugging printstream.  System.err by default; adjust as necessary.
 	 */
@@ -99,18 +105,24 @@ public abstract class Runtime<P extends Protocol> {
 	public static class JsonLogEvent {
 		public long timestamp;
 		public String address;
-		public String type;
+		public String event_type;
 		public Object event;
 		public JsonLogEvent(long timestamp, String address, String type, Object event) {
 			this.timestamp = timestamp;
 			this.address = address;
-			this.type = type;
+			this.event_type = type;
 			this.event = event;
 		}
 	}
 	
-	public void logEvent(final String eventType, final Object theEvent) {
+	public void logJson(final String eventType) {
+		logJson(eventType, null);
+	}
+	
+	public void logJson(final String eventType, final Object theEvent) {
 
+		if(!Runtime.LOGGING_JSON) return;
+		
 		runtimeLoglock.lock();
 
 		File logfile = getLogFile();
@@ -139,8 +151,18 @@ public abstract class Runtime<P extends Protocol> {
 					theEvent);
 
 		Gson gson = new Gson();
-		String msg = gson.toJson(logobj);
-		out.println(msg);
+		
+		try {
+			String msg = gson.toJson(logobj);
+			out.println(msg);
+		} catch(StackOverflowError e) {
+			// object probably has a reference cycle reference cycle
+			out.println(gson.toJson("error:reference cycle"));
+			// debugging:
+			ClassUtils.findReferenceCycles(logobj);
+		}
+		
+		
 		try {
 			fos.close();
 		} catch (IOException e) {

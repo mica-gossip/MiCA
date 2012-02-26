@@ -155,7 +155,7 @@ class SimpleRuntimeAgent<P extends Protocol> extends RuntimeAgent<P> {
 				ois = new ObjectInputStream(connection.getInputStream());
 			} catch (SocketException e) {
 				((BaseProtocol) pinstance)
-						.log("gossip-init-connection-failure");
+						.logCsv("gossip-init-connection-failure");
 				return;
 			}
 			try {
@@ -164,8 +164,12 @@ class SimpleRuntimeAgent<P extends Protocol> extends RuntimeAgent<P> {
 
 				rt.setProtocolInstance(rpm.protocolInstance);
 
-				((BaseProtocol) rpm.protocolInstance).logstate();
-
+				if(Runtime.LOGGING_CSV)
+					((BaseProtocol) rpm.protocolInstance).logstate();
+				
+				rt.logJson("state", rpm.protocolInstance.getLogState());
+				
+				
 				// Update runtime state
 				rt.getRuntimeState().update(rpm.runtimeState);
 
@@ -479,8 +483,10 @@ class SimpleRuntimeAgent<P extends Protocol> extends RuntimeAgent<P> {
 	@Override
 	public void handleConnectException(Runtime<?> runtime, P pinstance,
 			Address partner, ConnectException ce) {
-		((BaseProtocol) pinstance).log("connect-exception,%s", partner);
+		((BaseProtocol) pinstance).logCsv("connect-exception,%s", partner);
+		
 		// TODO add hook for user defined connect error handlers
+		
 	}
 
 	

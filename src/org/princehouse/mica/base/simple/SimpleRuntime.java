@@ -97,7 +97,12 @@ AcceptConnectionHandler {
 				lock.unlock();
 			} else {
 				// failed to acquire lock; timeout
-				//((BaseProtocol)pinstance).log("accept-lock-fail");
+				
+				//if(Runtime.LOGGING_CSV)   Can't do instance-based logging since setRuntime hasn't happened
+				//	((BaseProtocol)pinstance).log("accept-lock-fail");
+				
+				logJson("accept-lock-fail");
+				
 				System.err
 				.printf("%s accept: failed to acquire lock (timeout)", this);
 				connection.close();
@@ -131,14 +136,22 @@ AcceptConnectionHandler {
 
 		Random rng = new Random(randomSeed);
 
-		((BaseProtocol) pinstance).logstate();
-		logEvent("state",pinstance.getLogState());
+		
+		if(Runtime.LOGGING_CSV)
+			((BaseProtocol) pinstance).logstate();
+		
+		logJson("state",pinstance.getLogState());
 		
 		
 		
 		while (running) {
 			double rate = getRate(pinstance);
-			((BaseProtocol) pinstance).log("rate,%g",rate);
+			
+			if(Runtime.LOGGING_CSV)
+				((BaseProtocol) pinstance).logCsv("rate,%g",rate);
+			
+			logJson("rate",rate);
+			
 			int intervalLength = (int) (((double) intervalMS) / rate);
 			if(intervalLength <= 0) {
 				System.err.printf("%s error: Rate * intervalMS <= 0.  Resetting to default.\n", this);
@@ -162,9 +175,8 @@ AcceptConnectionHandler {
 							pinstance, rng.nextDouble());
 
 					Runtime.debug.printf("%s select %s\n", this, partner);
-
-					((BaseProtocol) pinstance).log("select,%s", partner);
-
+					logJson("select", partner);					
+					
 					if (partner == null) {
 						agent.handleNullSelect(this, pinstance);
 						continue;
@@ -191,7 +203,11 @@ AcceptConnectionHandler {
 					// next round
 					Runtime.debug.printf(
 							"%s active lock fail on init gossip [already engaged in gossip?]\n", this);
-					((BaseProtocol) pinstance).log("lockfail-active");
+					
+					if(Runtime.LOGGING_CSV)
+						((BaseProtocol) pinstance).logCsv("lockfail-active");
+					
+					logJson("lockfail-active");
 				}
 			} catch (IOException e) {
 				e.printStackTrace();
