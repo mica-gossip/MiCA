@@ -90,7 +90,10 @@ AcceptConnectionHandler {
 			throws IOException {
 		try {
 			if (lock.tryLock(LOCK_WAIT_MS, TimeUnit.MILLISECONDS)) {
+					
 				setRuntime(this);
+				
+				logJson("accept-lock-succeed", recipient);
 				((SimpleRuntimeAgent<P>) compile(pinstance)).acceptConnection(
 						this, getProtocolInstance(), connection);
 				clearRuntime(this);
@@ -101,10 +104,10 @@ AcceptConnectionHandler {
 				//if(Runtime.LOGGING_CSV)   Can't do instance-based logging since setRuntime hasn't happened
 				//	((BaseProtocol)pinstance).log("accept-lock-fail");
 				
-				logJson("accept-lock-fail");
+				logJson("accept-lock-fail", recipient);
 				
 				System.err
-				.printf("%s accept: failed to acquire lock (timeout)", this);
+				.printf("%s accept: failed to acquire lock (timeout)\n", this);
 				connection.close();
 			}
 		} catch (InterruptedException e) {
@@ -179,6 +182,7 @@ AcceptConnectionHandler {
 					
 					if (partner == null) {
 						agent.handleNullSelect(this, pinstance);
+						lock.unlock();
 						continue;
 					}
 

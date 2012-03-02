@@ -54,7 +54,7 @@ class SimpleRuntimeAgent<P extends Protocol> extends RuntimeAgent<P> {
 	 * @param <P> Top-level protocol class
 	 */
 	protected static class RequestMessage<P extends Protocol> implements
-			Serializable {
+	Serializable {
 		private static final long serialVersionUID = 1L;
 
 		public RequestMessage(P protocolInstance, RuntimeState runtimeState) {
@@ -85,7 +85,7 @@ class SimpleRuntimeAgent<P extends Protocol> extends RuntimeAgent<P> {
 	 * @param <P> Top-level Protocol class
 	 */
 	protected static class ResponseMessage<P extends Protocol> implements
-			Serializable {
+	Serializable {
 		private static final long serialVersionUID = 1L;
 		private P protocolInstance;
 		private RuntimeState runtimeState;
@@ -126,12 +126,30 @@ class SimpleRuntimeAgent<P extends Protocol> extends RuntimeAgent<P> {
 
 	@Override
 	public Address select(Runtime<?> rt, P pinstance, double randomValue) {
+		// Sanity check to prevent self-gossip added by Josh Endries
 		Distribution<Address> dist = getSelectDistribution(rt, pinstance);
-		if (dist == null)
+		if (dist == null || dist.size() == 0) {
+			/*
+			 * Either the distribution doesn't exist or it's empty.
+			 */
 			return null;
-		else
-			return dist.sample(rt.getRandom().nextLong());
+		} else {
+			Address a = dist.sample(rt.getRandom().nextLong());
+			if (rt.getAddress().equals(a)) {
+				/*
+				 * Settle down now, we don't want to start talking to ourselves...
+				 */
+				return null;
+			} else {
+				/*
+				 * We were lucky enough to get an address, toss it back!
+				 */
+				return a;
+			}
+		}
 	}
+
+
 
 	@Override
 	public void gossip(Runtime<P> rt, P pinstance, Connection connection) {
@@ -155,7 +173,7 @@ class SimpleRuntimeAgent<P extends Protocol> extends RuntimeAgent<P> {
 				ois = new ObjectInputStream(connection.getInputStream());
 			} catch (SocketException e) {
 				((BaseProtocol) pinstance)
-						.logCsv("gossip-init-connection-failure");
+				.logCsv("gossip-init-connection-failure");
 				return;
 			}
 			try {
@@ -166,10 +184,10 @@ class SimpleRuntimeAgent<P extends Protocol> extends RuntimeAgent<P> {
 
 				if(Runtime.LOGGING_CSV)
 					((BaseProtocol) rpm.protocolInstance).logstate();
-				
+
 				rt.logJson("state", rpm.protocolInstance.getLogState());
-				
-				
+
+
 				// Update runtime state
 				rt.getRuntimeState().update(rpm.runtimeState);
 
@@ -228,19 +246,19 @@ class SimpleRuntimeAgent<P extends Protocol> extends RuntimeAgent<P> {
 		}
 
 		Runtime.debug
-				.printf("SimpleRuntimeAgent processing for %s:\n   select = %s\n   update = %s\n   freq = %s\n",
-						pclass.getName(), selector, updateMethod,
-						frequencyMethod);
+		.printf("SimpleRuntimeAgent processing for %s:\n   select = %s\n   update = %s\n   freq = %s\n",
+				pclass.getName(), selector, updateMethod,
+				frequencyMethod);
 	}
 
 	private void locateUpdateMethod() throws TooManyException,
-			NotFoundException {
+	NotFoundException {
 		// TODO sanity check that update has the right signature
 		try {
 			updateMethod = Functional.findExactlyOne(
 					(Iterable<Method>) FunctionalReflection.getMethods(pclass),
 					FunctionalReflection
-							.<Method> hasAnnotation(GossipUpdate.class));
+					.<Method> hasAnnotation(GossipUpdate.class));
 		} catch (TooManyException e) {
 			// If multiple options are found, see if one overrides the others by
 			// sorting by declaring class subclass relation
@@ -261,13 +279,13 @@ class SimpleRuntimeAgent<P extends Protocol> extends RuntimeAgent<P> {
 	}
 
 	private void locateFrequencyMethod() throws TooManyException,
-			NotFoundException {
+	NotFoundException {
 		// TODO sanity check that freq has the right signature
 		try {
 			frequencyMethod = Functional.findExactlyOne(
 					(Iterable<Method>) FunctionalReflection.getMethods(pclass),
 					FunctionalReflection
-							.<Method> hasAnnotation(GossipRate.class));
+					.<Method> hasAnnotation(GossipRate.class));
 		} catch (TooManyException e) {
 			@SuppressWarnings({ "unchecked", "rawtypes" })
 			List<Method> options = (List) e.getOptions();// Functional.mapcast(
@@ -287,7 +305,7 @@ class SimpleRuntimeAgent<P extends Protocol> extends RuntimeAgent<P> {
 	}
 
 	private void locateSelectMethod(Class<?> klass) throws NotFoundException,
-			TooManyException {
+	TooManyException {
 
 		// first class functions for finding select and select uniform random
 		// annotations
@@ -302,7 +320,7 @@ class SimpleRuntimeAgent<P extends Protocol> extends RuntimeAgent<P> {
 			try {
 				selectElement = Functional.findExactlyOne(
 						(Iterable<AnnotatedElement>) FunctionalReflection
-								.getAnnotatedElements(klass), Functional.or(
+						.getAnnotatedElements(klass), Functional.or(
 								hasSelect, hasSelectUniformRandom));
 			} catch (NotFoundException nf) {
 				Class<?> base = klass.getSuperclass();
@@ -354,7 +372,7 @@ class SimpleRuntimeAgent<P extends Protocol> extends RuntimeAgent<P> {
 			throw new TooManyException(
 					String.format("Element has multiple select annotations %s",
 							selectElement)); // two annotations on the same
-												// element
+			// element
 		}
 
 	}
@@ -412,7 +430,7 @@ class SimpleRuntimeAgent<P extends Protocol> extends RuntimeAgent<P> {
 		}
 		// rt.setProtocolInstance(pinstance);
 	}
-	
+
 	/**
 	 * Executes the gossip update function on two local instances.
 	 * 
@@ -484,10 +502,10 @@ class SimpleRuntimeAgent<P extends Protocol> extends RuntimeAgent<P> {
 	public void handleConnectException(Runtime<?> runtime, P pinstance,
 			Address partner, ConnectException ce) {
 		((BaseProtocol) pinstance).logCsv("connect-exception,%s", partner);
-		
+
 		// TODO add hook for user defined connect error handlers
-		
+
 	}
 
-	
+
 }
