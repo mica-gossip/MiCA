@@ -123,14 +123,32 @@ class SimpleRuntimeAgent<P extends Protocol> extends RuntimeAgent<P> {
 		process();
 	}
 
+	
 	@Override
 	public Address select(Runtime<?> rt, P pinstance, double randomValue) {
+		// Sanity check to prevent self-gossip added by Josh Endries
 		Distribution<Address> dist = getSelectDistribution(rt, pinstance);
-		if (dist == null)
+		if (dist == null || dist.size() == 0) {
+			/*
+			 * Either the distribution doesn't exist or it's empty.
+			 */
 			return null;
-		else
-			return dist.sample(rt.getRandom().nextLong());
+		} else {
+			Address a = dist.sample(rt.getRandom().nextLong());
+			if (rt.getAddress().equals(a)) {
+				/*
+				 * Settle down now, we don't want to start talking to ourselves...
+				 */
+				return null;
+			} else {
+				/*
+				 * We were lucky enough to get an address, toss it back!
+				 */
+				return a;
+			}
+		}
 	}
+
 
 	@Override
 	public void gossip(Runtime<P> rt, P pinstance, Connection connection) {
