@@ -158,8 +158,10 @@ AcceptConnectionHandler {
 
 					((BaseProtocol) pinstance).log("select,%s", partner);
 
-					if (partner == null)
+					if (partner == null) {
+						lock.unlock();  // bugfix retroactively added to master 3/2/12
 						continue;
+					}
 
 
 					connection = partner.openConnection();
