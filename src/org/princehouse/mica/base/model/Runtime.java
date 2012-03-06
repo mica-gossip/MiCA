@@ -25,6 +25,9 @@ import org.princehouse.mica.util.Distribution;
  */
 public abstract class Runtime<P extends Protocol> {
 
+	// new logging (json-based)
+	
+	
 	/**
 	 * Universal debugging printstream.  System.err by default; adjust as necessary.
 	 */

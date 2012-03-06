@@ -134,7 +134,7 @@ AcceptConnectionHandler {
 
 		while (running) {
 			double rate = getRate(pinstance);
-			((BaseProtocol) pinstance).log("rate,%g",rate);
+			((BaseProtocol) getProtocolInstance()).log("rate,%g",rate);
 			int intervalLength = (int) (((double) intervalMS) / rate);
 			if(intervalLength <= 0) {
 				System.err.printf("%s error: Rate * intervalMS <= 0.  Resetting to default.\n", this);
@@ -151,12 +151,12 @@ AcceptConnectionHandler {
 
 			try {
 				if (lock.tryLock(LOCK_WAIT_MS, TimeUnit.MILLISECONDS)) {
-					partner = compile(pinstance).select(this,
-							pinstance, rng.nextDouble());
+					partner = compile(getProtocolInstance()).select(this,
+							getProtocolInstance(), rng.nextDouble());
 
 					Runtime.debug.printf("%s select %s\n", this, partner);
 
-					((BaseProtocol) pinstance).log("select,%s", partner);
+					((BaseProtocol) getProtocolInstance()).log("select,%s", partner);
 
 					if (partner == null) {
 						lock.unlock();  // bugfix retroactively added to master 3/2/12
@@ -167,7 +167,7 @@ AcceptConnectionHandler {
 					connection = partner.openConnection();
 					if (!running)
 						break;
-					compile(pinstance).gossip(this, getProtocolInstance(),
+					compile(getProtocolInstance()).gossip(this, getProtocolInstance(),
 							connection);
 					lock.unlock();
 				} else {
@@ -175,7 +175,7 @@ AcceptConnectionHandler {
 					// next round
 					Runtime.debug.printf(
 							"%s active lock fail on init gossip [already engaged in gossip?]\n", this);
-					((BaseProtocol) pinstance).log("lockfail-active");
+					((BaseProtocol) getProtocolInstance()).log("lockfail-active");
 				}
 			} catch (IOException e) {
 				e.printStackTrace();
