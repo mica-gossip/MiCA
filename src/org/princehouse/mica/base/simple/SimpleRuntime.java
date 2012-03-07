@@ -2,6 +2,7 @@ package org.princehouse.mica.base.simple;
 
 
 import java.io.IOException;
+import java.net.ConnectException;
 import java.util.Date;
 import java.util.Random;
 import java.util.concurrent.TimeUnit;
@@ -89,16 +90,24 @@ AcceptConnectionHandler {
 			throws IOException {
 		try {
 			if (lock.tryLock(LOCK_WAIT_MS, TimeUnit.MILLISECONDS)) {
+					
 				setRuntime(this);
+				
+				logJson("accept-lock-succeed", recipient);
 				((SimpleRuntimeAgent<P>) compile(pinstance)).acceptConnection(
 						this, getProtocolInstance(), connection);
 				clearRuntime(this);
 				lock.unlock();
 			} else {
 				// failed to acquire lock; timeout
-				//((BaseProtocol)pinstance).log("accept-lock-fail");
+				
+				//if(Runtime.LOGGING_CSV)   Can't do instance-based logging since setRuntime hasn't happened
+				//	((BaseProtocol)pinstance).log("accept-lock-fail");
+				
+				logJson("accept-lock-fail", recipient);
+				
 				System.err
-				.printf("%s accept: failed to acquire lock (timeout)", this);
+				.printf("%s accept: failed to acquire lock (timeout)\n", this);
 				connection.close();
 			}
 		} catch (InterruptedException e) {
@@ -130,11 +139,22 @@ AcceptConnectionHandler {
 
 		Random rng = new Random(randomSeed);
 
-		((BaseProtocol) pinstance).logstate();
-
+		
+		if(Runtime.LOGGING_CSV)
+			((BaseProtocol) pinstance).logstate();
+		
+		logJson("state",pinstance.getLogState());
+		
+		
+		
 		while (running) {
 			double rate = getRate(pinstance);
-			((BaseProtocol) getProtocolInstance()).log("rate,%g",rate);
+			
+			if(Runtime.LOGGING_CSV)
+				((BaseProtocol) pinstance).logCsv("rate,%g",rate);
+			
+			logJson("rate",rate);
+			
 			int intervalLength = (int) (((double) intervalMS) / rate);
 			if(intervalLength <= 0) {
 				System.err.printf("%s error: Rate * intervalMS <= 0.  Resetting to default.\n", this);
@@ -151,31 +171,50 @@ AcceptConnectionHandler {
 
 			try {
 				if (lock.tryLock(LOCK_WAIT_MS, TimeUnit.MILLISECONDS)) {
-					partner = compile(getProtocolInstance()).select(this,
+
+					RuntimeAgent<P> agent = compile(getProtocolInstance());
+					
+					partner = agent.select(this,
 							getProtocolInstance(), rng.nextDouble());
 
 					Runtime.debug.printf("%s select %s\n", this, partner);
+					
+					((BaseProtocol) getProtocolInstance()).logJson("select,%s", partner);
 
-					((BaseProtocol) getProtocolInstance()).log("select,%s", partner);
-
+					logJson("select", partner);					
+					
 					if (partner == null) {
-						lock.unlock();  // bugfix retroactively added to master 3/2/12
+						agent.handleNullSelect(this, getProtocolInstance());
+						lock.unlock();
 						continue;
 					}
 
 
-					connection = partner.openConnection();
+					try {
+						connection = partner.openConnection();
+					} catch(ConnectException ce) {
+						agent.handleConnectException(this, pinstance, partner,ce);
+						lock.unlock();
+						continue;
+					}
+					
 					if (!running)
 						break;
-					compile(getProtocolInstance()).gossip(this, getProtocolInstance(),
+										
+					agent.gossip(this, getProtocolInstance(),
 							connection);
+					
 					lock.unlock();
 				} else {
 					// failed to acquire lock within time limit; gossip again
 					// next round
 					Runtime.debug.printf(
 							"%s active lock fail on init gossip [already engaged in gossip?]\n", this);
-					((BaseProtocol) getProtocolInstance()).log("lockfail-active");
+					
+					if(Runtime.LOGGING_CSV)
+						((BaseProtocol) pinstance).logCsv("lockfail-active");
+					
+					logJson("lockfail-active");
 				}
 			} catch (IOException e) {
 				e.printStackTrace();

@@ -1,5 +1,7 @@
 package org.princehouse.mica.base.model;
 
+import java.net.ConnectException;
+
 import org.princehouse.mica.base.net.model.Address;
 import org.princehouse.mica.base.net.model.Connection;
 import org.princehouse.mica.util.Distribution;
@@ -69,4 +71,8 @@ public abstract class RuntimeAgent<P extends Protocol> {
 	 */
 	public abstract double getRate(Runtime<?> runtime, P pinstance);
 
+	public abstract void handleNullSelect(Runtime<?> runtime, P pinstance);
+
+	public abstract void handleConnectException(Runtime<?> runtime, P pinstance, Address partner, ConnectException ce);
+	
 }

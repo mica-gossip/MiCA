@@ -4,15 +4,136 @@ package org.princehouse.mica.util;
 import java.io.File;
 import java.io.IOException;
 import java.lang.annotation.Annotation;
+import java.lang.reflect.Field;
 import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
+import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 import org.princehouse.mica.base.annotations.GossipUpdate;
-import org.princehouse.mica.util.Files;
 
 
 public class ClassUtils {
+	
+	public static class RefCounter {
+		
+		static class Reference {
+			public Object object;
+			private String description;
+			public Reference(String description, Object obj) {
+				object = obj;
+				this.description = description;
+			}
+			public String toString() {
+				return description;
+			}
+		}
+				
+		Set<Object> seen = new HashSet<Object>();
+		private Object offendingObject = null;
+		
+		public RefCounter() {}
+		
+		public boolean findReferenceCycles(Object obj) {
+			seen.clear();
+			offendingObject = null;
+			List<Reference> path = visit(obj);
+			if(path == null)
+				return false;
+			else {
+				path = Functional.prepend(path, new Reference(String.format("%s base object", obj.getClass().getName()),obj));
+				System.err.printf("Reference cycle found:\n");
+				for(Reference r : path) {
+					System.err.printf("  %s %s\n", r, (r.object == offendingObject ? "<-----" : ""));
+				}
+				return true;
+			}
+			
+		}
+	
+		private boolean isPrimitiveRefType(Object obj) {
+			return (obj instanceof Number) || (obj instanceof String);
+		}
+		
+		private List<Reference> visit(Object obj) {
+			if(obj == null)
+				return null;
+			
+			if(isPrimitiveRefType(obj)) 
+				return null;
+			
+			if(seen.contains(obj)) {
+				offendingObject = obj;
+				return new LinkedList<Reference>();
+			} else {
+				seen.add(obj);
+			}
+			
+			for(Reference r : getReferences(obj)) {
+				List<Reference> temp = visit(r.object);
+				if(temp != null) {
+					temp = Functional.prepend(temp, r);
+					return temp;
+				}
+			}
+			
+			seen.remove(obj);
+			return null;
+		}
+		
+		@SuppressWarnings({ "unchecked", "rawtypes" })
+		private List<Reference> getReferences(Object obj) {
+			List<Reference> temp = new LinkedList<Reference>();
+			
+			// traverse all attributes
+			Class<?> k = obj.getClass();
+			for(Field field : k.getDeclaredFields()) {
+			//for(Field field : k.getFields()) {
+				// ignore static fields
+				if( (field.getModifiers() & Modifier.STATIC) != 0) 
+					continue;
+				field.setAccessible(true);
+				try {
+					temp.add(new Reference(String.format("%s.%s", k.getName(), field.getName()),field.get(obj)));
+				} catch (Exception e) {
+					continue;
+				}
+			}
+					
+			if(obj instanceof Iterable) {
+				int i = 0;
+				for(Object element : (Iterable<Object>) obj) {
+					temp.add(new Reference(String.format("%s.iterate[%d]",k.getName(), i++), element));
+				}
+			}
+			
+			if(obj instanceof Object[]) {
+				int i = 0;
+				for(Object element : (Object[]) obj) {
+					temp.add(new Reference(String.format("%s.array[%d]", k.getName(), i++), element));
+				}
+			}
+			
+			if(obj instanceof Map) {
+				temp.add(new Reference(String.format("%s.mapkeys",k.getName()), ((Map)obj).keySet()));
+				temp.add(new Reference(String.format("%s.mapvalues",k.getName()), ((Map)obj).values()));
+			}
+			
+			return temp;
+		}
+	}
+	/**
+	 * returns true if a reference cycle is found, and prints out a reference path on standard error
+	 * @param obj
+	 * @return
+	 */
+	public static boolean findReferenceCycles(Object obj) {
+		return new RefCounter().findReferenceCycles(obj);
+	}
+	
 	public static boolean classImplements(Class<?> klass, Class<?> iface) {
 		assert(iface.isInterface());
 		for(Class<?> i : klass.getInterfaces()) {

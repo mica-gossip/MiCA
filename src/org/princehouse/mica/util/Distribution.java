@@ -153,6 +153,10 @@ public class Distribution<T> extends HashMap<T,Double> {
 		
 		double sample = new Random().nextDouble() * getSum();  // if normalized, don't need getsum
 		
+		if(size() <= 0) {
+			return null;
+		}
+		
 		for(T x : keySet()) {
 			double y = get(x);
 			if(sample <= y) {

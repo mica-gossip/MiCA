@@ -25,12 +25,12 @@ public abstract class BaseProtocol implements Protocol, Serializable {
 	 * 
 	 */
 	private static final long serialVersionUID = 7604139731035133018L;
-	
+
 	/**
 	 * Default constructor
 	 */
 	public BaseProtocol() {}
-	
+
 	// clunky mechanism to register "foreign" objects when they are deserialized at a remote node
 	private void readObject(ObjectInputStream in) throws IOException, ClassNotFoundException {
 		in.defaultReadObject();
@@ -46,15 +46,19 @@ public abstract class BaseProtocol implements Protocol, Serializable {
 
 	@Override
 	public String toString() {
-		return String.format("[%s@%s]", getName(), getRuntimeState().getAddress());  
+		try {
+			return String.format("[%s@%s]", getName(), getRuntimeState().getAddress());  
+		} catch (RuntimeException e) {
+			return "[!]";
+		}
 	}
-	
+
 	@Override
 	final public Distribution<Address> getSelectDistribution() {
 		return Runtime.getRuntime().getSelectDistribution(this);
 	}
-	
-	
+
+
 	/**
 	 * Get the current node's address. This is part of Runtime state.
 	 * @return Current node's address
@@ -62,13 +66,13 @@ public abstract class BaseProtocol implements Protocol, Serializable {
 	public Address getAddress() {
 		return getRuntimeState().getAddress();
 	}
-	
+
 	@Override
 	public void executeUpdate(Protocol other) {
 		Runtime.getRuntime().executeUpdate(this,other);
 	}
-	
-	
+
+
 	@Override 
 	public double getFrequency() {
 		return Runtime.getRuntime().getRate(this);
@@ -93,7 +97,7 @@ public abstract class BaseProtocol implements Protocol, Serializable {
 		this.name = name;
 		return this;
 	}
-	
+
 	// TODO "local_timestamp":  Is that in ms or rounds?
 	/**
 	 * Write a message to the log.  Log messages are comma-separated fields of the format:
@@ -105,17 +109,31 @@ public abstract class BaseProtocol implements Protocol, Serializable {
 	 * @param formatStr
 	 * @param arguments
 	 */
-	public void log(String formatStr, Object... arguments) {
-		Runtime.log(String.format("%s,%s,%s,",getAddress(),getClass().getSimpleName(),getName()) + String.format(formatStr, arguments));
+	
+
+	public static class InstanceLogObject {
+		public String name;
+		public Object data;
 	}
 	
+	public void logJson(String eventType, final Object obj) {
+		InstanceLogObject logobj = new InstanceLogObject();
+		logobj.name = getName();
+		logobj.data = obj;
+		Runtime.getRuntime().logJson(eventType, logobj);
+	}
+
+	public void logCsv(String formatStr, Object... arguments) {
+		if(Runtime.LOGGING_CSV)
+			Runtime.log(String.format("%s,%s,%s,",getAddress(),getClass().getSimpleName(),getName()) + String.format(formatStr, arguments));
+	}
 	/**
 	 * Write the representation of local state (from getStateString) to the log
 	 */
 	public void logstate() {
-		log("state,"+getStateString());
+		logCsv("state,"+getStateString());
 	}
-	
+
 	/**
 	 * String representation of local state
 	 * @return
@@ -123,7 +141,7 @@ public abstract class BaseProtocol implements Protocol, Serializable {
 	public String getStateString() {
 		return "-";
 	}
-	
+
 	/**
 	 * The default rate of all protocols is 1.0.
 	 * Override this only if you specifically want to make this protocol gossip at a 
@@ -134,5 +152,10 @@ public abstract class BaseProtocol implements Protocol, Serializable {
 	public double rate() {
 		return 1.0;
 	}
-	
+
+	@Override
+	public Object getLogState() {
+		return this;
+	}
+
 }
