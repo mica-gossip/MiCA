@@ -144,16 +144,19 @@ public class MergeIndependent extends BaseProtocol {
 		case 0:
 			// only protocol 1 gossips
 			p1.executeUpdate(other.p1);
-			log("merge-update,p1");
+			logCsv("merge-update,p1");
+			logJson("merge-update","p1");
 			break;
 		case 1:
 			// only protocol 2 gossips
 			p2.executeUpdate(other.p2);
-			log("merge-update,p2");
+			logCsv("merge-update,p2");
+			logJson("merge-update","p2");
 			break;
 		case 2:
 			// both protocols gossip
-			log("merge-update,both");
+			logCsv("merge-update,both");
+			logJson("merge-update","both");
 			p1.executeUpdate(other.p1);
 			p2.executeUpdate(other.p2);
 		}

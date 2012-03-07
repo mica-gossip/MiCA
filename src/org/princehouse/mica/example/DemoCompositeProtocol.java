@@ -97,4 +97,5 @@ public class DemoCompositeProtocol extends MergeCorrelated {
 			return new DemoCompositeProtocol(bootstrapView, i);
 		}
 	};
+	
 }

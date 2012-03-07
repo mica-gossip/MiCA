@@ -23,8 +23,8 @@ public class TestFindMinPullProtocol {
 		Address a1 = TCPAddress.valueOf("localhost:8001");
 		Address a2 = TCPAddress.valueOf("localhost:8002");
 		
-		FindMinPull node1 = new FindMinPull(5, Functional.set(a2));
-		FindMinPull node2 = new FindMinPull(3, Functional.set(a1));
+		FindMinPull node1 = new FindMinPull(5, Functional.list(a2));
+		FindMinPull node2 = new FindMinPull(3, Functional.list(a1));
 
 		
 		Runtime<FindMinPull> rt1 = SimpleRuntime.launchDaemon(node1, a1);
