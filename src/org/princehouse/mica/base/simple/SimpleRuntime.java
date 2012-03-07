@@ -171,20 +171,17 @@ AcceptConnectionHandler {
 
 			try {
 				if (lock.tryLock(LOCK_WAIT_MS, TimeUnit.MILLISECONDS)) {
-
-					RuntimeAgent<P> agent = compile(getProtocolInstance());
 					
+					RuntimeAgent<P> agent = compile(pinstance);
+
 					partner = agent.select(this,
-							getProtocolInstance(), rng.nextDouble());
+							pinstance, rng.nextDouble());
 
 					Runtime.debug.printf("%s select %s\n", this, partner);
-					
-					((BaseProtocol) getProtocolInstance()).logJson("select,%s", partner);
-
 					logJson("select", partner);					
 					
 					if (partner == null) {
-						agent.handleNullSelect(this, getProtocolInstance());
+						agent.handleNullSelect(this, pinstance);
 						lock.unlock();
 						continue;
 					}
@@ -194,13 +191,13 @@ AcceptConnectionHandler {
 						connection = partner.openConnection();
 					} catch(ConnectException ce) {
 						agent.handleConnectException(this, pinstance, partner,ce);
-						lock.unlock();
 						continue;
 					}
 					
 					if (!running)
 						break;
-										
+					
+					
 					agent.gossip(this, getProtocolInstance(),
 							connection);
 					

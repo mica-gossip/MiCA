@@ -124,7 +124,6 @@ class SimpleRuntimeAgent<P extends Protocol> extends RuntimeAgent<P> {
 		process();
 	}
 
-	
 	@Override
 	public Address select(Runtime<?> rt, P pinstance, double randomValue) {
 		// Sanity check to prevent self-gossip added by Josh Endries
@@ -149,7 +148,6 @@ class SimpleRuntimeAgent<P extends Protocol> extends RuntimeAgent<P> {
 			}
 		}
 	}
-
 
 
 

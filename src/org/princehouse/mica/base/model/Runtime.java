@@ -28,7 +28,6 @@ import com.google.gson.Gson;
  */
 public abstract class Runtime<P extends Protocol> {
 
-
 	// If true, enable the "old style" .csv file logging 
 	public static boolean LOGGING_CSV = true;
 	// Enable new JSON logs
@@ -63,8 +62,6 @@ public abstract class Runtime<P extends Protocol> {
 
 
 	private File logfile = null;
-	
-	// initial value; can be changed with command line options
 	private File logDirectory = new File("mica_log");
 
 	public File getLogFile() {
