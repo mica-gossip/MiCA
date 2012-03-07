@@ -5,6 +5,11 @@ org.princehouse.mica.base.net
 org.princehouse.mica.base.net.model
 org.princehouse.mica.base.net.tcpip
 org.princehouse.mica.base.simple
+org.princehouse.mica.example
 org.princehouse.mica.lib
 org.princehouse.mica.lib.abstractions
+org.princehouse.mica.test
 org.princehouse.mica.util
+org.princehouse.mica.util.asm
+org.princehouse.mica.util.implementation
+org.princehouse.mica.util.jconverters
