@@ -8,7 +8,12 @@ public class Randomness {
 	
 	private static final double EPSILON = 10e-7;
 	
-	public static class EmptyCollection extends RuntimeException {}
+	public static class EmptyCollection extends RuntimeException {
+
+		/**
+		 * 
+		 */
+		private static final long serialVersionUID = 1L;}
 	
 	public static Random random = new Random();
 	

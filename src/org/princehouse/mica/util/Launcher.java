@@ -2,7 +2,6 @@ package org.princehouse.mica.util;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
-import java.net.UnknownHostException;
 
 import org.princehouse.mica.base.model.Protocol;
 import org.princehouse.mica.base.net.model.Address;
@@ -10,7 +9,6 @@ import org.princehouse.mica.base.net.tcpip.TCPAddress;
 import org.princehouse.mica.base.simple.SimpleRuntime;
 import org.princehouse.mica.util.jconverters.ArgsConverterFactory;
 
-import com.beust.jcommander.IStringConverterFactory;
 import com.beust.jcommander.JCommander;
 import com.beust.jcommander.Parameter;
 

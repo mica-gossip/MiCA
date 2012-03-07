@@ -4,11 +4,9 @@ package org.princehouse.mica.util.asm;
 import java.util.HashSet;
 import java.util.Set;
 
-
 import org.objectweb.asm.ClassAdapter;
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.MethodVisitor;
-import org.princehouse.mica.util.asm.CopyMethodClassAdapter.State;
 
 public class RemoveMethodClassAdapter extends ClassAdapter {
 

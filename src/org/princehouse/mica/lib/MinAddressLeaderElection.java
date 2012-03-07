@@ -3,7 +3,6 @@ package org.princehouse.mica.lib;
 import org.princehouse.mica.base.BaseProtocol;
 import org.princehouse.mica.base.annotations.GossipUpdate;
 import org.princehouse.mica.base.annotations.SelectUniformRandom;
-import org.princehouse.mica.base.model.Protocol;
 import org.princehouse.mica.base.net.model.Address;
 import org.princehouse.mica.lib.abstractions.LeaderElection;
 import org.princehouse.mica.lib.abstractions.Overlay;

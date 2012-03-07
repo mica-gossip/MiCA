@@ -18,4 +18,8 @@ public class CompilerException extends Exception {
 	public Exception getCause() {
 		return e;
 	}
+	
+	public String toString() {
+		return msg;
+	}
 }

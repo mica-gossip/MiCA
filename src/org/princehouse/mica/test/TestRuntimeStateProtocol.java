@@ -22,6 +22,11 @@ import org.princehouse.mica.util.Functional;
  */
 public class TestRuntimeStateProtocol extends BaseProtocol {
 
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = 1L;
+
 	public Address a;
 
 	@SelectUniformRandom
