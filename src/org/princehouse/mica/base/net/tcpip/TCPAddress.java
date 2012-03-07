@@ -163,6 +163,19 @@ public class TCPAddress implements Address, Externalizable {
 	 */
 	public TCPAddress() {}
 
+	public TCPAddress(String address) {
+		TCPAddress temp = null;
+		try {
+			temp = TCPAddress.valueOf(address);
+		} catch (UnknownHostException e) {
+			throw new RuntimeException(e);
+		}
+		this.address = temp.address;
+		port = temp.port;
+		sock = temp.sock;
+		
+	}
+
 	@Override
 	public int compareTo(Address o) {
 		return toString().compareTo(o.toString());
