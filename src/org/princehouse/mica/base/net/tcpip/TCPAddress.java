@@ -162,6 +162,7 @@ public class TCPAddress implements Address, Externalizable {
 	 */
 	public TCPAddress() {}
 
+
 	public TCPAddress(String string) {
 		try {
 			TCPAddress temp = TCPAddress.valueOf(string);

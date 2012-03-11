@@ -3,7 +3,12 @@ package org.princehouse.mica.util.asm;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import org.objectweb.asm.*;
+import org.objectweb.asm.AnnotationVisitor;
+import org.objectweb.asm.Attribute;
+import org.objectweb.asm.ClassVisitor;
+import org.objectweb.asm.FieldVisitor;
+import org.objectweb.asm.Label;
+import org.objectweb.asm.MethodVisitor;
 
 // See TODO blocks for places to fix.  Development on this is suspended since I've just discovered RemappingClassAdapter
 
@@ -11,14 +16,9 @@ public class RenameClassClassAdapter implements ClassVisitor {
 	
 	private String src, dst;
 	private Pattern typeTransform;
-	private ClassVisitor cv;
-
-	
 	public class RenameClassAnnotationAdapter implements AnnotationVisitor {
 
-		private AnnotationVisitor av;
 		public RenameClassAnnotationAdapter(AnnotationVisitor av) {
-			this.av = av;
 			throw new RuntimeException("RenameClassAnnotationAdapter not implemented");
 		}
 		@Override
@@ -227,7 +227,6 @@ public class RenameClassClassAdapter implements ClassVisitor {
 
 	
 	public RenameClassClassAdapter(String srcName, String dstName, ClassVisitor cv) {
-		this.cv = cv;
 		src = srcName; dst = dstName;
 		// FIXME this is a hack; it does basic string substitution.  This will majorly fail
 		// if one class name is a substring of another
@@ -250,7 +249,7 @@ public class RenameClassClassAdapter implements ClassVisitor {
 		return sb.toString();
 	}
 
-	private String translateName(String in) {
+	public String translateName(String in) {
 		// FIXME hack
 		return searchAndReplace(in);
 	}

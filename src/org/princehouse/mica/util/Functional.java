@@ -106,7 +106,6 @@ public class Functional {
 
 	}
 
-	@SuppressWarnings("unchecked")
 	// stupid that it gives a warning for instanceof.... runtime generics are
 	// erased, it's impossible to supply a type parameter
 	/**
@@ -119,7 +118,6 @@ public class Functional {
 		return extend(Functional.<T> list(), iterable);
 	}
 
-	@SuppressWarnings("unchecked")
 	public static <T> Set<T> set(Iterable<T> iterable) {
 		if (iterable instanceof Set) {
 			return (Set<T>) iterable;

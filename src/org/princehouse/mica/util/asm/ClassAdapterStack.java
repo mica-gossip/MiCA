@@ -10,6 +10,11 @@ import org.objectweb.asm.MethodVisitor;
 
 public class ClassAdapterStack extends Stack<ClassVisitor> implements ClassVisitor {
 
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = 1L;
+
 	public ClassAdapterStack() {}
 	
 	public ClassAdapterStack(ClassVisitor out) {

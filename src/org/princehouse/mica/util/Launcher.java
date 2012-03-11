@@ -2,7 +2,6 @@ package org.princehouse.mica.util;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
-import java.net.UnknownHostException;
 
 import org.princehouse.mica.base.model.Protocol;
 import org.princehouse.mica.base.net.model.Address;
@@ -10,10 +9,19 @@ import org.princehouse.mica.base.net.tcpip.TCPAddress;
 import org.princehouse.mica.base.simple.SimpleRuntime;
 import org.princehouse.mica.util.jconverters.ArgsConverterFactory;
 
-import com.beust.jcommander.IStringConverterFactory;
 import com.beust.jcommander.JCommander;
 import com.beust.jcommander.Parameter;
 
+/**
+ * The Launcher class starts a single instance of a MiCA protocol on the local machine. 
+ * 
+ * Command line arguments can easily be passed to the protocol using JCommander for parsing
+ * 
+ * See the Launcher tutorial on the MiCA wiki.
+ * 
+ * @author lonnie
+ *
+ */
 public class Launcher {
 
 	private String protocolClassString = null;

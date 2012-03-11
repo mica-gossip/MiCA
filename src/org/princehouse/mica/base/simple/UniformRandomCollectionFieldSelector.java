@@ -24,7 +24,6 @@ class UniformRandomCollectionFieldSelector<Q extends Protocol> extends Selector<
 		// FIXME: sanity check should go here
 	}
 	
-	@SuppressWarnings("unchecked")
 	private Collection<Address> getCollection(Q pinstance) {
 		Object obj = null;
 		try {

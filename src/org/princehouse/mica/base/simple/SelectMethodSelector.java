@@ -24,6 +24,7 @@ class SelectMethodSelector<Q extends Protocol> extends Selector<Q> {
 	}
 	
 	
+	@SuppressWarnings("unchecked")
 	@Override
 	public Distribution<Address> select(Runtime<?> rt, Q pinstance) {
 		try {
