@@ -182,6 +182,9 @@ AcceptConnectionHandler {
 					((BaseProtocol) getProtocolInstance()).logJson("select,%s", partner);
 
 					logJson("select", partner);					
+
+					getProtocolInstance().preUpdate();
+					
 					
 					if (partner == null) {
 						agent.handleNullSelect(this, getProtocolInstance());
@@ -203,6 +206,8 @@ AcceptConnectionHandler {
 										
 					agent.gossip(this, getProtocolInstance(),
 							connection);
+					
+					getProtocolInstance().postUpdate();
 					
 					lock.unlock();
 				} else {

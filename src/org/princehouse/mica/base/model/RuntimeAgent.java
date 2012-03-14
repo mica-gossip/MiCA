@@ -61,6 +61,7 @@ public abstract class RuntimeAgent<P extends Protocol> {
 	public abstract void gossip(Runtime<P> runtime, P pinstance,
 			Connection connection);
 
+	
 	/**
 	 * Returns the "rate" of a protocol instance, i.e., the number of times  
 	 * per "round" the protocol gossips.

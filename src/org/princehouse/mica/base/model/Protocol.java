@@ -50,6 +50,25 @@ public interface Protocol {
 	};
 	
 	/**
+	 * Called by the runtime on the gossip initiator immediately before running the gossip update.
+	 * This is called even if select returns a null distribution.
+	 */
+	public void preUpdate();
+
+
+	/**
+	 * Called by the runtime on the gossip initiator immediately after the update is executed 
+	 * This is called even if the update method terminated with an exception or connection failure. I
+	 * t can be thought of as a "finally" block for update
+	 */
+	public void postUpdate();
+	
+	
+	/**
+	 * Called 
+	 */
+	
+	/**
 	 * Returns an object that represents local node state.  By default, the instance itself.
 	 * This will be JSON-serialized into the log.  Circular references cause serialization to break;
 	 * in that case, this function will need to be overridden or the offending fields marked as transient.
