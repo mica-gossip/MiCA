@@ -214,4 +214,16 @@ public class Distribution<T> extends HashMap<T,Double> {
 		}
 		return tmp.normalize();
 	}
+	
+	/**
+	 * Create a singleton distribution
+	 * (That is, dist[key] == 1,  dist[x] = 0 for x != key)
+	 * @param key
+	 * @return
+	 */
+	public static <T> Distribution<T> singleton(T key) {
+		Distribution<T> dist = new Distribution<T>();
+		dist.put(key, 1.0);
+		return dist;
+	}
 }
