@@ -38,7 +38,7 @@ public abstract class Runtime<P extends Protocol> {
 
 	
 	// If true, enable the "old style" .csv file logging 
-	public static boolean LOGGING_CSV = true;
+	public static boolean LOGGING_CSV = false;
 	// Enable new JSON logs
 	public static boolean LOGGING_JSON = true;
 	
