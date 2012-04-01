@@ -182,9 +182,12 @@ AcceptConnectionHandler {
 					((BaseProtocol) getProtocolInstance()).logJson("select,%s", partner);
 
 					logJson("select", partner);					
-
-					getProtocolInstance().preUpdate();
 					
+					try {
+						getProtocolInstance().preUpdate();
+					} catch(Throwable t) {
+						logJson("pre-update-throwable", new Object[]{"preUpdate() threw throwable", t});
+					}
 					
 					if (partner == null) {
 						agent.handleNullSelect(this, getProtocolInstance());
@@ -203,11 +206,20 @@ AcceptConnectionHandler {
 					
 					if (!running)
 						break;
-										
+					
+					try {
 					agent.gossip(this, getProtocolInstance(),
 							connection);
+					} catch(Throwable t) { 
+						// May be a serialization problem!
+						logJson("mica-internal-exception", new Object[]{"agent.gossip unexpectedly threw a throwable.  Possible serialization reference cycle",t});		
+					}
 					
-					getProtocolInstance().postUpdate();
+					try {
+						getProtocolInstance().postUpdate();
+					} catch(Throwable t) {
+						logJson("post-update-throwable", new Object[]{"postUpdate() threw throwable", t});
+					}
 					
 					lock.unlock();
 				} else {
