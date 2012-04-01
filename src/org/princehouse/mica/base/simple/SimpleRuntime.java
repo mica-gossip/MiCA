@@ -321,4 +321,9 @@ AcceptConnectionHandler {
 		return compiler.compile(pinstance);
 	}
 
+	@Override
+	public ReentrantLock getProtocolInstanceLock() {
+		return lock;
+	}
+
 }

@@ -29,6 +29,14 @@ import com.google.gson.Gson;
 public abstract class Runtime<P extends Protocol> {
 
 
+	/**
+	 * Get a lock that can be used to suspend incoming or outgoing gossip
+	 * WARNING: Failure to release this lock will effectively cause node failure.
+	 * @return
+	 */
+	public abstract ReentrantLock getProtocolInstanceLock();
+
+	
 	// If true, enable the "old style" .csv file logging 
 	public static boolean LOGGING_CSV = true;
 	// Enable new JSON logs
