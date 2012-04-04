@@ -31,10 +31,14 @@ public abstract class NaiveBroadcast<Message extends Serializable> extends BaseP
 	
 	// Seriously inefficient: Keep a set of all the messages we've ever received, so we can compare them with incoming
 	// messages
-	private Set<Message> received = new HashSet<Message>();
+	public Set<Message> received = new HashSet<Message>();
 	
+	/**
+	 * NOT THREAD SAFE.  Acquire a lock first!
+	 */
 	@Override
 	public void sendMessage(Message m) {
+		//logJson("send-message", m);
 		received.add(m);
 		Distribution<Address> dist = getSelectDistribution();
 		Set<Address> view = new HashSet<Address>();

@@ -55,7 +55,7 @@ public abstract class Runtime<P extends Protocol> {
 	private static int uidCounter = 0;
 	private static final ReentrantLock uidlock = new ReentrantLock();
 
-
+	
 	private ReentrantLock runtimeLoglock = new ReentrantLock();
 
 	/**
