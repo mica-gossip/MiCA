@@ -38,6 +38,10 @@ import fj.F3;
 public class DemoCompositeProtocol extends MergeCorrelated {
 	private static final long serialVersionUID = 1L;
 	
+	@Override
+	public void preUpdate() {
+		logJson("preupdate log",0);
+	}
 	// Four sub-protocols
 	private MinAddressLeaderElection leaderElection;
 	private SpanningTreeOverlay tree;

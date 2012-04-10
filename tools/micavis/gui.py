@@ -17,29 +17,48 @@ class BasicTreeViewExample:
         return False
 
     def __init__(self, events):
-
         self.events = events
+        self.create_event_window()
+        self.create_graph_window()
 
+    def create_graph_window(self):
+        self.graph_window = gtk.Window(gtk.WINDOW_TOPLEVEL)
+        self.event_window.set_title("Communication Graph")
+        self.event_window.set_size_request(200, 200)
+        self.event_window.connect("delete_event", self.delete_event)
+
+        self.graph_scrollwindow = gtk.ScrolledWindow()
+        self.graph_scrollwindow.set_border_width(10)
+        self.graph_scrollwindow.set_policy(gtk.POLICY_AUTOMATIC, gtk.POLICY_ALWAYS)
+
+        self.graph_vbox = gtk.VBox()
+        self.graph_vbox.pack_start(self.graph_scrollwindow, True)
+
+        # You are here
+        
+
+        self.graph_window.show_all()
+
+
+
+
+    def create_event_window(self):
         # Create a new window
-        self.window = gtk.Window(gtk.WINDOW_TOPLEVEL)
-        self.window.set_title("Basic TreeView Example")
-        self.window.set_size_request(200, 200)
-        self.window.connect("delete_event", self.delete_event)
+        self.event_window = gtk.Window(gtk.WINDOW_TOPLEVEL)
+        self.event_window.set_title("Event Browser")
+        self.event_window.set_size_request(200, 200)
+        self.event_window.connect("delete_event", self.delete_event)
 
-        self.swindow = gtk.ScrolledWindow()
-        self.swindow.set_border_width(10)
-        self.swindow.set_policy(gtk.POLICY_AUTOMATIC, gtk.POLICY_ALWAYS)
-        self.vbox = gtk.VBox()
-        self.vbox.pack_start(self.swindow, True)
+        self.event_scrollwindow = gtk.ScrolledWindow()
+        self.event_scrollwindow.set_border_width(10)
+        self.event_scrollwindow.set_policy(gtk.POLICY_AUTOMATIC, gtk.POLICY_ALWAYS)
+        self.event_vbox = gtk.VBox()
+        self.event_vbox.pack_start(self.event_scrollwindow, True)
 
         # create a TreeStore with one string column to use as the model
         self.treestore = gtk.TreeStore(int, str, str, str)
 
         self.init_populate_treestore()
-
-
-
-
 
         # create the TreeView using treestore
         self.treeview = gtk.TreeView(self.treestore)
@@ -84,13 +103,10 @@ class BasicTreeViewExample:
 
         # Allow drag and drop reordering of rows
         self.treeview.set_reorderable(True)
-
-        self.swindow.add(self.treeview)
-
-        self.window.add(self.vbox)
-        self.window.show_all()
-
-        self.window.maximize()
+        self.event_scrollwindow.add(self.treeview)
+        self.event_window.add(self.event_vbox)
+        self.event_window.show_all()
+        self.event_window.maximize()
 
     def init_populate_treestore(self):
         # populate the table with events

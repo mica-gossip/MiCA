@@ -105,7 +105,8 @@ public abstract class Runtime<P extends Protocol> {
 	private long runtimeStartingTimestamp = 0;
 
 	public long getRuntimeClockMS() {
-		return (new Date().getTime()) - runtimeStartingTimestamp;
+	//	return (new Date().getTime()) - runtimeStartingTimestamp;
+		return (new Date().getTime());
 	}
 
 	public long getRuntimeClock() {
@@ -117,12 +118,12 @@ public abstract class Runtime<P extends Protocol> {
 		public long timestamp;
 		public String address;
 		public String event_type;
-		public Object event;
+		public Object data;
 		public JsonLogEvent(long timestamp, String address, String type, Object event) {
 			this.timestamp = timestamp;
 			this.address = address;
 			this.event_type = type;
-			this.event = event;
+			this.data = event;
 		}
 	}
 	
