@@ -24,21 +24,39 @@ class BasicTreeViewExample:
     def create_graph_window(self):
         self.graph_window = gtk.Window(gtk.WINDOW_TOPLEVEL)
         self.event_window.set_title("Communication Graph")
-        self.event_window.set_size_request(200, 200)
+        self.event_window.set_size_request(500, 500)
         self.event_window.connect("delete_event", self.delete_event)
 
         self.graph_scrollwindow = gtk.ScrolledWindow()
         self.graph_scrollwindow.set_border_width(10)
         self.graph_scrollwindow.set_policy(gtk.POLICY_AUTOMATIC, gtk.POLICY_ALWAYS)
 
+        self.drawing_area = gtk.DrawingArea()
+        self.graph_scrollwindow.add(self.drawing_area)
+
         self.graph_vbox = gtk.VBox()
-        self.graph_vbox.pack_start(self.graph_scrollwindow, True)
+        self.graph_vbox.pack_start(self.graph_scrollwindow, expand=True, fill=True, padding=0)
 
-        # You are here
+        self.graph_nav_layout = gtk.Layout(hadjustment=None, vadjustment=None)
+
+        adj = gtk.Adjustment(0,0,100,step_incr=1,page_incr=0,page_size=0)
+        self.event_scale = gtk.HScale(adj)
+        self.event_scale.set_size_request(200,30)
+        self.graph_nav_layout.put(self.event_scale, 10,10)
+
+        self.graph_vbox.pack_end(self.graph_nav_layout, expand=True, fill=True, padding=10)
+
+        self.graph_window.add(self.graph_vbox)
+
+        # set drawing area background color
+        dw = self.drawing_area.window
+#        gc = dw.new_gc(
+#            background = "black"
+#            )
         
-
+        # YOU ARE HERE
+        
         self.graph_window.show_all()
-
 
 
 
