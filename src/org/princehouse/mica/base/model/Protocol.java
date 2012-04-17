@@ -51,9 +51,10 @@ public interface Protocol {
 	
 	/**
 	 * Called by the runtime on the gossip initiator immediately before running the gossip update.
-	 * This is called even if select returns a null distribution.
+	 * 
+	 * selected denotes the result of the select function.  It may be null. 
 	 */
-	public void preUpdate();
+	public void preUpdate(Address selected);
 
 
 	/**

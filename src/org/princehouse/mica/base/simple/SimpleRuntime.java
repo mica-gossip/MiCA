@@ -181,18 +181,18 @@ AcceptConnectionHandler {
 
 					logJson("select", String.format("%s",partner));					
 
+					try {
+						getProtocolInstance().preUpdate(partner);
+					} catch(Throwable t) {
+						logJson("pre-update-throwable", new Object[]{"preUpdate() threw throwable", t});
+					}
+
+					
 					if (partner == null) {
 						agent.handleNullSelect(this, getProtocolInstance());
 						lock.unlock();
 						continue;
 					}
-
-					try {
-						getProtocolInstance().preUpdate();
-					} catch(Throwable t) {
-						logJson("pre-update-throwable", new Object[]{"preUpdate() threw throwable", t});
-					}
-
 
 					try {
 						connection = partner.openConnection();
