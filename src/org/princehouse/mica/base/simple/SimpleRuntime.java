@@ -187,7 +187,7 @@ AcceptConnectionHandler {
 					}
 
 					try {
-						getProtocolInstance().preUpdate();
+						getProtocolInstance().preUpdate(partner);
 					} catch(Throwable t) {
 						logJson("pre-update-throwable", new Object[]{"preUpdate() threw throwable", t});
 					}

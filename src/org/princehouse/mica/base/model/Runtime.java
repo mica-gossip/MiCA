@@ -46,7 +46,6 @@ public abstract class Runtime<P extends Protocol> {
 	public abstract ReentrantLock getProtocolInstanceLock();
 
 
-
 	// If true, enable the "old style" .csv file logging 
 	public static boolean LOGGING_CSV = true;
 	// Enable new JSON logs

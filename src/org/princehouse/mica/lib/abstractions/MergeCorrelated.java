@@ -1,5 +1,9 @@
 package org.princehouse.mica.lib.abstractions;
 
+import static org.princehouse.mica.util.Randomness.weightedChoice;
+
+import java.util.Random;
+
 import org.princehouse.mica.base.BaseProtocol;
 import org.princehouse.mica.base.annotations.GossipRate;
 import org.princehouse.mica.base.annotations.GossipUpdate;
@@ -9,7 +13,6 @@ import org.princehouse.mica.base.net.model.Address;
 import org.princehouse.mica.util.Distribution;
 
 import fj.F2;
-import static org.princehouse.mica.util.Randomness.weightedChoice;
 
 /**
  * Merge two protocols in such a way that the composite protocol gossips both
@@ -24,6 +27,16 @@ import static org.princehouse.mica.util.Randomness.weightedChoice;
 public class MergeCorrelated extends BaseProtocol {
 
 	private Protocol p1;
+	
+	private MergeSelectionCase subProtocolGossipCase = MergeSelectionCase.NA;
+	
+	protected MergeSelectionCase getSubProtocolGossipCase() {
+		return subProtocolGossipCase;
+	}
+
+	protected void setSubProtocolGossipCase(MergeSelectionCase subProtocolGossipCase) {
+		this.subProtocolGossipCase = subProtocolGossipCase;
+	}
 
 	/**
 	 * Get first subprotocol
@@ -135,12 +148,83 @@ public class MergeCorrelated extends BaseProtocol {
 	 * Composite update function.
 	 * Run both sub-updates if possible; otherwise run one or the other
 	 * 
-	 * @param other
+	 * @param that
 	 */
 	@GossipUpdate
-	public void update(MergeCorrelated other) {
-		Address x = other.getAddress();
+	public void update(MergeCorrelated that) {
+		logJson("update-select-case",getSubProtocolGossipCase());
 
+		switch (getSubProtocolGossipCase()) {
+		case P1:
+			// only protocol 1 gossips
+			p1.executeUpdate(that.p1);
+			logCsv("merge-update,p1");
+			logJson("merge-update", "p1");
+			break;
+		case P2:
+			// only protocol 2 gossips
+			p2.executeUpdate(that.p2);
+			logCsv("merge-update,p1");
+			logJson("merge-update", "p2");
+			break;
+		case BOTH:
+			// both protocols gossip
+			logCsv("merge-update,both");
+			logJson("merge-update","both");
+			p1.executeUpdate(that.p1);
+			p2.executeUpdate(that.p2);
+		case NA:
+			throw new RuntimeException("Merge error: No selection choice! Did you override preUpdate and forget to call super()?");
+		}
+	}
+
+	/**
+	 * Note: If preUpdate is overridden and this super method never called, merge will break
+	 */
+	@Override
+	public void preUpdate(Address selected) {
+		setSubProtocolGossipCase(decideSelectionCase(selected, getRuntimeState().getRandom()));
+		logJson("preUpdate-select-case",getSubProtocolGossipCase());
+		switch(getSubProtocolGossipCase()) {
+		case P1:
+			getP1().preUpdate(selected);
+			break;
+		case P2:
+			getP2().preUpdate(selected);
+			break;
+		case BOTH:
+			getP1().preUpdate(selected);
+			getP2().preUpdate(selected);
+			break;
+		case NA:
+			throw new RuntimeException("subProtocolGossipCase is NA, which should be impossible");
+		}
+
+	}
+		
+	@Override
+	public void postUpdate() {
+		switch(getSubProtocolGossipCase()) {
+		case P1:
+			getP1().postUpdate();
+			break;
+		case P2:
+			getP2().postUpdate();
+			break;
+		case BOTH:
+			getP1().postUpdate();
+			getP2().postUpdate();
+			break;
+		}
+	}
+	
+	/**
+	 * 
+	 * @param x  Gossip partner chosen by the runtime
+	 * @param rng Random number generator
+	 * @return
+	 */
+	private MergeSelectionCase decideSelectionCase(Address x, Random rng) {
 		Distribution<Address> d1 = p1.getSelectDistribution();
 		Distribution<Address> d2 = p2.getSelectDistribution();
 
@@ -168,28 +252,18 @@ public class MergeCorrelated extends BaseProtocol {
 
 		double[] weights = { alpha, beta, gamma };
 
-		switch (weightedChoice(getRuntimeState().getRandom(), weights)) {
+		switch (weightedChoice(rng, weights)) {
 		case 0:
-			// only protocol 1 gossips
-			p1.executeUpdate(other.p1);
-			logCsv("merge-update,p1");
-			logJson("merge-update", "p1");
-			break;
+			return MergeSelectionCase.P1;
 		case 1:
-			// only protocol 2 gossips
-			p2.executeUpdate(other.p2);
-			logCsv("merge-update,p1");
-			logJson("merge-update", "p2");
-			break;
+			return MergeSelectionCase.P2;
 		case 2:
-			// both protocols gossip
-			logCsv("merge-update,both");
-			logJson("merge-update","both");
-			p1.executeUpdate(other.p1);
-			p2.executeUpdate(other.p2);
+			return MergeSelectionCase.BOTH;
+		default:
+				throw new RuntimeException("impossible to reach exception");
 		}
 	}
-
+	
 	@Override
 	public String getName() {
 		return String.format("merge(%s || %s)", ((BaseProtocol) p1).getName(),

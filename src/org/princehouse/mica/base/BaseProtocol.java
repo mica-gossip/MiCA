@@ -159,7 +159,7 @@ public abstract class BaseProtocol implements Protocol, Serializable {
 	}
 
 	@Override 
-	public void preUpdate() {}
+	public void preUpdate(Address selected) {}
 	
 	@Override
 	public void postUpdate() {}
