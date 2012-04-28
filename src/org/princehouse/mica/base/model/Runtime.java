@@ -28,6 +28,7 @@ import com.google.gson.Gson;
  */
 public abstract class Runtime<P extends Protocol> {
 
+<<<<<<< HEAD
 
 	/**
 	 * Get a lock that can be used to suspend incoming or outgoing gossip
@@ -37,6 +38,8 @@ public abstract class Runtime<P extends Protocol> {
 	public abstract ReentrantLock getProtocolInstanceLock();
 
 	
+=======
+>>>>>>> eb9123f7477d8876808b9cf360c3602bb3017f2d
 	// If true, enable the "old style" .csv file logging 
 	public static boolean LOGGING_CSV = false;
 	// Enable new JSON logs
@@ -71,8 +74,6 @@ public abstract class Runtime<P extends Protocol> {
 
 
 	private File logfile = null;
-	
-	// initial value; can be changed with command line options
 	private File logDirectory = new File("mica_log");
 
 	public File getLogFile() {

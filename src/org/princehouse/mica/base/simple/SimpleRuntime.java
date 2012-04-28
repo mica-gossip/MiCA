@@ -171,18 +171,28 @@ AcceptConnectionHandler {
 
 			try {
 				if (lock.tryLock(LOCK_WAIT_MS, TimeUnit.MILLISECONDS)) {
+<<<<<<< HEAD
 
 					RuntimeAgent<P> agent = compile(getProtocolInstance());
+=======
+					
+					RuntimeAgent<P> agent = compile(pinstance);
+>>>>>>> eb9123f7477d8876808b9cf360c3602bb3017f2d
 
 					partner = agent.select(this,
-							getProtocolInstance(), rng.nextDouble());
+							pinstance, rng.nextDouble());
 
 					Runtime.debug.printf("%s select %s\n", this, partner);
+<<<<<<< HEAD
 
 					logJson("select", String.format("%s",partner));					
 
+=======
+					logJson("select", partner);					
+					
+>>>>>>> eb9123f7477d8876808b9cf360c3602bb3017f2d
 					if (partner == null) {
-						agent.handleNullSelect(this, getProtocolInstance());
+						agent.handleNullSelect(this, pinstance);
 						lock.unlock();
 						continue;
 					}
@@ -198,13 +208,13 @@ AcceptConnectionHandler {
 						connection = partner.openConnection();
 					} catch(ConnectException ce) {
 						agent.handleConnectException(this, pinstance, partner,ce);
-						lock.unlock();
 						continue;
 					}
 
 					if (!running) {
 						lock.unlock();
 						break;
+<<<<<<< HEAD
 					}
 
 					try {
@@ -221,6 +231,13 @@ AcceptConnectionHandler {
 						logJson("post-update-throwable", new Object[]{"postUpdate() threw throwable", t});
 					}
 
+=======
+					
+					
+					agent.gossip(this, getProtocolInstance(),
+							connection);
+					
+>>>>>>> eb9123f7477d8876808b9cf360c3602bb3017f2d
 					lock.unlock();
 				} else {
 					// failed to acquire lock within time limit; gossip again
@@ -330,6 +347,7 @@ AcceptConnectionHandler {
 		return compiler.compile(pinstance);
 	}
 
+<<<<<<< HEAD
 	@Override
 	public ReentrantLock getProtocolInstanceLock() {
 		return lock;
@@ -337,3 +355,6 @@ AcceptConnectionHandler {
 
 
 }
+=======
+}
+>>>>>>> eb9123f7477d8876808b9cf360c3602bb3017f2d
