@@ -1,3 +1,7 @@
+*.csv
+*.log
+*.pyc
+
 /bin
 /log.csv
 /mica_log
