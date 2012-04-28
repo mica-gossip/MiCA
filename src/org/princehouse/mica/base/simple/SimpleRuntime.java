@@ -46,7 +46,6 @@ AcceptConnectionHandler {
 
 	/**
 	 * Entry point for SimpleRuntime.  Starts a protocol in a new thread. 
-	 *  com	
 	 * @param pinstance Local protocol instance
 	 * @param address Local address
 	 * @param daemon Launch thread as a daemon
@@ -71,7 +70,7 @@ AcceptConnectionHandler {
 	}
 
 	/**
- 	 * Entry point for SimpleRuntime.  Starts a protocol in a new thread. 
+	 * Entry point for SimpleRuntime.  Starts a protocol in a new thread. 
 	 * (Calls through to launch(), with the daemon flag true)
 	 * 
 	 * @param pinstance Local protocol instance
@@ -82,7 +81,7 @@ AcceptConnectionHandler {
 			final Address address) {
 		return launch(pinstance,address,true);
 	}
-	
+
 	private P pinstance;
 
 	@Override
@@ -90,9 +89,9 @@ AcceptConnectionHandler {
 			throws IOException {
 		try {
 			if (lock.tryLock(LOCK_WAIT_MS, TimeUnit.MILLISECONDS)) {
-					
+
 				setRuntime(this);
-				
+
 				logJson("accept-lock-succeed", recipient);
 				((SimpleRuntimeAgent<P>) compile(pinstance)).acceptConnection(
 						this, getProtocolInstance(), connection);
@@ -100,12 +99,12 @@ AcceptConnectionHandler {
 				lock.unlock();
 			} else {
 				// failed to acquire lock; timeout
-				
+
 				//if(Runtime.LOGGING_CSV)   Can't do instance-based logging since setRuntime hasn't happened
 				//	((BaseProtocol)pinstance).log("accept-lock-fail");
-				
+
 				logJson("accept-lock-fail", recipient);
-				
+
 				System.err
 				.printf("%s accept: failed to acquire lock (timeout)\n", this);
 				connection.close();
@@ -139,22 +138,22 @@ AcceptConnectionHandler {
 
 		Random rng = new Random(randomSeed);
 
-		
+
 		if(Runtime.LOGGING_CSV)
 			((BaseProtocol) pinstance).logstate();
-		
+
 		logJson("state",pinstance.getLogState());
-		
-		
-		
+
+
+
 		while (running) {
 			double rate = getRate(pinstance);
-			
+
 			if(Runtime.LOGGING_CSV)
 				((BaseProtocol) pinstance).logCsv("rate,%g",rate);
-			
+
 			logJson("rate",rate);
-			
+
 			int intervalLength = (int) (((double) intervalMS) / rate);
 			if(intervalLength <= 0) {
 				System.err.printf("%s error: Rate * intervalMS <= 0.  Resetting to default.\n", this);
@@ -171,19 +170,23 @@ AcceptConnectionHandler {
 
 			try {
 				if (lock.tryLock(LOCK_WAIT_MS, TimeUnit.MILLISECONDS)) {
-					
-					RuntimeAgent<P> agent = compile(pinstance);
+					RuntimeAgent<P> agent = compile(getProtocolInstance());
 
 					partner = agent.select(this,
-							pinstance, rng.nextDouble());
+							getProtocolInstance(), rng.nextDouble());
 
 					Runtime.debug.printf("%s select %s\n", this, partner);
-					logJson("select", partner);					
-					
+					logJson("select", partner);					 // addresses should be serializable now
 					if (partner == null) {
-						agent.handleNullSelect(this, pinstance);
+						agent.handleNullSelect(this, getProtocolInstance());
 						lock.unlock();
 						continue;
+					}
+
+					try {
+						getProtocolInstance().preUpdate();
+					} catch(Throwable t) {
+						logJson("pre-update-throwable", new Object[]{"preUpdate() threw throwable", t});
 					}
 
 
@@ -193,24 +196,33 @@ AcceptConnectionHandler {
 						agent.handleConnectException(this, pinstance, partner,ce);
 						continue;
 					}
-					
-					if (!running)
+
+					if (!running) {
+						lock.unlock();
 						break;
-					
-					
-					agent.gossip(this, getProtocolInstance(),
-							connection);
-					
+				    } 	
+
+					try {
+						agent.gossip(this, getProtocolInstance(),
+								connection);
+					} catch(Throwable t) { 
+						// May be a serialization problem!
+						logJson("mica-internal-exception", new Object[]{"agent.gossip unexpectedly threw a throwable.  Possible serialization reference cycle",t});		
+					}
+
+					try {
+						getProtocolInstance().postUpdate();
+					} catch(Throwable t) {
+						logJson("post-update-throwable", new Object[]{"postUpdate() threw throwable", t});
+					}
+
 					lock.unlock();
 				} else {
 					// failed to acquire lock within time limit; gossip again
 					// next round
-					Runtime.debug.printf(
-							"%s active lock fail on init gossip [already engaged in gossip?]\n", this);
-					
 					if(Runtime.LOGGING_CSV)
 						((BaseProtocol) pinstance).logCsv("lockfail-active");
-					
+
 					logJson("lockfail-active");
 				}
 			} catch (IOException e) {
@@ -311,6 +323,11 @@ AcceptConnectionHandler {
 	@Override
 	public <T extends Protocol> RuntimeAgent<T> compile(T pinstance) {
 		return compiler.compile(pinstance);
+	}
+
+	@Override
+	public ReentrantLock getProtocolInstanceLock() {
+		return lock;
 	}
 
 }

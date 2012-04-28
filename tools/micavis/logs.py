@@ -80,4 +80,3 @@ def matrix_edge_generator(comm_matrix):
             if comm_matrix[i][j] > 0:
                 yield (i,j)
 
-

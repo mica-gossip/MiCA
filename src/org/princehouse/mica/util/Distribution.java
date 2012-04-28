@@ -58,6 +58,27 @@ public class Distribution<T> extends HashMap<T,Double> {
 		return this;
 	}
 
+	
+	/**
+	 * In-place "bump"
+	 * 
+	 * Add delta to the value associated with the given key; adjust other values to keep the distribution normalized.
+	 * @param key
+	 * @param delta
+	 * @return
+	 */
+	public Distribution<T> bump(T key, double delta) {
+		// d' is the amount we adjust the key's value X pre-normalization in order to achieve X+delta after normalization
+		double x = get(key);
+		double dprime = delta / (1.0 - x - delta);
+		put(key, x+dprime);
+		normalize();
+		assert(Math.abs(get(key) - (x + delta)) < 1e-7); // sanity check
+		return this;
+	}
+
+	
+	
 	@Override
 	/**
 	 * returns only keys whose probability is nonzero
@@ -192,5 +213,17 @@ public class Distribution<T> extends HashMap<T,Double> {
 			tmp.put(k,get(k));
 		}
 		return tmp.normalize();
+	}
+	
+	/**
+	 * Create a singleton distribution
+	 * (That is, dist[key] == 1,  dist[x] = 0 for x != key)
+	 * @param key
+	 * @return
+	 */
+	public static <T> Distribution<T> singleton(T key) {
+		Distribution<T> dist = new Distribution<T>();
+		dist.put(key, 1.0);
+		return dist;
 	}
 }

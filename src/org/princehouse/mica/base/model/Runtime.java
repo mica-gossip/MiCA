@@ -46,6 +46,13 @@ public abstract class Runtime<P extends Protocol> {
 	public abstract ReentrantLock getProtocolInstanceLock();
 
 
+	/**
+	 * Get a lock that can be used to suspend incoming or outgoing gossip
+	 * WARNING: Failure to release this lock will effectively cause node failure.
+	 * @return
+	 */
+	public abstract ReentrantLock getProtocolInstanceLock();
+
 	// If true, enable the "old style" .csv file logging 
 	public static boolean LOGGING_CSV = true;
 	// Enable new JSON logs
@@ -63,7 +70,6 @@ public abstract class Runtime<P extends Protocol> {
 
 	private static int uidCounter = 0;
 	private static final ReentrantLock uidlock = new ReentrantLock();
-
 
 	private ReentrantLock runtimeLoglock = new ReentrantLock();
 
@@ -114,7 +120,7 @@ public abstract class Runtime<P extends Protocol> {
 	private long runtimeStartingTimestamp = 0;
 
 	public long getRuntimeClockMS() {
-		//	return (new Date().getTime()) - runtimeStartingTimestamp;
+	//	return (new Date().getTime()) - runtimeStartingTimestamp;
 		return (new Date().getTime());
 	}
 
@@ -127,12 +133,12 @@ public abstract class Runtime<P extends Protocol> {
 		public long timestamp;
 		public String address;
 		public String event_type;
-		public Object event;
+		public Object data;
 		public JsonLogEvent(long timestamp, String address, String type, Object event) {
 			this.timestamp = timestamp;
 			this.address = address;
 			this.event_type = type;
-			this.event = event;
+			this.data = event;
 		}
 	}
 

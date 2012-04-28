@@ -77,8 +77,6 @@ class MicaVisGui:
         return self.events[self.current]
 
     def __init__(self, events):
-        # any widget in this set will ignore the NEXT event it generates,
-        # but then remove itself from the set
         self.current = 0
         self.events = events
         self.create_event_window()
@@ -117,11 +115,31 @@ class MicaVisGui:
         g.add_edges(edges)
         return g
 
+    def create_graph_window(self):
+        self.graph_window = gtk.Window(gtk.WINDOW_TOPLEVEL)
+        self.event_window.set_title("Communication Graph")
+        self.event_window.set_size_request(200, 200)
+        self.event_window.connect("delete_event", self.delete_event)
+
+        self.graph_scrollwindow = gtk.ScrolledWindow()
+        self.graph_scrollwindow.set_border_width(10)
+        self.graph_scrollwindow.set_policy(gtk.POLICY_AUTOMATIC, gtk.POLICY_ALWAYS)
+
+        self.graph_vbox = gtk.VBox()
+        self.graph_vbox.pack_start(self.graph_scrollwindow, True)
+
+        # You are here
+        
+
+        self.graph_window.show_all()
+
+
     def create_event_window(self):
         # Create a new window
         self.event_window = gtk.Window(gtk.WINDOW_TOPLEVEL)
         self.event_window.set_title("Event Browser")
         self.event_window.set_size_request(500, 600)
+        self.event_window.set_size_request(200, 200)
         self.event_window.connect("delete_event", self.delete_event)
 
         self.event_scrollwindow = gtk.ScrolledWindow()

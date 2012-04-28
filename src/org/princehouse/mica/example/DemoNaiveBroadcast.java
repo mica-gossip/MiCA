@@ -8,6 +8,7 @@ import org.princehouse.mica.lib.NaiveBroadcast;
 import org.princehouse.mica.lib.abstractions.Overlay;
 import org.princehouse.mica.lib.abstractions.StaticOverlay;
 import org.princehouse.mica.util.TestHarness;
+import org.princehouse.mica.base.model.Runtime;
 
 import fj.F3;
 
@@ -29,7 +30,6 @@ import fj.F3;
  * Protocol includes a main() method that can be used to run an experiment on the local machine.
  * See TestHarness.TestHarnessOptions for command line options.
  * 
- * The test harness will generate a log file named log.csv
  * 
  * @author lonnie
  * 
@@ -44,18 +44,12 @@ public class DemoNaiveBroadcast{
 		public StringBroadcast(Overlay overlay) {
 			super(overlay);
 		}
-
-		private String received = "";
 		
 		@Override
 		public void receiveMessage(String m) {
-			received += " / " +  m;
+			logJson("receive-broadcast-message", m);
 		}
 		
-		@Override
-		public String getStateString() {
-			return received;
-		}
 		
 	};
 	
@@ -66,18 +60,18 @@ public class DemoNaiveBroadcast{
 	 */
 	public static void main(String[] args) {
 		final TestHarness<StringBroadcast> harness = new TestHarness<StringBroadcast>();
+		
 		harness.addTimerRounds(5, new TimerTask() {
 			@Override
 			public void run() {
-				harness.getRuntimes().get(0).getProtocolInstance().sendMessage("hello");
+				Runtime<StringBroadcast> rt = harness.getRuntimes().get(0);
+				rt.getProtocolInstanceLock().lock();
+				rt.getProtocolInstance().sendMessage("hello world");
+				rt.getProtocolInstanceLock().unlock();
 			}
 		});
-		harness.addTimerRounds(10, new TimerTask() {
-			@Override
-			public void run() {
-				harness.getRuntimes().get(1).getProtocolInstance().sendMessage("world");
-			}
-		});
+
+		
 		harness.runMain(args, createNodeFunc);
 	}
 
