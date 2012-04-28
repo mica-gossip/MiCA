@@ -1,0 +1,4 @@
+Dependencies:
+
+libigraph and python-igraph  (http://igraph.sourceforge.net/download.html)
+   (Ubuntu: apt-get install libigraph-dev, but the python extension must be downloaded and built separately.  You will need python-dev package)

@@ -170,13 +170,16 @@ AcceptConnectionHandler {
 
 			try {
 				if (lock.tryLock(LOCK_WAIT_MS, TimeUnit.MILLISECONDS)) {
+
 					RuntimeAgent<P> agent = compile(getProtocolInstance());
+					
 
 					partner = agent.select(this,
 							getProtocolInstance(), rng.nextDouble());
 
 					Runtime.debug.printf("%s select %s\n", this, partner);
 					logJson("select", partner);					 // addresses should be serializable now
+
 					if (partner == null) {
 						agent.handleNullSelect(this, getProtocolInstance());
 						lock.unlock();
@@ -216,6 +219,9 @@ AcceptConnectionHandler {
 						logJson("post-update-throwable", new Object[]{"postUpdate() threw throwable", t});
 					}
 
+					agent.gossip(this, getProtocolInstance(),
+							connection);
+					
 					lock.unlock();
 				} else {
 					// failed to acquire lock within time limit; gossip again
