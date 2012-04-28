@@ -16,6 +16,8 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
+import org.princehouse.ficus.Query;
+
 import fj.Effect;
 import fj.F;
 import fj.F2;
@@ -525,5 +527,30 @@ public class Functional {
 	public static <T> List<T> list(T t) {
 		List<T> l = list();
 		return append(l,t);
+	}
+
+	/**
+	 * Return a /new/ set consisting of all elements in a which are not in b
+	 * @param a
+	 * @param b
+	 * @return
+	 */
+	public static <T> Set<T> setDifference(Set<T> a,
+			Set<T> b) {
+		Set<T> temp = new HashSet<T>(a);
+		temp.removeAll(b);
+		return temp;
+	}
+	
+	@SuppressWarnings("unchecked")
+	public static <A,B> Map<A,B> mapFromPairs(Object... pairs) {
+		Map<A,B> temp = map();
+		if(pairs.length % 2 != 0) {
+			throw new RuntimeException("pairs must be an even-length array");
+		}
+		for(int i = 0; i < pairs.length; i+=2) {
+			temp.put( (A) pairs[i], (B) pairs[i+1]);
+		}
+		return temp;
 	}
 }

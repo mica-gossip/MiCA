@@ -46,7 +46,7 @@ AcceptConnectionHandler {
 
 	/**
 	 * Entry point for SimpleRuntime.  Starts a protocol in a new thread. 
-	 * 
+	 *  com	
 	 * @param pinstance Local protocol instance
 	 * @param address Local address
 	 * @param daemon Launch thread as a daemon

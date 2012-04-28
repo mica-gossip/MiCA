@@ -7,7 +7,7 @@ import java.util.Vector;
 
 import fj.F;
 
-public class RandomGraph {
+public class RandomGraph implements TestHarnessGraph {
 	
 	public class Edge {
 		

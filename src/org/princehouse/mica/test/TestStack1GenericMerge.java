@@ -44,7 +44,7 @@ public class TestStack1GenericMerge extends TestHarness<MergeGeneric<MinAddressL
 			}
 		};
 
-		new TestStack1GenericMerge().runRandomGraph(0, 20, 8, createNodeFunc);
+		new TestStack1GenericMerge().runMain(args, createNodeFunc);
 		
 	}
 

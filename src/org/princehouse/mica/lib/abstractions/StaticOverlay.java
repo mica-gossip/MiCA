@@ -16,7 +16,7 @@ import org.princehouse.mica.base.net.model.Address;
 public class StaticOverlay implements Overlay, Serializable {
 
 	private static final long serialVersionUID = 1L;
-	private Collection<Address> view = null;
+	public Collection<Address> view = null;
 	
 	public StaticOverlay(Collection<Address> view) {
 		this.view = view;

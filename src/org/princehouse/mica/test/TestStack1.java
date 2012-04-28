@@ -47,7 +47,7 @@ public class TestStack1 extends TestHarness<MergeIndependent> {
 			}
 		};
 
-		new TestStack1().runRandomGraph(0, 20, 8, createNodeFunc);
+		new TestStack1().runMain(args, createNodeFunc);
 		
 	}
 
