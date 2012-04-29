@@ -6,6 +6,7 @@ import org.princehouse.mica.base.net.model.Address;
 import org.princehouse.mica.lib.MinAddressLeaderElection;
 import org.princehouse.mica.lib.SpanningTreeOverlay;
 import org.princehouse.mica.lib.abstractions.MergeCorrelated;
+import org.princehouse.mica.lib.abstractions.MergeIndependent;
 import org.princehouse.mica.lib.abstractions.Overlay;
 import org.princehouse.mica.lib.abstractions.StaticOverlay;
 import org.princehouse.mica.util.TestHarness;

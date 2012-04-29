@@ -220,9 +220,6 @@ AcceptConnectionHandler {
 						logJson("post-update-throwable", new Object[]{"postUpdate() threw throwable", t});
 					}
 
-					agent.gossip(this, getProtocolInstance(),
-							connection);
-					
 					lock.unlock();
 				} else {
 					// failed to acquire lock within time limit; gossip again
