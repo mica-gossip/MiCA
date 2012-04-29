@@ -152,7 +152,7 @@ public class MergeCorrelated extends BaseProtocol {
 	 */
 	@GossipUpdate
 	public void update(MergeCorrelated that) {
-		logJson("update-select-case",getSubProtocolGossipCase());
+		logJson("update-select-case",getAddress().toString() + ">>" + getSubProtocolGossipCase().toString());
 
 		switch (getSubProtocolGossipCase()) {
 		case P1:
@@ -173,6 +173,7 @@ public class MergeCorrelated extends BaseProtocol {
 			logJson("merge-update","both");
 			p1.executeUpdate(that.p1);
 			p2.executeUpdate(that.p2);
+			break;
 		case NA:
 			throw new RuntimeException("Merge error: No selection choice! Did you override preUpdate and forget to call super()?");
 		}
