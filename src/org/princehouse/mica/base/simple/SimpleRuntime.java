@@ -178,7 +178,7 @@ AcceptConnectionHandler {
 							getProtocolInstance(), rng.nextDouble());
 
 					Runtime.debug.printf("%s select %s\n", this, partner);
-					logJson("select", partner);					 // addresses should be serializable now
+					logJson("select", String.format("%s",partner));
 
 					if (partner == null) {
 						agent.handleNullSelect(this, getProtocolInstance());
@@ -197,6 +197,7 @@ AcceptConnectionHandler {
 						connection = partner.openConnection();
 					} catch(ConnectException ce) {
 						agent.handleConnectException(this, pinstance, partner,ce);
+                        lock.unlock();
 						continue;
 					}
 
