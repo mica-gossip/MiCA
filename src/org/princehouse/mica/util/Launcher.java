@@ -31,6 +31,12 @@ public class Launcher {
 	@Parameter(names = "-address", description = "Address")
 	private Address address = new TCPAddress("localhost:8000"); 
 	
+	@Parameter(names = "-round", description = "Gossip round length (milliseconds)")
+	private int intervalMS = SimpleRuntime.DEFAULT_INTERVAL;
+	
+	@Parameter(names = "-seed", description = "Random seed (long int)")
+	private long randomSeed = SimpleRuntime.DEFAULT_RANDOM_SEED;
+	
 	// not working... jcommander bug?  implement as exceptional case
 	@Parameter(names = "-usage", description = "Print usage", arity=0)
 	public boolean printUsage = false;
@@ -120,7 +126,7 @@ public class Launcher {
 		jc.parse(subargs);
 		// Attempt to run the initialize method
 		runInitialize(protocolClass, protocolInstance);		
-		SimpleRuntime.launch(protocolInstance, address, false);
+		SimpleRuntime.launch(protocolInstance, address, false, intervalMS, randomSeed);
 	}
 	
 	private void runInitialize(Class<?> protocolClass, Protocol classInstance) {

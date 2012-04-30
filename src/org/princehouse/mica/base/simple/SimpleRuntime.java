@@ -46,6 +46,9 @@ AcceptConnectionHandler {
 
 	/**
 	 * Entry point for SimpleRuntime.  Starts a protocol in a new thread. 
+	 * Uses SimpleRuntime.DEFAULT_INTERVAL as the gossip interval and 
+	 * SimpleRuntime.DEFAULT_RANDOM_SEED as the random seed.
+	 * 
 	 * @param pinstance Local protocol instance
 	 * @param address Local address
 	 * @param daemon Launch thread as a daemon
@@ -53,12 +56,27 @@ AcceptConnectionHandler {
 	 */
 	public static <T extends Protocol> Runtime<T> launch(final T pinstance,
 			final Address address, final boolean daemon) {
+		return launch(pinstance, address, daemon, DEFAULT_INTERVAL, DEFAULT_RANDOM_SEED);
+	}
+	
+	/**
+	 * Entry point for SimpleRuntime.  Starts a protocol in a new thread. 
+	 * 
+	 * @param pinstance Local protocol instance
+	 * @param address Local address
+	 * @param daemon Launch thread as a daemon
+	 * @param intervalMS Milliseconds to sleep between each gossip initiation
+	 * @param randomSeed Random seed to use for this runtime
+	 * @return New Runtime instance
+	 */
+	public static <T extends Protocol> Runtime<T> launch(final T pinstance,
+			final Address address, final boolean daemon, final int intervalMS, final long randomSeed) {
 		final Runtime<T> rt = new SimpleRuntime<T>(address);
 		Thread t = new Thread() {
 			public void run() {
 				try {
-					rt.run(pinstance, address, DEFAULT_INTERVAL,
-							DEFAULT_RANDOM_SEED);
+					rt.run(pinstance, address, intervalMS,
+							randomSeed);
 				} catch (InterruptedException e) {
 					e.printStackTrace();
 				}
@@ -82,6 +100,22 @@ AcceptConnectionHandler {
 		return launch(pinstance,address,true);
 	}
 
+	/**
+	 * Entry point for SimpleRuntime.  Starts a protocol in a new thread. 
+	 * (Calls through to launch(), with the daemon flag true)
+	 * 
+	 * @param pinstance Local protocol instance
+	 * @param address Local address
+	 * @param intervalMS milliseconds to sleep between each gossip initiation
+	 * @param randomSeed random seed to be used for this runtime
+	 * @return New Runtime instance
+	 */
+	public static <T extends Protocol> Runtime<T> launchDaemon(final T pinstance,
+			final Address address, int intervalMS, long randomSeed) {
+		return launch(pinstance,address,true, intervalMS, randomSeed);
+	}
+	
+	
 	private P pinstance;
 
 	@Override
