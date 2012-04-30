@@ -39,9 +39,10 @@ public class DemoCompositeProtocol extends MergeCorrelated {
 	private static final long serialVersionUID = 1L;
 	
 	@Override
-	public void preUpdate() {
-		logJson("preupdate log",0);
+	public void preUpdate(Address selected) {
+		logJson("pre-update",String.format("I'm about to gossip with %s",selected));
 	}
+	
 	// Four sub-protocols
 	private MinAddressLeaderElection leaderElection;
 	private SpanningTreeOverlay tree;

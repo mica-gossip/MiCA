@@ -116,11 +116,19 @@ public abstract class BaseProtocol implements Protocol, Serializable {
 		public Object data;
 	}
 	
+	/**
+	 * Convenience method for logging only an event type
+	 * @param eventType
+	 */
+	public void logJson(String eventType) {
+		logJson(eventType,null);
+	}
+	
 	public void logJson(String eventType, final Object obj) {
 		InstanceLogObject logobj = new InstanceLogObject();
 		logobj.name = getName();
 		logobj.data = obj;
-		Runtime.getRuntime().logJson(eventType, logobj);
+		Runtime.getRuntime().logJson(getAddress(), eventType, logobj);
 	}
 
 	public void logCsv(String formatStr, Object... arguments) {
@@ -159,7 +167,7 @@ public abstract class BaseProtocol implements Protocol, Serializable {
 	}
 
 	@Override 
-	public void preUpdate() {}
+	public void preUpdate(Address selected) {}
 	
 	@Override
 	public void postUpdate() {}

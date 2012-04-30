@@ -103,7 +103,7 @@ public abstract class Runtime<P extends Protocol> {
 		this.logDirectory = logDirectory;
 	}
 
-	private long runtimeStartingTimestamp = 0;
+	//private long runtimeStartingTimestamp = 0;
 
 	public long getRuntimeClockMS() {
 	//	return (new Date().getTime()) - runtimeStartingTimestamp;
@@ -133,6 +133,10 @@ public abstract class Runtime<P extends Protocol> {
 	}
 	
 	public void logJson(final String eventType, final Object theEvent) {
+		logJson(getAddress(), eventType, theEvent);
+	}
+		
+	public void logJson(final Address origin, final String eventType, final Object theEvent) {
 
 		if(!Runtime.LOGGING_JSON) return;
 		
@@ -140,12 +144,13 @@ public abstract class Runtime<P extends Protocol> {
 
 		File logfile = getLogFile();
 
+		/**
 		if(runtimeStartingTimestamp == 0) {
 			runtimeStartingTimestamp = new Date().getTime();
 			if(logfile.exists()) {
 				logfile.delete();
-			}
-		}
+			} 
+		} **/   // old logfile now deleted at startup 
 
 		FileOutputStream fos = null;
 		try {
@@ -159,7 +164,7 @@ public abstract class Runtime<P extends Protocol> {
 		PrintStream out = new PrintStream(fos);
 		JsonLogEvent logobj = new JsonLogEvent(
 					getRuntimeClock(),
-					getAddress().toString(),
+					origin.toString(),
 					eventType,
 					theEvent);
 
@@ -243,6 +248,12 @@ public abstract class Runtime<P extends Protocol> {
 	 * @throws InterruptedException
 	 */
 	public void run(P pinstance, Address address, int intervalMS, long randomSeed) throws InterruptedException {
+		// clear old log
+		File logfile = this.getLogFile();
+		if(logfile.exists()) {
+			logfile.delete();
+		}
+		
 		setRuntime(this);
 	};
 
