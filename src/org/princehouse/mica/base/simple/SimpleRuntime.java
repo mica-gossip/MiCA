@@ -46,7 +46,6 @@ AcceptConnectionHandler {
 
 	/**
 	 * Entry point for SimpleRuntime.  Starts a protocol in a new thread. 
-	 * 
 	 * @param pinstance Local protocol instance
 	 * @param address Local address
 	 * @param daemon Launch thread as a daemon
@@ -178,11 +177,9 @@ AcceptConnectionHandler {
 							getProtocolInstance(), rng.nextDouble());
 
 					Runtime.debug.printf("%s select %s\n", this, partner);
-
-					logJson("select", String.format("%s",partner));					
-					
+					logJson("select", String.format("%s",partner));
 					if (partner == null) {
-						agent.handleNullSelect(this, pinstance);
+						agent.handleNullSelect(this, getProtocolInstance());
 						lock.unlock();
 						continue;
 					}
@@ -204,13 +201,14 @@ AcceptConnectionHandler {
 						connection = partner.openConnection();
 					} catch(ConnectException ce) {
 						agent.handleConnectException(this, pinstance, partner,ce);
+                        lock.unlock();
 						continue;
 					}
 
 					if (!running) {
 						lock.unlock();
 						break;
-					}
+				    } 	
 
 					try {
 						agent.gossip(this, getProtocolInstance(),
@@ -335,11 +333,9 @@ AcceptConnectionHandler {
 		return compiler.compile(pinstance);
 	}
 
-<<<<<<< HEAD
 	@Override
 	public ReentrantLock getProtocolInstanceLock() {
 		return lock;
 	}
-
 
 }

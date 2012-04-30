@@ -60,7 +60,7 @@ public class TestStackCorr3 extends TestHarness<MergeCorrelated> {
 			}
 		};
 
-		new TestStackCorr3().runRandomGraph(0, 100, 6, createNodeFunc);
+		new TestStackCorr3().runMain(args, createNodeFunc);
 
 	}
 

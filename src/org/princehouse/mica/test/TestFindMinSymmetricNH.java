@@ -18,7 +18,6 @@ public class TestFindMinSymmetricNH extends TestHarness<FindMinSymmetric> {
 	 */
 	public static void main(String[] args)  {
 	
-		
 		F3<Integer, Address, List<Address>, FindMinSymmetric> createNodeFunc = new F3<Integer, Address, List<Address>, FindMinSymmetric>() {
 			@Override
 			public FindMinSymmetric f(Integer i, Address address,
@@ -29,7 +28,7 @@ public class TestFindMinSymmetricNH extends TestHarness<FindMinSymmetric> {
 			}
 		};
 
-		new TestFindMinSymmetricNH().runRandomGraph(0, 20, 8, createNodeFunc);
+		new TestFindMinSymmetricNH().runMain(args, createNodeFunc);
 		
 	}
 

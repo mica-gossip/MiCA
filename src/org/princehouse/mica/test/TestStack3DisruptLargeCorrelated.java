@@ -98,7 +98,7 @@ public class TestStack3DisruptLargeCorrelated extends TestHarness<MergeIndepende
 			};
 			harness.addTimer(roundsToMs(i), disrupt);
 		}	
-		harness.runRandomGraph(0, nnodes, 4, createNodeFunc);
+		harness.runMain(args, createNodeFunc);
 	}
 
 }

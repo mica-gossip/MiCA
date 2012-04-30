@@ -121,7 +121,7 @@ public abstract class BaseProtocol implements Protocol, Serializable {
 	 * @param eventType
 	 */
 	public void logJson(String eventType) {
-		logJson(eventType,null);
+		Runtime.getRuntime().logJson(eventType);
 	}
 	
 	public void logJson(String eventType, final Object obj) {
