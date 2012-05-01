@@ -259,7 +259,6 @@ class SimpleRuntimeAgent<P extends Protocol> extends RuntimeAgent<P> {
 				pclass.getName(), selector, updateMethod,
 				frequencyMethod);
 				*/
-		
 	}
 
 	private void locateUpdateMethod() throws TooManyException,
