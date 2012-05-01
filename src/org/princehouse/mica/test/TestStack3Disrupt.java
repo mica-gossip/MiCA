@@ -89,7 +89,7 @@ public class TestStack3Disrupt extends TestHarness<MergeIndependent> {
 			harness.addTimer((600+10*i)*1000, disrupt);
 		}	
 		// disrupt at 150, 160, 170, 180 seconds by setting all leaders to random valid addresses
-		harness.runRandomGraph(0, 100, 6, createNodeFunc);
+		harness.runMain(args, createNodeFunc);
 	}
 
 }

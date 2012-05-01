@@ -91,4 +91,5 @@ public class TestStack3DisruptSmall extends TestHarness<MergeIndependent> {
 		harness.runRandomGraph(0, 25, 4, createNodeFunc);
 	}
 
+
 }

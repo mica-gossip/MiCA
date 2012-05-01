@@ -9,46 +9,46 @@ import org.princehouse.mica.base.net.model.Address;
 import org.princehouse.mica.util.Distribution;
 
 
-class SelectFieldSelector<Q extends Protocol> extends Selector<Q> {
+/**
+ * Applies the @Select annotation to an object to produce a Distribution<Address>
+ * 
+ * Applicable object types:
+ *    Distribution<Address>
+ *    Protocol
+ *    Overlay 
+ *    Collection  (returns uniform random distribution)
+ *    
+ * @author lonnie
+ *
+ * @param <Q>
+ */
+public class SelectFieldSelector<Q extends Protocol> extends Selector<Q> {
 
 	private Field field;
 
-	public SelectFieldSelector(Field field) {
+	public SelectFieldSelector(Field field) throws InvalidSelectElement {
 		this.field = field;
 		validate(field);
 	}
 
-	private void validate(Field field) {
+	private void validate(Field field) throws InvalidSelectElement {
 		// FIXME: sanity check should go here
 	}
 
 	@Override
-	public Distribution<Address> select(Runtime<?> rt, Q pinstance) {
+	public Distribution<Address> select(Runtime<?> rt, Q pinstance) throws SelectException  {
 		Object obj = null;
 		try {
 			obj = field.get(pinstance);
 		} catch (IllegalArgumentException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-			return null;
+			throw new RuntimeException(e);
 		} catch (IllegalAccessException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-			return null;
+			throw new RuntimeException(e);
 		}
-		return getDistFromValue(obj);
+		return asDistribution(obj);
 	}
 
-	@SuppressWarnings("unchecked")
-	private Distribution<Address> getDistFromValue(Object obj) {
-		if(obj instanceof Distribution) {
-			return (Distribution<Address>) obj;
-		} else if(obj instanceof Protocol) {
-			return ((Protocol) obj).getSelectDistribution();
-		} else {
-			throw new RuntimeException(String.format("Don't know how to extract selector from %s instance", obj.getClass().getName()));
-		}
-	}
+	
 
 	public String toString() {
 		return String.format("<%s field %s>",getClass().getName(), field.getName());

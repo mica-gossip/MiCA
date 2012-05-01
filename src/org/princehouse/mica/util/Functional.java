@@ -29,12 +29,12 @@ public class Functional {
 		list.add(obj);
 		return list;
 	}
-	
+
 	public static <T> List<T> prepend(List<T> list, T obj) {
 		list.add(0,obj);
 		return list;
 	}
-	
+
 	/**
 	 * Concatenate one or more lists Always creates a new list
 	 * 
@@ -62,6 +62,20 @@ public class Functional {
 				return arg0;
 			}
 		};
+	}
+
+	public static <A,B> A foldl(F2<A,B,A> f, A initial, Iterable<B> it) {
+		for(B element : it) {
+			initial = f.f(initial, element);
+		}
+		return initial;
+	}
+
+	public static <T> T foldl(F2<T,T,T> func, Iterable<T> it) {
+		Iterator<T> iter = it.iterator();
+		return foldl(func,
+				iter.next(),
+				iteratorAsIterable(iter));
 	}
 
 	/**
@@ -506,7 +520,17 @@ public class Functional {
 			}	
 		};
 	}
-	
+
+	// first class "or" function
+	public static <A> F2<F<A,Boolean>,F<A,Boolean>,F<A,Boolean>> or1() {
+		return new F2<F<A,Boolean>,F<A,Boolean>,F<A,Boolean>>() {
+			@Override
+			public F<A, Boolean> f(F<A, Boolean> arg0, F<A, Boolean> arg1) {
+				return or(arg0,arg1);
+			}
+		};
+	}
+
 	public static <A> F<A, Boolean> and(
 			final F<A, Boolean> a,
 			final F<A, Boolean> b) {
@@ -518,6 +542,16 @@ public class Functional {
 		};
 	}
 
+	// first class "and" function
+	public static <A> F2<F<A,Boolean>,F<A,Boolean>,F<A,Boolean>> and1() {
+		return new F2<F<A,Boolean>,F<A,Boolean>,F<A,Boolean>>() {
+			@Override
+			public F<A, Boolean> f(F<A, Boolean> arg0, F<A, Boolean> arg1) {
+				return and(arg0,arg1);
+			}
+		};
+	}
+
 	public static <K,V> Map<K,V> map() {
 		return new HashMap<K,V>();
 	}
@@ -525,5 +559,30 @@ public class Functional {
 	public static <T> List<T> list(T t) {
 		List<T> l = list();
 		return append(l,t);
+	}
+
+	/**
+	 * Return a /new/ set consisting of all elements in a which are not in b
+	 * @param a
+	 * @param b
+	 * @return
+	 */
+	public static <T> Set<T> setDifference(Set<T> a,
+			Set<T> b) {
+		Set<T> temp = new HashSet<T>(a);
+		temp.removeAll(b);
+		return temp;
+	}
+
+	@SuppressWarnings("unchecked")
+	public static <A,B> Map<A,B> mapFromPairs(Object... pairs) {
+		Map<A,B> temp = map();
+		if(pairs.length % 2 != 0) {
+			throw new RuntimeException("pairs must be an even-length array");
+		}
+		for(int i = 0; i < pairs.length; i+=2) {
+			temp.put( (A) pairs[i], (B) pairs[i+1]);
+		}
+		return temp;
 	}
 }

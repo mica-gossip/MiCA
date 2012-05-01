@@ -5,6 +5,7 @@ import java.io.Serializable;
 import java.util.Collection;
 
 import org.princehouse.mica.base.net.model.Address;
+import org.princehouse.mica.util.Distribution;
 
 
 /**
@@ -13,7 +14,7 @@ import org.princehouse.mica.base.net.model.Address;
  * @author lonnie
  *
  */
-public interface RootedTree extends Overlay {
+public interface RootedTree extends TreeOverlay {
 
 	/**
 	 * An overlay that causes nodes to gossip only to their children 
@@ -28,8 +29,8 @@ public interface RootedTree extends Overlay {
 			this.tree = t;
 		}
 		@Override
-		public Collection<Address> getView() {
-			return tree.getChildren();
+		public Distribution<Address> getView() {
+			return Distribution.uniform(tree.getChildren());
 		}
 	}
 

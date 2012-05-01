@@ -75,7 +75,6 @@ public class TestStack3DisruptLargeCorrelated extends TestHarness<MergeIndepende
 		
 		SimpleRuntime.DEFAULT_INTERVAL = 3000;
 		int totalRounds = 600;
-		int nnodes = 128;
 		
 		harness.addTimer(roundsToMs(totalRounds), harness.taskStop());
 
@@ -98,7 +97,7 @@ public class TestStack3DisruptLargeCorrelated extends TestHarness<MergeIndepende
 			};
 			harness.addTimer(roundsToMs(i), disrupt);
 		}	
-		harness.runRandomGraph(0, nnodes, 4, createNodeFunc);
+		harness.runMain(args, createNodeFunc);
 	}
 
 }

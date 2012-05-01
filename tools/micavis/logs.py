@@ -52,7 +52,7 @@ def query_timestamp_range(events):
 # returns a matrix weighted by the (relatively normalized) number of times each
 # address selected each other address
 #   graph[src][dst]
-def query_select_graph(unique_address_list, events):
+def build_comm_matrix(unique_address_list, events):
     tot = 0
     n = len(unique_address_list)
     matrix = [ [0.] * n for i in xrange(n) ]
@@ -62,7 +62,7 @@ def query_select_graph(unique_address_list, events):
     for e in selevts:
         tot += 1
         src = e['address']
-        dst = e['event']
+        dst = e['data']
         matrix[index[src]][index[dst]] += 1.0
 
     for i in xrange(n):
@@ -71,16 +71,12 @@ def query_select_graph(unique_address_list, events):
 
     return matrix
 
-def write_dot_file(events, filename):
-    ual = query_unique_addresses(events)
-    matrix = query_select_graph
 
-    edge_list = []
-
-    # edges
+def matrix_edge_generator(comm_matrix):
+    # matrix must be square!
+    n = len(comm_matrix)
     for i in xrange(n):
-        for j, value in enumerate(matrix[i]):
-            if value > 0:
-                edge_list.add((events[i],events[j]))
-
+        for j in xrange(n):
+            if comm_matrix[i][j] > 0:
+                yield (i,j)
 

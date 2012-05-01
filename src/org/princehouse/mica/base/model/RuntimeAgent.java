@@ -4,6 +4,7 @@ import java.net.ConnectException;
 
 import org.princehouse.mica.base.net.model.Address;
 import org.princehouse.mica.base.net.model.Connection;
+import org.princehouse.mica.base.simple.SelectException;
 import org.princehouse.mica.util.Distribution;
 
 /**
@@ -25,7 +26,7 @@ public abstract class RuntimeAgent<P extends Protocol> {
 
 	// TODO modify to take a Random instance instead of a pre-generated random double
 	/**
-	 * Executes the select function for the specified protocol instance and
+	 * Executes the select function for the specified proto col instance and
 	 * chooses an address from the resulting address distribution.
 	 * 
 	 * @param runtime Current Runtime
@@ -33,8 +34,9 @@ public abstract class RuntimeAgent<P extends Protocol> {
 	 * @param randomValue A random double supplied by the runtime. select should be deterministic.
 	 * 
 	 * @return Address of the chosen gossip peer
+	 * @throws SelectException 
 	 */
-	public abstract Address select(Runtime<?> runtime, P pinstance, double randomValue);
+	public abstract Address select(Runtime<?> runtime, P pinstance, double randomValue) throws SelectException;
 
 	// Called on subprotocols as well as the top protocol; Runtime type
 	// parameter doesn't necessarily match pinstance type
@@ -47,9 +49,10 @@ public abstract class RuntimeAgent<P extends Protocol> {
 	 * @param runtime Current Runtime 
 	 * @param pinstance Protocol instance
 	 * @return
+	 * @throws SelectException 
 	 */
 	public abstract Distribution<Address> getSelectDistribution(Runtime<?> runtime,
-			P pinstance);
+			P pinstance) throws SelectException;
 
 	/**
 	 * Execute the gossip update with a remote peer.

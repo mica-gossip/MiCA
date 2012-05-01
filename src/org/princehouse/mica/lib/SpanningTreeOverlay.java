@@ -8,13 +8,13 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-import org.princehouse.mica.base.BaseProtocol;
+import org.princehouse.mica.base.ExternalSelectProtocol;
 import org.princehouse.mica.base.annotations.GossipUpdate;
-import org.princehouse.mica.base.annotations.SelectUniformRandom;
 import org.princehouse.mica.base.net.model.Address;
 import org.princehouse.mica.lib.abstractions.LeaderElection;
 import org.princehouse.mica.lib.abstractions.Overlay;
 import org.princehouse.mica.lib.abstractions.RootedTree;
+import org.princehouse.mica.util.Distribution;
 import org.princehouse.mica.util.Functional;
 
 
@@ -24,7 +24,7 @@ import org.princehouse.mica.util.Functional;
  * @author lonnie
  *
  */
-public class SpanningTreeOverlay extends BaseProtocol implements RootedTree {
+public class SpanningTreeOverlay extends ExternalSelectProtocol implements RootedTree {
 
 	private static final long serialVersionUID = 1L;
 
@@ -38,9 +38,6 @@ public class SpanningTreeOverlay extends BaseProtocol implements RootedTree {
 
 	public LeaderElection leaderElection;
 
-	@SelectUniformRandom
-	public Overlay overlay;
-
 	/**
 	 * Create a new instance
 	 * 
@@ -48,8 +45,8 @@ public class SpanningTreeOverlay extends BaseProtocol implements RootedTree {
 	 * @param sourceOverlay The overlay this algorithm gossips on
 	 */
 	public SpanningTreeOverlay(LeaderElection leaderElection, Overlay sourceOverlay) {
+		super(sourceOverlay);
 		this.leaderElection = leaderElection;
-		this.overlay = sourceOverlay;
 	}
 
 	@Override
@@ -62,7 +59,7 @@ public class SpanningTreeOverlay extends BaseProtocol implements RootedTree {
 		return parent;
 	}
 
-	// FIXME arbitrary big number? real professional.
+	// FIXME arbitrary big number? real professional...
 	private static final int MAXDIST = 1000000;
 	
 	private Collection<Address> getKnown() {
@@ -172,22 +169,21 @@ public class SpanningTreeOverlay extends BaseProtocol implements RootedTree {
 			children.add(other.getAddress());
 		else 
 			children.remove(other.getAddress());
-	
 	}
 
 	@Override
 	public boolean isRoot() {
-		return leaderElection.isLeader() || (overlay.getView().size() == 0);
+		return leaderElection.isLeader() || (getSelectDistribution().keySet().size() == 0);
 	}
 
 	@Override
-	public Collection<Address> getView() {
+	public Distribution<Address> getView() {
 		Set<Address> view = new HashSet<Address>();
 		Address parent = getParent();
 		if(parent != null)
 			view.add(parent);
 		Functional.extend(view,getChildren());
-		return view;
+		return Distribution.uniform(view);
 	}
 
 	@Override

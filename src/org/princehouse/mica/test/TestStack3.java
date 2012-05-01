@@ -63,7 +63,7 @@ public class TestStack3 extends TestHarness<MergeIndependent> {
 
 		TestHarness<MergeIndependent> test = new TestStack3();
 		test.addTimer(15*60*1000, test.taskStop());
-		test.runRandomGraph(0, 100, 6, createNodeFunc);
+		test.runMain(args, createNodeFunc);
 	}
 
 }
