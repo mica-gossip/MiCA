@@ -16,6 +16,8 @@ import com.beust.jcommander.Parameter;
 /**
  * Pull-based "find minimum value" example protocol
  * 
+ * Demonstrates gossiping to neighbors with an arbitrary weighted distribution
+ * 
  * @author lonnie
  *
  */

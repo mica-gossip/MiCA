@@ -23,6 +23,7 @@ public interface Protocol {
 	/**
 	 * Execute the select function for this Protocol instance and return its address distribution.
 	 * @return Address distribution
+	 * @throws  
 	 */
 	public Distribution<Address> getSelectDistribution();
 	

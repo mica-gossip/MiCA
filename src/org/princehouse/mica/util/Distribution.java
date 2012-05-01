@@ -226,4 +226,5 @@ public class Distribution<T> extends HashMap<T,Double> {
 		dist.put(key, 1.0);
 		return dist;
 	}
+	
 }

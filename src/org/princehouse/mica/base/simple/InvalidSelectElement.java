@@ -6,7 +6,7 @@ import java.lang.reflect.AnnotatedElement;
  * Thrown when a @Select* annotation is attached to an invalid element
  * @author lonnie
  */
-public class InvalidSelectElement extends Exception {
+public class InvalidSelectElement extends SelectException {
 	private static final long serialVersionUID = 1L;
 
 	private Class<?> selectorClass;

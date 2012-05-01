@@ -7,7 +7,7 @@ import org.princehouse.mica.lib.MinAddressLeaderElection;
 import org.princehouse.mica.lib.SpanningTreeOverlay;
 import org.princehouse.mica.lib.abstractions.MergeCorrelated;
 import org.princehouse.mica.lib.abstractions.Overlay;
-import org.princehouse.mica.lib.abstractions.StaticOverlay;
+import org.princehouse.mica.lib.abstractions.RoundRobinOverlay;
 import org.princehouse.mica.util.TestHarness;
 
 import fj.F3;
@@ -35,7 +35,7 @@ import fj.F3;
  * @author lonnie
  * 
  */
-public class DemoCompositeProtocol extends MergeCorrelated {
+public class DemoCompositeProtocolDeterministic extends MergeCorrelated {
 	private static final long serialVersionUID = 1L;
 	
 	
@@ -50,7 +50,7 @@ public class DemoCompositeProtocol extends MergeCorrelated {
 	 * @param view An overlay instance.  StaticOverlay can be used to run on a fixed network graph.
 	 * @param nodeID A unique id used for logging.
 	 */
-	public DemoCompositeProtocol(Overlay view, int nodeID) {
+	public DemoCompositeProtocolDeterministic(Overlay view, int nodeID) {
 		super();
 		
 		// Instantiate the four sub-protocols.  setName() is optional, but having named protocols makes the 
@@ -89,13 +89,13 @@ public class DemoCompositeProtocol extends MergeCorrelated {
 	 * 
 	 * 
 	 */
-	public static F3<Integer, Address, List<Address>, DemoCompositeProtocol> createNodeFunc = new F3<Integer, Address, List<Address>, DemoCompositeProtocol>() {
+	public static F3<Integer, Address, List<Address>, DemoCompositeProtocolDeterministic> createNodeFunc = new F3<Integer, Address, List<Address>, DemoCompositeProtocolDeterministic>() {
 		@Override
-		public DemoCompositeProtocol f(Integer i, Address address,
+		public DemoCompositeProtocolDeterministic f(Integer i, Address address,
 				List<Address> neighbors) {
 			// Create a static overlay to bootstrap our set of neighbors
-			Overlay bootstrapView = new StaticOverlay(neighbors);
-			return new DemoCompositeProtocol(bootstrapView, i);
+			Overlay bootstrapView = new RoundRobinOverlay(neighbors);
+			return new DemoCompositeProtocolDeterministic(bootstrapView, i);
 		}
 	};
 	

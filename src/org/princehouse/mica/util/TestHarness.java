@@ -3,9 +3,7 @@ package org.princehouse.mica.util;
 import java.io.File;
 import java.io.FilenameFilter;
 import java.net.UnknownHostException;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Random;
 import java.util.Timer;
 import java.util.TimerTask;
@@ -69,7 +67,7 @@ public class TestHarness<Q extends Protocol> {
 
 		@Parameter(names = "-graphType", description = "Type of communication graph to use. Valid options: random, complete")
 		public String graphType = "random";
-		
+
 	}
 
 
@@ -130,7 +128,7 @@ public class TestHarness<Q extends Protocol> {
 		List<Runtime<Q>> runtimes = Functional.list();
 
 		Runtime.log(String.format("-,-,-,init_experiment,round_ms=%d nodes=%d seed=%d",getOptions().roundLength, n, getOptions().seed));
-		
+
 		running = true;
 
 		launchTimers();
@@ -147,7 +145,7 @@ public class TestHarness<Q extends Protocol> {
 					neighborsFunc.f(i), addressFunc));
 			Q pinstance = createNodeFunc.f(i, address, neighbors);
 			Runtime<Q> rt = SimpleRuntime.launchDaemon(pinstance, address, getOptions().roundLength, getOptions().seed);
-			
+
 			rt.logJson("runtime-init", Functional.<String,Object>mapFromPairs(
 					"n", n,
 					"round_ms", getOptions().roundLength,
@@ -157,7 +155,7 @@ public class TestHarness<Q extends Protocol> {
 
 		return runtimes;
 	}
-	
+
 	private void launchTimers() {
 		Timer timer = new Timer(true);
 		for(P2<Long,TimerTask> tt : timers) {

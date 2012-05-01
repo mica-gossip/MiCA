@@ -1,18 +1,11 @@
 package org.princehouse.mica.lib.abstractions;
 
-import static org.princehouse.mica.util.Randomness.weightedChoice;
-
 import java.util.Random;
 
 import org.princehouse.mica.base.BaseProtocol;
-import org.princehouse.mica.base.annotations.GossipRate;
 import org.princehouse.mica.base.annotations.GossipUpdate;
-import org.princehouse.mica.base.annotations.Select;
 import org.princehouse.mica.base.model.Protocol;
 import org.princehouse.mica.base.net.model.Address;
-import org.princehouse.mica.util.Distribution;
-
-import fj.F2;
 
 /**
  * Merge two protocols in such a way that the composite protocol gossips both
@@ -97,17 +90,6 @@ public abstract class MergeAbstract extends BaseProtocol {
 		((BaseProtocol) p2).logstate();
 	}
 
-	private Distribution<Address> getMin() {
-		Distribution<Address> d1 = p1.getSelectDistribution().copynormalize();
-		Distribution<Address> d2 = p2.getSelectDistribution().copynormalize();
-
-		return Distribution.convolve(d1, d2, new F2<Double, Double, Double>() {
-			@Override
-			public Double f(Double a, Double b) {
-				return Math.min(a, b);
-			}
-		});
-	}
 
 	/**
 	 * Composite update function.

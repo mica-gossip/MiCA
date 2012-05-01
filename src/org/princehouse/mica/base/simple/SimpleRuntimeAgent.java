@@ -5,7 +5,6 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.Serializable;
 import java.lang.reflect.AnnotatedElement;
-import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.net.ConnectException;
@@ -17,8 +16,6 @@ import java.util.List;
 import org.princehouse.mica.base.BaseProtocol;
 import org.princehouse.mica.base.annotations.GossipRate;
 import org.princehouse.mica.base.annotations.GossipUpdate;
-import org.princehouse.mica.base.annotations.Select;
-import org.princehouse.mica.base.annotations.SelectUniformRandom;
 import org.princehouse.mica.base.model.CompilerException;
 import org.princehouse.mica.base.model.Protocol;
 import org.princehouse.mica.base.model.Runtime;
@@ -131,7 +128,7 @@ class SimpleRuntimeAgent<P extends Protocol> extends RuntimeAgent<P> {
 	}
 
 	@Override
-	public Address select(Runtime<?> rt, P pinstance, double randomValue) {
+	public Address select(Runtime<?> rt, P pinstance, double randomValue) throws SelectException {
 		// Sanity check to prevent self-gossip added by Josh Endries
 		Distribution<Address> dist = getSelectDistribution(rt, pinstance);
 		if (dist == null || dist.size() == 0) {
@@ -227,9 +224,7 @@ class SimpleRuntimeAgent<P extends Protocol> extends RuntimeAgent<P> {
 			throw new CompilerException(String.format(
 					"Failure to identify protocol select for %s",
 					pclass.getName()), e);
-		} catch (InvalidSelectElement e) {
-			throw new CompilerException(e.toString(), e);
-		} catch (ConflictingSelectAnnotationsException e) {
+		} catch (SelectException e) {
 			throw new CompilerException(e.toString(), e);
 		}
 
@@ -315,7 +310,7 @@ class SimpleRuntimeAgent<P extends Protocol> extends RuntimeAgent<P> {
 	}
 
 	private void locateSelectMethod(Class<?> klass) throws NotFoundException,
-	TooManyException, InvalidSelectElement, ConflictingSelectAnnotationsException {
+	TooManyException, SelectException {
 		/*
 		 * Search through fields and functions looking for syntactic sugar
 		 * Select annotations
@@ -491,7 +486,7 @@ class SimpleRuntimeAgent<P extends Protocol> extends RuntimeAgent<P> {
 
 	@Override
 	public Distribution<Address> getSelectDistribution(Runtime<?> rt,
-			P pinstance) {
+			P pinstance) throws SelectException {
 		return selector.select(rt, pinstance);
 	}
 

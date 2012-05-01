@@ -2,9 +2,8 @@ package org.princehouse.mica.lib.abstractions;
 
 import java.util.Map;
 
-import org.princehouse.mica.base.BaseProtocol;
+import org.princehouse.mica.base.ExternalSelectProtocol;
 import org.princehouse.mica.base.annotations.GossipUpdate;
-import org.princehouse.mica.base.annotations.SelectUniformRandom;
 import org.princehouse.mica.base.model.Protocol;
 import org.princehouse.mica.base.net.model.Address;
 import org.princehouse.mica.util.Functional;
@@ -28,8 +27,8 @@ import org.princehouse.mica.util.Functional;
  * @param <Summary>
  * @param <Aggregate>
  */
-public abstract class Aggregator<AgClass extends BaseProtocol, Summary, Aggregate>
-		extends BaseProtocol {
+public abstract class Aggregator<AgClass extends ExternalSelectProtocol, Summary, Aggregate>
+		extends ExternalSelectProtocol {
 
 	private static final long serialVersionUID = 1L;
 
@@ -37,27 +36,6 @@ public abstract class Aggregator<AgClass extends BaseProtocol, Summary, Aggregat
 	private Protocol.Direction direction;
 
 	private Aggregate aggregate = null;
-
-	@SelectUniformRandom
-	public Overlay overlay = null;
-
-	/**
-	 * Get the communication overlay
-	 * 
-	 * @return
-	 */
-	public Overlay getOverlay() {
-		return overlay;
-	}
-
-	/** 
-	 * Set a new communication overlay
-	 * 
-	 * @param overlay 
-	 */
-	public void setOverlay(Overlay overlay) {
-		this.overlay = overlay;
-	}
 
 	/**
 	 * Aggregate constructor. The direction of aggregation is given by constants from Protocol.Direction.
@@ -70,8 +48,8 @@ public abstract class Aggregator<AgClass extends BaseProtocol, Summary, Aggregat
 	 * @param defaultAggregateValue
 	 */
 	public Aggregator(Overlay overlay, Protocol.Direction direction, Aggregate defaultAggregateValue) {
+		super(overlay);
 		initializeSummaries();
-		setOverlay(overlay);
 		this.direction = direction;
 		this.aggregate = defaultAggregateValue;
 	}

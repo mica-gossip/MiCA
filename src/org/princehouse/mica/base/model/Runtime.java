@@ -11,6 +11,7 @@ import java.util.Random;
 import java.util.concurrent.locks.ReentrantLock;
 
 import org.princehouse.mica.base.net.model.Address;
+import org.princehouse.mica.base.simple.SelectException;
 import org.princehouse.mica.util.ClassUtils;
 import org.princehouse.mica.util.Distribution;
 
@@ -380,8 +381,9 @@ public abstract class Runtime<P extends Protocol> {
 	 * NOTE: must never return null.  return an empty distribution instead.
 	 * @param p
 	 * @return
+	 * @throws SelectException 
 	 */
-	public abstract Distribution<Address> getSelectDistribution(Protocol p);
+	public abstract Distribution<Address> getSelectDistribution(Protocol p) throws SelectException;
 
 	public abstract void executeUpdate(Protocol p1, Protocol p2);
 

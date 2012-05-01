@@ -8,7 +8,7 @@ import org.princehouse.mica.base.net.model.Address;
 import org.princehouse.mica.base.net.tcpip.TCPAddress;
 import org.princehouse.mica.base.simple.SimpleRuntime;
 import org.princehouse.mica.example.FindMinPull;
-import org.princehouse.mica.util.Functional;
+import org.princehouse.mica.lib.abstractions.StaticOverlay;
 
 
 public class TestFindMinPullProtocol {
@@ -23,8 +23,8 @@ public class TestFindMinPullProtocol {
 		Address a1 = TCPAddress.valueOf("localhost:8001");
 		Address a2 = TCPAddress.valueOf("localhost:8002");
 		
-		FindMinPull node1 = new FindMinPull(5, Functional.list(a2));
-		FindMinPull node2 = new FindMinPull(3, Functional.list(a1));
+		FindMinPull node1 = new FindMinPull(5, new StaticOverlay(a2));
+		FindMinPull node2 = new FindMinPull(3, new StaticOverlay(a1));
 
 		
 		Runtime<FindMinPull> rt1 = SimpleRuntime.launchDaemon(node1, a1);

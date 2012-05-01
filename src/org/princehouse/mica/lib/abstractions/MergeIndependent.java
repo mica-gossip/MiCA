@@ -4,9 +4,7 @@ import static org.princehouse.mica.util.Randomness.weightedChoice;
 
 import java.util.Random;
 
-import org.princehouse.mica.base.BaseProtocol;
 import org.princehouse.mica.base.annotations.GossipRate;
-import org.princehouse.mica.base.annotations.GossipUpdate;
 import org.princehouse.mica.base.annotations.Select;
 import org.princehouse.mica.base.model.Protocol;
 import org.princehouse.mica.base.net.model.Address;

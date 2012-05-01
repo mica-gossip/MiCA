@@ -7,7 +7,6 @@ import java.util.Collection;
 import org.princehouse.mica.base.model.Protocol;
 import org.princehouse.mica.base.model.Runtime;
 import org.princehouse.mica.base.net.model.Address;
-import org.princehouse.mica.lib.abstractions.Overlay;
 import org.princehouse.mica.util.Distribution;
 
 
@@ -40,22 +39,11 @@ class UniformRandomCollectionFieldSelector<Q extends Protocol> extends Selector<
 		return getCollectionFromValue(obj);
 	}
 
-	@SuppressWarnings("unchecked")
-	private Collection<Address> getCollectionFromValue(Object value) {
-		if(value instanceof Collection) {
-			// TODO add sanity check for addresses
-			return (Collection<Address>) value;
-		} else if(value instanceof Overlay) {
-			return ((Overlay)value).getView();
-		} else {
-			throw new RuntimeException(String.format("Don't know how to extract view from %s instance", value.getClass().getName()));
-		}
-	}
+
 
 	@Override
 	public Distribution<Address> select(Runtime<?> rt, Q pinstance) {
 		return Distribution.uniform(getCollection(pinstance));
-		//return Randomness.choose(getCollection(pinstance));
 	}
 	
 	public String toString() {

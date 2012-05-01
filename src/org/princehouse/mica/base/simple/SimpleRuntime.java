@@ -224,12 +224,6 @@ AcceptConnectionHandler {
 						logJson("pre-update-throwable", new Object[]{"preUpdate() threw throwable", t});
 					}
 
-					
-					if (partner == null) {
-						agent.handleNullSelect(this, getProtocolInstance());
-						lock.unlock();
-						continue;
-					}
 
 					try {
 						connection = partner.openConnection();
@@ -268,7 +262,11 @@ AcceptConnectionHandler {
 					logJson("lockfail-active");
 				}
 			} catch (IOException e) {
-				e.printStackTrace();
+				lock.unlock();
+				this.tolerate(e);
+			} catch (SelectException e) {
+				lock.unlock();
+				this.tolerate(e);
 			}
 			lastElapsedMS = getTimeMS() - startTime;
 		}
@@ -339,7 +337,7 @@ AcceptConnectionHandler {
 
 	@Override
 	public Distribution<Address> getSelectDistribution(
-			Protocol protocol) {
+			Protocol protocol) throws SelectException {
 		Distribution<Address> dist = compile(protocol).getSelectDistribution(this, protocol);
 		if(dist == null)
 			dist = new Distribution<Address>(); // empty

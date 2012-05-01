@@ -75,7 +75,6 @@ public class TestStack3DisruptLargeCorrelated extends TestHarness<MergeIndepende
 		
 		SimpleRuntime.DEFAULT_INTERVAL = 3000;
 		int totalRounds = 600;
-		int nnodes = 128;
 		
 		harness.addTimer(roundsToMs(totalRounds), harness.taskStop());
 

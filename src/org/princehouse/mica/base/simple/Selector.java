@@ -4,6 +4,7 @@ import java.lang.annotation.Annotation;
 import java.lang.reflect.AnnotatedElement;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
+import java.util.Collection;
 import java.util.List;
 
 import org.princehouse.mica.base.annotations.Select;
@@ -11,18 +12,48 @@ import org.princehouse.mica.base.annotations.SelectUniformRandom;
 import org.princehouse.mica.base.model.Protocol;
 import org.princehouse.mica.base.model.Runtime;
 import org.princehouse.mica.base.net.model.Address;
-import org.princehouse.mica.base.simple.Selector.SelectorAnnotationDecider;
+import org.princehouse.mica.lib.abstractions.Overlay;
 import org.princehouse.mica.util.Distribution;
 import org.princehouse.mica.util.Functional;
 import org.princehouse.mica.util.FunctionalReflection;
 
 import fj.F;
 
-abstract class Selector<Q extends Protocol> {
+public abstract class Selector<Q extends Protocol> {
 
-	public abstract Distribution<Address> select(Runtime<?> rt, Q pinstance);
+	public abstract Distribution<Address> select(Runtime<?> rt, Q pinstance) throws SelectException;
 
-
+	
+	// Utility methods for selecting from various different data types
+	@SuppressWarnings("unchecked")
+	public static Distribution<Address> asDistribution(Object obj) throws SelectException  {
+		if(obj instanceof Distribution) {
+			return (Distribution<Address>) obj;
+		} else if(obj instanceof Protocol) {
+			return ((Protocol) obj).getSelectDistribution();
+		} else if(obj instanceof Collection) {
+			return Distribution.uniform((Collection<Address>)obj);
+		} else if(obj instanceof Overlay) {
+			return ((Overlay)obj).getView();
+		} else if(obj instanceof Address) {
+			return Distribution.singleton((Address)obj);
+		} else {
+			throw new InvalidSelectValue(Select.class, obj);
+		}
+	}
+	
+	@SuppressWarnings("unchecked")
+	protected static Collection<Address> getCollectionFromValue(Object value) {
+		if(value instanceof Collection) {
+			// TODO add sanity check for addresses
+			return (Collection<Address>) value;
+		} else if(value instanceof Overlay) {
+			Distribution<Address> dist = ((Overlay)value).getView();
+			return dist.keySet();
+		} else {
+			throw new RuntimeException(String.format("Don't know how to extract view from %s instance", value.getClass().getName()));
+		}
+	}
 
 
 	// ----------------------- machinery for choosing a selector in the SimpleRuntimeAgent process() function -----------------
@@ -34,7 +65,7 @@ abstract class Selector<Q extends Protocol> {
 		public Class<? extends Annotation> getAnnotationClass() {
 			return annotationClass;
 		}
-		public abstract <P extends Protocol> Selector<P> getSelector(AnnotatedElement element) throws InvalidSelectElement;
+		public abstract <P extends Protocol> Selector<P> getSelector(AnnotatedElement element) throws SelectException;
 		
 		// first class function 
 		public F<AnnotatedElement,Boolean> accept1() {

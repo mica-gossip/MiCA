@@ -23,17 +23,9 @@ public class FicusQueryInstaller extends BaseProtocol {
 	private static final long serialVersionUID = 1L;
 
 
+	@Select
 	public Overlay baseView;
 
-	
-	@Select
-	public Distribution<Address> select() {
-		Distribution<Address> baseUniform = Distribution.uniform(baseView.getView());
-		return baseUniform;
-		// modify with composite query routing weights
-		// FIXME YOU ARE HERE
-		
-	}
 	
 	
 	// integer is queryid
@@ -69,10 +61,9 @@ public class FicusQueryInstaller extends BaseProtocol {
 		generateSourceData();
 		relayNewQueries(that);
 		
-	
-		for(Query q : installedQueries) {
-			
-		}
+		// TODO incomplete
+		//for(Query q : installedQueries) {
+		//}
 	}
 
 	

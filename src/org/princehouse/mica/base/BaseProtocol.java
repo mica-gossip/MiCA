@@ -10,6 +10,7 @@ import org.princehouse.mica.base.model.Protocol;
 import org.princehouse.mica.base.model.Runtime;
 import org.princehouse.mica.base.model.RuntimeState;
 import org.princehouse.mica.base.net.model.Address;
+import org.princehouse.mica.base.simple.SelectException;
 import org.princehouse.mica.util.Distribution;
 import org.princehouse.mica.util.MarkingObjectInputStream;
 
@@ -55,7 +56,11 @@ public abstract class BaseProtocol implements Protocol, Serializable {
 
 	@Override
 	final public Distribution<Address> getSelectDistribution() {
-		return Runtime.getRuntime().getSelectDistribution(this);
+		try {
+			return Runtime.getRuntime().getSelectDistribution(this);
+		} catch (SelectException e) {
+			throw new RuntimeException(e);
+		}
 	}
 
 

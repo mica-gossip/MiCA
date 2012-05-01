@@ -2,7 +2,7 @@ package org.princehouse.mica.base.simple;
 
 import java.lang.reflect.AnnotatedElement;
 
-public class ConflictingSelectAnnotationsException extends Exception {
+public class ConflictingSelectAnnotationsException extends SelectException {
 
 	/**
 	 * 
