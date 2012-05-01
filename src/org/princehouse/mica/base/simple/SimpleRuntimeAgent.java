@@ -26,6 +26,7 @@ import org.princehouse.mica.base.model.RuntimeAgent;
 import org.princehouse.mica.base.model.RuntimeState;
 import org.princehouse.mica.base.net.model.Address;
 import org.princehouse.mica.base.net.model.Connection;
+import org.princehouse.mica.base.simple.Selector.SelectorAnnotationDecider;
 import org.princehouse.mica.util.Distribution;
 import org.princehouse.mica.util.Functional;
 import org.princehouse.mica.util.FunctionalReflection;
@@ -41,17 +42,20 @@ import fj.P2;
  * 
  * @author lonnie
  * 
- * @param <P> Top-level Protocol class
+ * @param <P>
+ *            Top-level Protocol class
  */
 class SimpleRuntimeAgent<P extends Protocol> extends RuntimeAgent<P> {
 
 	/**
-	 * Utility class representing the message sent by the gossip initiator to the 
-	 * gossip receiver.  RequestMessage instances are serialized and sent over the network.
+	 * Utility class representing the message sent by the gossip initiator to
+	 * the gossip receiver. RequestMessage instances are serialized and sent
+	 * over the network.
 	 * 
 	 * @author lonnie
-	 *
-	 * @param <P> Top-level protocol class
+	 * 
+	 * @param <P>
+	 *            Top-level protocol class
 	 */
 	protected static class RequestMessage<P extends Protocol> implements
 	Serializable {
@@ -76,13 +80,14 @@ class SimpleRuntimeAgent<P extends Protocol> extends RuntimeAgent<P> {
 	}
 
 	/**
-	 * Utility class representing the response message sent by the gossip receiver to the 
-	 * initiator after receiving a RequestMessage. ResponseMessages are serialized and sent
-	 * over the network.
+	 * Utility class representing the response message sent by the gossip
+	 * receiver to the initiator after receiving a RequestMessage.
+	 * ResponseMessages are serialized and sent over the network.
 	 * 
 	 * @author lonnie
-	 *
-	 * @param <P> Top-level Protocol class
+	 * 
+	 * @param <P>
+	 *            Top-level Protocol class
 	 */
 	protected static class ResponseMessage<P extends Protocol> implements
 	Serializable {
@@ -116,7 +121,8 @@ class SimpleRuntimeAgent<P extends Protocol> extends RuntimeAgent<P> {
 	 * Initialize Runtime Agent, including searching for select, update, rate
 	 * annotated elements.
 	 * 
-	 * @param pclass Top-level Protocol class
+	 * @param pclass
+	 *            Top-level Protocol class
 	 * @throws CompilerException
 	 */
 	public SimpleRuntimeAgent(Class<P> pclass) throws CompilerException {
@@ -137,7 +143,8 @@ class SimpleRuntimeAgent<P extends Protocol> extends RuntimeAgent<P> {
 			Address a = dist.sample(rt.getRandom().nextLong());
 			if (rt.getAddress().equals(a)) {
 				/*
-				 * Settle down now, we don't want to start talking to ourselves...
+				 * Settle down now, we don't want to start talking to
+				 * ourselves...
 				 */
 				return null;
 			} else {
@@ -148,8 +155,6 @@ class SimpleRuntimeAgent<P extends Protocol> extends RuntimeAgent<P> {
 			}
 		}
 	}
-
-
 
 	@Override
 	public void gossip(Runtime<P> rt, P pinstance, Connection connection) {
@@ -182,11 +187,10 @@ class SimpleRuntimeAgent<P extends Protocol> extends RuntimeAgent<P> {
 
 				rt.setProtocolInstance(rpm.protocolInstance);
 
-				if(Runtime.LOGGING_CSV)
+				if (Runtime.LOGGING_CSV)
 					((BaseProtocol) rpm.protocolInstance).logstate();
 
 				rt.logJson("state", rpm.protocolInstance.getLogState());
-
 
 				// Update runtime state
 				rt.getRuntimeState().update(rpm.runtimeState);
@@ -223,6 +227,10 @@ class SimpleRuntimeAgent<P extends Protocol> extends RuntimeAgent<P> {
 			throw new CompilerException(String.format(
 					"Failure to identify protocol select for %s",
 					pclass.getName()), e);
+		} catch (InvalidSelectElement e) {
+			throw new CompilerException(e.toString(), e);
+		} catch (ConflictingSelectAnnotationsException e) {
+			throw new CompilerException(e.toString(), e);
 		}
 
 		try {
@@ -245,10 +253,13 @@ class SimpleRuntimeAgent<P extends Protocol> extends RuntimeAgent<P> {
 					"Failure to identify protocol frequency", e);
 		}
 
+		/*
 		Runtime.debug
 		.printf("SimpleRuntimeAgent processing for %s:\n   select = %s\n   update = %s\n   freq = %s\n",
 				pclass.getName(), selector, updateMethod,
 				frequencyMethod);
+				*/
+		
 	}
 
 	private void locateUpdateMethod() throws TooManyException,
@@ -305,23 +316,27 @@ class SimpleRuntimeAgent<P extends Protocol> extends RuntimeAgent<P> {
 	}
 
 	private void locateSelectMethod(Class<?> klass) throws NotFoundException,
-	TooManyException {
+	TooManyException, InvalidSelectElement, ConflictingSelectAnnotationsException {
+		/*
+		 * Search through fields and functions looking for syntactic sugar
+		 * Select annotations
+		 */
 
-		// first class functions for finding select and select uniform random
-		// annotations
-		F<AnnotatedElement, Boolean> hasSelect = FunctionalReflection
-				.<AnnotatedElement> hasAnnotation(Select.class);
-		F<AnnotatedElement, Boolean> hasSelectUniformRandom = FunctionalReflection
-				.<AnnotatedElement> hasAnnotation(SelectUniformRandom.class);
+		// first class function that tells us if an AnnotatedElement has any of the registered select annotations
+		F<AnnotatedElement, Boolean> hasSelectAnnotation1 = Functional
+				.<F<AnnotatedElement, Boolean>> foldl(Functional
+						.<AnnotatedElement> or1(), Functional.map(
+								Selector.registeredDeciders,
+								SelectorAnnotationDecider.getAccept));
 
 		AnnotatedElement selectElement = null;
 		try {
-			// search for annotated element in the given class
+			// search for annotated element in the given class (and its ancestor
+			// classes)
 			try {
 				selectElement = Functional.findExactlyOne(
 						(Iterable<AnnotatedElement>) FunctionalReflection
-						.getAnnotatedElements(klass), Functional.or(
-								hasSelect, hasSelectUniformRandom));
+						.getAnnotatedElements(klass), hasSelectAnnotation1);
 			} catch (NotFoundException nf) {
 				Class<?> base = klass.getSuperclass();
 				if (base == null)
@@ -330,60 +345,71 @@ class SimpleRuntimeAgent<P extends Protocol> extends RuntimeAgent<P> {
 					locateSelectMethod(base);
 			}
 		} catch (TooManyException e) {
-			// we found too many. sort them by order of declaring class w.r.t.
+			// we found more than one annotated element!
+			// sort them by order of declaring class w.r.t.
 			// inheritance hierarchy
+
+			// get all of the annotated elements
 			@SuppressWarnings({ "unchecked", "rawtypes" })
 			List<AnnotatedElement> options = (List) e.getOptions();
+
+			// group annotated elements by declaring class
 			HashMap<Class<?>, List<AnnotatedElement>> groups = Functional
 					.groupBy(options, FunctionalReflection
 							.<AnnotatedElement> getOriginatingClass());
+
+			// rearrange grouping map as a list of key,value pairs
 			List<P2<Class<?>, List<AnnotatedElement>>> items = Functional
 					.items(groups);
+
+			// sort by subclass relation
 			Collections.sort(items, Functional
 					.pcomparator(FunctionalReflection.subclassComparator));
+
+			// get elements of the least class (i.e., the farthest descendant
+			// subtype)
 			List<AnnotatedElement> elements = items.get(0)._2();
+
 			if (elements.size() > 1)
+				// More than one declared select element in this class!
 				throw new TooManyException(Functional.mapcast(elements));
 			else {
+				// Great, we decided on exactly one!
 				selectElement = elements.get(0);
 			}
 		}
 
-		if (hasSelect.f(selectElement)
-				&& !hasSelectUniformRandom.f(selectElement)) {
-			if (selectElement instanceof Method) {
-				selector = new SelectMethodSelector<P>((Method) selectElement);
-			} else if (selectElement instanceof Field) {
-				selector = new SelectFieldSelector<P>((Field) selectElement);
-			} else {
-				throw new RuntimeException(
-						"Select annotation attached to invalid entity");
+		final AnnotatedElement temp = selectElement;
+
+		// Which Selectors accept this element?
+		List<SelectorAnnotationDecider> acceptingDeciders = Functional.list(Functional.filter(Selector.registeredDeciders, new F<SelectorAnnotationDecider,Boolean>() {
+			@Override
+			public Boolean f(SelectorAnnotationDecider d) {
+				return d.accept(temp);
 			}
-		} else if (!hasSelect.f(selectElement)
-				&& hasSelectUniformRandom.f(selectElement)) {
-			if (selectElement instanceof Field) {
-				selector = new UniformRandomCollectionFieldSelector<P>(
-						(Field) selectElement);
-			} else {
-				throw new RuntimeException(
-						"Select annotation attached to invalid entity");
-			}
-		} else {
-			throw new TooManyException(
-					String.format("Element has multiple select annotations %s",
-							selectElement)); // two annotations on the same
-			// element
+		}));
+
+		switch(acceptingDeciders.size()) {
+		case 0:
+			throw new RuntimeException("Something has gone horribly wrong. Even though a decider chose this selectElement earlier, no deciders now accept it!");
+		case 1:
+			selector = acceptingDeciders.get(0).getSelector(selectElement);
+			break;
+		default:
+			throw new ConflictingSelectAnnotationsException(selectElement);
 		}
 
 	}
 
 	/**
-	 * Callback executed when a gossip request arrives.
-	 * Deserializes a RequestMessage from the incoming connection and  
-	 * sends back  a ResponseMessage.
+	 * Callback executed when a gossip request arrives. Deserializes a
+	 * RequestMessage from the incoming connection and sends back a
+	 * ResponseMessage.
 	 * 
-	 * @param runtime Current Runtime
-	 * @param pinstance Protocol instance 
+	 * @param runtime
+	 *            Current Runtime
+	 * @param pinstance
+	 *            Protocol instance
 	 * @param connection
 	 * @throws IOException
 	 */
@@ -434,9 +460,12 @@ class SimpleRuntimeAgent<P extends Protocol> extends RuntimeAgent<P> {
 	/**
 	 * Executes the gossip update function on two local instances.
 	 * 
-	 * @param runtime Current runtime
-	 * @param pinit Initiating instance
-	 * @param precv Receiving instance
+	 * @param runtime
+	 *            Current runtime
+	 * @param pinit
+	 *            Initiating instance
+	 * @param precv
+	 *            Receiving instance
 	 */
 	private void runGossipUpdate(Runtime<?> runtime, P pinit, P precv) {
 		// imperative update of p1 and p2 states
@@ -450,7 +479,7 @@ class SimpleRuntimeAgent<P extends Protocol> extends RuntimeAgent<P> {
 			Throwable tgt = e.getTargetException();
 			if (tgt instanceof RuntimeException)
 				throw (RuntimeException) tgt;
-			else {					
+			else {
 				throw new RuntimeException(e); // shouldn't happen --- update
 				// doesn't declare any
 				// exceptions; anything
@@ -506,6 +535,5 @@ class SimpleRuntimeAgent<P extends Protocol> extends RuntimeAgent<P> {
 		// TODO add hook for user defined connect error handlers
 
 	}
-
 
 }

@@ -70,9 +70,6 @@ public class TestHarness<Q extends Protocol> {
 		@Parameter(names = "-graphType", description = "Type of communication graph to use. Valid options: random, complete")
 		public String graphType = "random";
 		
-		@Parameter(names = "-seed", description = "Random seed (long int)")
-		public long randomSeed = SimpleRuntime.DEFAULT_RANDOM_SEED;
-		
 	}
 
 
@@ -132,7 +129,7 @@ public class TestHarness<Q extends Protocol> {
 
 		List<Runtime<Q>> runtimes = Functional.list();
 
-		Runtime.log(String.format("-,-,-,init_experiment,round_ms=%d nodes=%d seed=%d",getOptions().roundLength, n, getOptions().randomSeed));
+		Runtime.log(String.format("-,-,-,init_experiment,round_ms=%d nodes=%d seed=%d",getOptions().roundLength, n, getOptions().seed));
 		
 		running = true;
 
@@ -149,12 +146,12 @@ public class TestHarness<Q extends Protocol> {
 			List<Address> neighbors = Functional.list(Functional.map(
 					neighborsFunc.f(i), addressFunc));
 			Q pinstance = createNodeFunc.f(i, address, neighbors);
-			Runtime<Q> rt = SimpleRuntime.launchDaemon(pinstance, address, getOptions().roundLength, getOptions().randomSeed);
+			Runtime<Q> rt = SimpleRuntime.launchDaemon(pinstance, address, getOptions().roundLength, getOptions().seed);
 			
 			rt.logJson("runtime-init", Functional.<String,Object>mapFromPairs(
 					"n", n,
 					"round_ms", getOptions().roundLength,
-					"random_seed", getOptions().randomSeed
+					"random_seed", getOptions().seed
 					));					
 		}
 
