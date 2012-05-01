@@ -178,8 +178,7 @@ AcceptConnectionHandler {
 							getProtocolInstance(), rng.nextDouble());
 
 					Runtime.debug.printf("%s select %s\n", this, partner);
-
-					logJson("select", String.format("%s",partner));					
+					logJson("select", String.format("%s",partner));
 
 					try {
 						getProtocolInstance().preUpdate(partner);
@@ -198,7 +197,7 @@ AcceptConnectionHandler {
 						connection = partner.openConnection();
 					} catch(ConnectException ce) {
 						agent.handleConnectException(this, pinstance, partner,ce);
-						lock.unlock();
+                        lock.unlock();
 						continue;
 					}
 
