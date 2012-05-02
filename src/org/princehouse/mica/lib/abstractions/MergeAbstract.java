@@ -84,11 +84,6 @@ public abstract class MergeAbstract extends BaseProtocol {
 		p2 = null;
 	}
 
-	@Override
-	public void logstate() {
-		((BaseProtocol) p1).logstate();
-		((BaseProtocol) p2).logstate();
-	}
 
 
 	/**
@@ -166,12 +161,6 @@ public abstract class MergeAbstract extends BaseProtocol {
 	 */
 	public abstract MergeSelectionCase decideSelectionCase(Address x, Random rng);
 	
-	@Override
-	public String getName() {
-		return String.format("merge(%s || %s)", ((BaseProtocol) p1).getName(),
-				((BaseProtocol) p2).getName());
-	}
-
-
+	
 	private static final long serialVersionUID = 1L;
 }

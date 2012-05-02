@@ -61,8 +61,4 @@ public class FindMinPullWeighted extends BaseProtocol implements Serializable {
 		x = temp;
 	}
 		
-	@Override public String getStateString() {
-		return String.format("%d", x);
-	}
-
 }

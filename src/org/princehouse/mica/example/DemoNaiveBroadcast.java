@@ -90,7 +90,6 @@ public class DemoNaiveBroadcast{
 			// Create a static overlay to bootstrap our set of neighbors
 			Overlay bootstrapView = new StaticOverlay(neighbors);
 			StringBroadcast bc = new StringBroadcast(bootstrapView);
-			bc.setName(String.format("broadcast-%d",i));
 			return bc;
 		}
 	};

@@ -106,8 +106,8 @@ public class MergeCorrelated extends MergeAbstract {
 
 		if (a < 1e-5 && b < 1e-5) {
 			System.err
-					.printf("Broken component distribution diagnostic for x=%s: d1=%s %s, d2=%s %s\n",
-							x, a, (d1.containsKey(x) ? "" : "(MISSING)"), b,
+					.printf("Broken component distribution diagnostic for x=%s: p1=%s=%s %s, p2=d2=%s %s\n",
+							x, getP1().getClass(), a, (d1.containsKey(x) ? "" : "(MISSING)"), getP2().getClass(), b,
 							(d2.containsKey(x) ? "" : "(MISSING)"));
 			d1.dump(System.err);
 			d2.dump(System.err);

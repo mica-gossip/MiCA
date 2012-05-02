@@ -46,15 +46,6 @@ public class TreeCountNodes extends Aggregator<TreeCountNodes, Integer, Integer>
 		return getAggregate();
 	}
 	
-	
-	@Override
-	public String getStateString() {
-		String tmp = "";
-		for(Address c : tree.getChildren()) {
-			tmp += String.format("%s=%s ",c, getSummary(c));
-		}
-		return String.format("subtree-size:%d   child subtrees: %s",getSubtreeSize(), tmp);
-	}
 
 	@Override
 	public Integer computeSummary(TreeCountNodes child) {

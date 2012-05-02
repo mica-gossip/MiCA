@@ -112,23 +112,21 @@ public class TestHarness<Q extends Protocol> {
 
 
 	public List<Runtime<Q>> launchProtocol(int n,
-			F3<Integer, Address, List<Address>, Q> createNodeFunc,
+			ProtocolInstanceFactory<Q> factory,
 			TestHarnessGraph g,
 			F<Integer, Address> addressFunc) {
 
-		return launchProtocol(n, createNodeFunc, g.getNeighbors(), addressFunc);
+		return launchProtocol(n, factory, g.getNeighbors(), addressFunc);
 	}
 
 
 	public List<Runtime<Q>> launchProtocol(final int n,
-			F3<Integer, Address, List<Address>, Q> createNodeFunc,
+			ProtocolInstanceFactory<Q> factory,
 			F<Integer, List<Integer>> neighborsFunc,
 			F<Integer, Address> addressFunc) {
 
 		List<Runtime<Q>> runtimes = Functional.list();
-
-		Runtime.log(String.format("-,-,-,init_experiment,round_ms=%d nodes=%d seed=%d",getOptions().roundLength, n, getOptions().seed));
-
+	
 		running = true;
 
 		launchTimers();
@@ -143,14 +141,13 @@ public class TestHarness<Q extends Protocol> {
 			Address address = addressFunc.f(i);
 			List<Address> neighbors = Functional.list(Functional.map(
 					neighborsFunc.f(i), addressFunc));
-			Q pinstance = createNodeFunc.f(i, address, neighbors);
+			//Q pinstance = createNodeFunc.f(i, address, neighbors);
+			Q pinstance = factory.createProtocolInstance(i, address, neighbors);
 			Runtime<Q> rt = SimpleRuntime.launchDaemon(pinstance, address, getOptions().roundLength, getOptions().seed);
 
-			rt.logJson("runtime-init", Functional.<String,Object>mapFromPairs(
-					"n", n,
-					"round_ms", getOptions().roundLength,
-					"random_seed", getOptions().seed
-					));					
+			runtimes.add(rt);
+			
+			
 		}
 
 		return runtimes;
@@ -169,15 +166,15 @@ public class TestHarness<Q extends Protocol> {
 
 
 	public List<Runtime<Q>> launchProtocolRandomGraph(int n, int degree,
-			F3<Integer, Address, List<Address>, Q> createNodeFunc) {
+			ProtocolInstanceFactory<Q> factory) {
 		return launchProtocol(n, 
-				createNodeFunc, 
+				factory, 
 				new RandomGraph(n, degree, rng),
 				defaultAddressFunc);
 	}
 
-	public List<Runtime<Q>> launchProtocolCompleteGraph(int n, F3<Integer, Address, List<Address>, Q> createNodeFunc) {
-		return launchProtocol(n, createNodeFunc, new CompleteGraph(n), defaultAddressFunc);
+	public List<Runtime<Q>> launchProtocolCompleteGraph(int n, ProtocolInstanceFactory<Q> factory) {
+		return launchProtocol(n, factory, new CompleteGraph(n), defaultAddressFunc);
 	}
 
 	private List<Runtime<Q>> runtimes;
@@ -188,12 +185,12 @@ public class TestHarness<Q extends Protocol> {
 	}
 
 	public void runGraph(int n, 
-			F3<Integer, Address, List<Address>, Q> createNodeFunc,
+			ProtocolInstanceFactory<Q> factory,
 			TestHarnessGraph graph,
 			F<Integer,Address> addressFunc
 			) {
 
-		runtimes = launchProtocol(n, createNodeFunc, graph, addressFunc);
+		runtimes = launchProtocol(n, factory, graph, addressFunc);
 
 		// wait for interrupt
 		try {
@@ -225,12 +222,38 @@ public class TestHarness<Q extends Protocol> {
 		stopRuntimes();
 	}
 
+	/**
+	 * Implementations of this interface create protocol instances for the TestHarness
+	 * 
+	 * @author lonnie
+	 *
+	 * @param <Q>
+	 */
+	public static interface ProtocolInstanceFactory<Q extends Protocol> {
+		public Q createProtocolInstance(int nodeId, Address address, List<Address> view);		
+	};
+	
+	// backwards compatibility method; do not use
+	public static <R extends Protocol> ProtocolInstanceFactory<R> factoryFromCNF(final F3<Integer, Address, List<Address>, R> createNodeFunc) {
+		return new ProtocolInstanceFactory<R>() {
+			@Override
+			public R createProtocolInstance(int nodeId, Address address,
+					List<Address> view) {
+				return createNodeFunc.f(nodeId, address, view);
+			}
+		};
+	}
+	
+	// backwards compatibility
 	public static <ProtocolClass extends Protocol> void main(String[] argv, F3<Integer, Address, List<Address>, ProtocolClass> createNodeFunc) {
-		TestHarness<ProtocolClass> harness = new TestHarness<ProtocolClass>();
-		harness.runMain(argv, createNodeFunc);
+		TestHarness.main(argv, TestHarness.factoryFromCNF(createNodeFunc));
 	}
 
-
+	public static <ProtocolClass extends Protocol> void main(String[] argv, ProtocolInstanceFactory<ProtocolClass> factory) {
+		TestHarness<ProtocolClass> harness = new TestHarness<ProtocolClass>();
+		harness.runMain(argv, factory);
+	}
+	
 	public TestHarnessOptions defaultOptions() {
 		return new TestHarnessOptions();
 	}
@@ -240,11 +263,16 @@ public class TestHarness<Q extends Protocol> {
 		new JCommander(options, argv); // parse command line options
 		return options;
 	}
-	public void runMain(String[] argv, F3<Integer, Address, List<Address>, Q> createNodeFunc) {
+	
+	public void runMain(String[] argv, ProtocolInstanceFactory<Q> factory) {
 		TestHarnessOptions options = parseOptions(argv);
-		runMain(options, createNodeFunc);
+		runMain(options, factory);
 	}
 
+	public void runMain(String[] argv, F3<Integer, Address, List<Address>, Q> createNodeFunc) {
+		runMain(argv, TestHarness.factoryFromCNF(createNodeFunc));
+	}
+	
 	/**
 	 * Instantiate nodes and create RunTime instances. 
 	 * 
@@ -255,10 +283,10 @@ public class TestHarness<Q extends Protocol> {
 	 * @param createNodeFunc
 	 */
 	public void runRandomGraph(long seed, int n, int nodeDegree,
-			F3<Integer, Address, List<Address>, Q> createNodeFunc) {
+			ProtocolInstanceFactory<Q> factory) {
 		rng = new Random(seed);
 		TestHarnessGraph graph = new RandomGraph(n,nodeDegree,rng);
-		runGraph(n, createNodeFunc, graph, defaultAddressFunc);
+		runGraph(n, factory, graph, defaultAddressFunc);
 	}
 
 	private TestHarnessGraph graph = null;
@@ -326,7 +354,7 @@ public class TestHarness<Q extends Protocol> {
 		}
 	}
 
-	public void runMain(TestHarnessOptions options, F3<Integer, Address, List<Address>, Q> createNodeFunc) {
+	public void runMain(TestHarnessOptions options, ProtocolInstanceFactory<Q> factory) {
 		assert(options != null);
 		setOptions(options);
 		//SimpleRuntime.DEFAULT_INTERVAL = (int) options.roundLength;
@@ -339,7 +367,7 @@ public class TestHarness<Q extends Protocol> {
 		}
 
 		runGraph(getOptions().n, 
-				createNodeFunc, 
+				factory, 
 				graph,
 				defaultAddressFunc);
 	}

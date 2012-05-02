@@ -4,6 +4,7 @@ package org.princehouse.mica.lib.abstractions;
 import java.io.Serializable;
 import java.util.Collection;
 
+import org.princehouse.mica.base.model.RuntimeState;
 import org.princehouse.mica.base.net.model.Address;
 import org.princehouse.mica.util.Distribution;
 
@@ -29,7 +30,7 @@ public interface RootedTree extends TreeOverlay {
 			this.tree = t;
 		}
 		@Override
-		public Distribution<Address> getView() {
+		public Distribution<Address> getView(RuntimeState rts) {
 			return Distribution.uniform(tree.getChildren());
 		}
 	}

@@ -73,8 +73,5 @@ public class TreeLabelNodes extends BaseProtocol {
 		}
 	} 
 
-	@Override
-	public String getStateString() {
-		return String.format("label:%d",getLabel());
-	}
+	
 }

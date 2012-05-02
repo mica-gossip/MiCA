@@ -38,16 +38,12 @@ public class TestStack3 extends TestHarness<MergeIndependent> {
 				Overlay view = new StaticOverlay(neighbors);
 
 				MinAddressLeaderElection leaderElection = new MinAddressLeaderElection(view);
-				leaderElection.setName(String.format("leader-%d",i));
 
 				SpanningTreeOverlay tree = new SpanningTreeOverlay(leaderElection,view);
-				tree.setName(String.format("tree-%d",i));
 
 				TreeCountNodes counting = new TreeCountNodes(tree);
-				counting.setName(String.format("count-%d",i));
 
 				TreeLabelNodes labeling = new TreeLabelNodes(tree,counting);
-				labeling.setName(String.format("label-%d",i));
 
 				return MergeIndependent.merge(
 						MergeIndependent.merge(

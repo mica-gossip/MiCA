@@ -11,6 +11,7 @@ import org.princehouse.mica.base.annotations.Select;
 import org.princehouse.mica.base.annotations.SelectUniformRandom;
 import org.princehouse.mica.base.model.Protocol;
 import org.princehouse.mica.base.model.Runtime;
+import org.princehouse.mica.base.model.RuntimeState;
 import org.princehouse.mica.base.net.model.Address;
 import org.princehouse.mica.lib.abstractions.Overlay;
 import org.princehouse.mica.util.Distribution;
@@ -26,7 +27,7 @@ public abstract class Selector<Q extends Protocol> {
 	
 	// Utility methods for selecting from various different data types
 	@SuppressWarnings("unchecked")
-	public static Distribution<Address> asDistribution(Object obj) throws SelectException  {
+	public static Distribution<Address> asDistribution(Object obj, RuntimeState rts) throws SelectException  {
 		if(obj instanceof Distribution) {
 			return (Distribution<Address>) obj;
 		} else if(obj instanceof Protocol) {
@@ -34,7 +35,7 @@ public abstract class Selector<Q extends Protocol> {
 		} else if(obj instanceof Collection) {
 			return Distribution.uniform((Collection<Address>)obj);
 		} else if(obj instanceof Overlay) {
-			return ((Overlay)obj).getView();
+			return ((Overlay)obj).getView(rts);
 		} else if(obj instanceof Address) {
 			return Distribution.singleton((Address)obj);
 		} else {
@@ -43,12 +44,12 @@ public abstract class Selector<Q extends Protocol> {
 	}
 	
 	@SuppressWarnings("unchecked")
-	protected static Collection<Address> getCollectionFromValue(Object value) {
+	protected static Collection<Address> getCollectionFromValue(Object value, RuntimeState rts) {
 		if(value instanceof Collection) {
 			// TODO add sanity check for addresses
 			return (Collection<Address>) value;
 		} else if(value instanceof Overlay) {
-			Distribution<Address> dist = ((Overlay)value).getView();
+			Distribution<Address> dist = ((Overlay)value).getView(rts);
 			return dist.keySet();
 		} else {
 			throw new RuntimeException(String.format("Don't know how to extract view from %s instance", value.getClass().getName()));

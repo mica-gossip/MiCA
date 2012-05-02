@@ -58,8 +58,5 @@ public class MinAddressLeaderElection extends BaseProtocol implements LeaderElec
 		}
 	}
 
-	@Override
-	public String getStateString() {
-		return String.format("%s,",getLeader());
-	}
+	
 }

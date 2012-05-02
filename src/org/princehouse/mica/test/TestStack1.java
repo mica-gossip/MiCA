@@ -37,9 +37,8 @@ public class TestStack1 extends TestHarness<MergeIndependent> {
 				Overlay view = new StaticOverlay(neighbors);
 				
 				MinAddressLeaderElection leaderElection = new MinAddressLeaderElection(view);
-				leaderElection.setName(String.format("leader-%d",i));
 				
-				Protocol tree = new SpanningTreeOverlay(leaderElection,view).setName(String.format("tree-%d",i));
+				Protocol tree = new SpanningTreeOverlay(leaderElection,view);
 				
 				return new MergeIndependent(
 						leaderElection,
