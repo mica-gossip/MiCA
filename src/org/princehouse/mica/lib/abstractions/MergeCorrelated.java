@@ -89,63 +89,6 @@ public class MergeCorrelated extends MergeAbstract {
 	
 	/**
 	 * 
-<<<<<<< HEAD
-	 * @that
-	 */
-	@GossipUpdate
-	public void update(MergeCorrelated that) {
-		logJson("update-select-case",getAddress().toString() + ">>" + getSubProtocolGossipCase().toString());
-
-		switch (getSubProtocolGossipCase()) {
-		case P1:
-			// only protocol 1 gossips
-			p1.executeUpdate(that.p1);
-			logCsv("merge-update,p1");
-			logJson("merge-update", "p1");
-			break;
-		case P2:
-			// only protocol 2 gossips
-			p2.executeUpdate(that.p2);
-			logCsv("merge-update,p1");
-			logJson("merge-update", "p2");
-			break;
-		case BOTH:
-			// both protocols gossip
-			logCsv("merge-update,both");
-			logJson("merge-update","both");
-			p1.executeUpdate(that.p1);
-			p2.executeUpdate(that.p2);
-			break;
-		case NA:
-			throw new RuntimeException("Merge error: No selection choice! Did you override preUpdate and forget to call super()?");
-		}
-	}
-
-	/**
-	 * Note: If preUpdate is overridden and this super method never called, merge will break
-	 */
-	@Override
-	public void preUpdate(Address selected) {
-		setSubProtocolGossipCase(decideSelectionCase(selected, getRuntimeState().getRandom()));
-		logJson("preUpdate-select-case",getSubProtocolGossipCase());
-		switch(getSubProtocolGossipCase()) {
-		case P1:
-			getP1().preUpdate(selected);
-			break;
-		case P2:
-			getP2().preUpdate(selected);
-			break;
-		case BOTH:
-			getP1().preUpdate(selected);
-			getP2().preUpdate(selected);
-			break;
-		case NA:
-			throw new RuntimeException("subProtocolGossipCase is NA, which should be impossible");
-		}
-
-		Distribution<Address> d1 = p1.getSelectDistribution();
-		Distribution<Address> d2 = p2.getSelectDistribution();
-=======
 	 * @param x  Gossip partner chosen by the runtime
 	 * @param rng Random number generator
 	 * @return
@@ -154,7 +97,6 @@ public class MergeCorrelated extends MergeAbstract {
 	public MergeSelectionCase decideSelectionCase(Address x, Random rng) {
 		Distribution<Address> d1 = getP1().getSelectDistribution();
 		Distribution<Address> d2 = getP2().getSelectDistribution();
->>>>>>> 97138beb038474990c6eaae7c23ad15eb5cf2e66
 
 		d1 = d1.copynormalize();
 		d2 = d2.copynormalize();
