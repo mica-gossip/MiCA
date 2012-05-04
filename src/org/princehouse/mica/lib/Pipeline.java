@@ -1,6 +1,7 @@
 package org.princehouse.mica.lib;
 
 import java.util.LinkedList;
+import java.util.List;
 
 import org.princehouse.mica.base.BaseProtocol;
 import org.princehouse.mica.base.annotations.GossipRate;
@@ -8,6 +9,7 @@ import org.princehouse.mica.base.annotations.GossipUpdate;
 import org.princehouse.mica.base.annotations.Select;
 import org.princehouse.mica.base.model.Protocol;
 import org.princehouse.mica.base.net.model.Address;
+import org.princehouse.mica.lib.abstractions.MergeCorrelated;
 import org.princehouse.mica.util.Distribution;
 
 public class Pipeline<P extends Protocol> extends BaseProtocol {
@@ -51,25 +53,22 @@ public class Pipeline<P extends Protocol> extends BaseProtocol {
 
 	@Select
 	public Distribution<Address> select() {
-		// FIXME this only works if all protocols have the same distribution!!
-		return pipe.get(0).getSelectDistribution();
+		return buildMerge().getSelectDistribution();
 	}
 	
 	@GossipUpdate
 	public void update(Pipeline<P> that) {
-		// execute update for every pair of local/remote protocols in the pipeline
-		for(int i = 0; i < k; i++) {
-			this.pipe.get(i).executeUpdate(that.pipe.get(i));
-		}
-		// destroy the oldest; create the newest
-		P eldest = pipe.poll();
-		factory.destroyProtocol(eldest);		
-		pipe.add(factory.createProtocol());
+		buildMerge().executeUpdate(that.buildMerge());
+	}
+	
+	@SuppressWarnings("unchecked")
+	private Protocol buildMerge() {
+		// merge together everything in the pipeline!
+		return MergeCorrelated.merge( (List<Protocol>) pipe);	
 	}
 	
 	@GossipRate
 	public double rate() {
-		// FIXME assumes all have the same frequency
-		return pipe.get(0).getFrequency();
+		return buildMerge().getFrequency();
 	}
 }

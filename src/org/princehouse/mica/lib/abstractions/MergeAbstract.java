@@ -7,6 +7,7 @@ import org.princehouse.mica.base.annotations.GossipUpdate;
 import org.princehouse.mica.base.model.Protocol;
 import org.princehouse.mica.base.net.model.Address;
 
+// FIXME shares other than 0.5 not implemented!!
 /**
  * Merge two protocols in such a way that the composite protocol gossips both
  * subprotocols to the same target peer as frequently as possible, while still
@@ -20,6 +21,28 @@ import org.princehouse.mica.base.net.model.Address;
 public abstract class MergeAbstract extends BaseProtocol {
 
 	private Protocol p1;
+	
+	private double p1share = 0.5;
+	
+	public double getShare1() {
+		return p1share;
+	}
+
+	public void setShare1(double p1share) {
+		this.p1share = p1share;
+		this.p2share = (1.0 - p1share);
+	}
+
+	public double getShare2() {
+		return p2share;
+	}
+
+	public void setShare2(double p2share) {
+		this.p2share = p2share;
+		this.p1share = (1.0 - p1share);
+	}
+
+	private double p2share = 0.5;
 	
 	private MergeSelectionCase subProtocolGossipCase = MergeSelectionCase.NA;
 	
@@ -75,13 +98,17 @@ public abstract class MergeAbstract extends BaseProtocol {
 	 * @param p2 Second subprotocol
 	 */
 	public MergeAbstract(Protocol p1, Protocol p2) {
-		this.p1 = p1;
-		this.p2 = p2;
+		this(p1,p2,0.5);
+	}
+
+	public MergeAbstract(Protocol p1, Protocol p2, double p1share) {
+		setP1(p1);
+		setP2(p2);
+		setShare1(p1share);
 	}
 
 	public MergeAbstract() {
-		p1 = null;
-		p2 = null;
+		this(null, null);
 	}
 
 

@@ -2,6 +2,7 @@ package org.princehouse.mica.lib.abstractions;
 
 import static org.princehouse.mica.util.Randomness.weightedChoice;
 
+import java.util.List;
 import java.util.Random;
 
 import org.princehouse.mica.base.annotations.GossipRate;
@@ -9,6 +10,7 @@ import org.princehouse.mica.base.annotations.Select;
 import org.princehouse.mica.base.model.Protocol;
 import org.princehouse.mica.base.net.model.Address;
 import org.princehouse.mica.util.Distribution;
+import org.princehouse.mica.util.Functional;
 
 import fj.F2;
 
@@ -31,6 +33,10 @@ public class MergeCorrelated extends MergeAbstract {
 	 */
 	public MergeCorrelated(Protocol p1, Protocol p2) {
 		super(p1,p2);
+	}
+	
+	public MergeCorrelated(Protocol p1, Protocol p2, double p1share) {
+		super(p1,p2,p1share);
 	}
 
 	public MergeCorrelated() {
@@ -145,6 +151,32 @@ public class MergeCorrelated extends MergeAbstract {
 	public static MergeCorrelated merge(Protocol p1, Protocol p2) {
 		return new MergeCorrelated(p1, p2);
 	}
+	
+	public static MergeCorrelated merge(Protocol p1, Protocol p2, double p1share) {
+		return new MergeCorrelated(p1, p2, p1share);
+	}
 
+	public static Protocol merge(List<Protocol> plist) {
+		// build a balanced tree of merges
+		int n = plist.size();			
+		if(n == 1) {
+			return plist.get(0);
+		}
+		else if(n == 2) {
+			return merge(plist.get(0), plist.get(1));
+		}
+		else if(n % 2 == 0) {
+			List<Protocol> left = Functional.<Protocol>sublist(plist, 0, n/2);
+			List<Protocol> right = Functional.<Protocol>sublist(plist, n/2, n);
+			return merge(merge(left), merge(right));
+		}
+		else { // n is odd, n >= 3
+			List<Protocol> left = Functional.<Protocol>sublist(plist, 0, n/2);
+			List<Protocol> right = Functional.<Protocol>sublist(plist, n/2, n); // odd length
+			return merge(merge(left), merge(right), ((double)left.size()) / ((double)plist.size())); // balance the shares
+		}
+		
+	}
+	
 	private static final long serialVersionUID = 1L;
 }

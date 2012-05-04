@@ -16,6 +16,8 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
+import org.princehouse.mica.base.model.Protocol;
+
 import fj.Effect;
 import fj.F;
 import fj.F2;
@@ -591,6 +593,23 @@ public class Functional {
 		for(int i = 0; i < n; i++) {
 			temp.add(i);
 		}
+		return temp;
+	}
+
+	/**
+	 * Return a sub-list from [start,end)
+	 * 
+	 * Creates a new list even if the sublist is the whole list
+	 * 
+	 * @param list
+	 * @param start
+	 * @param end
+	 * @return
+	 */
+	public static <T> List<T> sublist(List<T> list, int start, int end) {
+		List<T> temp = Functional.list();
+		for(int i = start; i < end; i++) 
+			temp.add(list.get(i));
 		return temp;
 	}
 }
