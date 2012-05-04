@@ -51,7 +51,7 @@ public class Pipeline<P extends Protocol> extends BaseProtocol {
 
 	@Select
 	public Distribution<Address> select() {
-		// FIXME this only works if all protocols have the same distribution
+		// FIXME this only works if all protocols have the same distribution!!
 		return pipe.get(0).getSelectDistribution();
 	}
 	

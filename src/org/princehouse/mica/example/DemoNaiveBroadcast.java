@@ -1,14 +1,12 @@
 package org.princehouse.mica.example;
 
-import java.util.List;
 import java.util.TimerTask;
 
+import org.princehouse.mica.base.model.Runtime;
 import org.princehouse.mica.base.net.model.Address;
 import org.princehouse.mica.lib.NaiveBroadcast;
 import org.princehouse.mica.lib.abstractions.Overlay;
-import org.princehouse.mica.lib.abstractions.StaticOverlay;
-import org.princehouse.mica.util.TestHarness;
-import org.princehouse.mica.base.model.Runtime;
+import org.princehouse.mica.util.harness.TestHarness;
 
 import fj.F3;
 
@@ -83,13 +81,12 @@ public class DemoNaiveBroadcast{
 	 * 
 	 * 
 	 */
-	public static F3<Integer, Address, List<Address>, StringBroadcast> createNodeFunc = new F3<Integer, Address, List<Address>, StringBroadcast>() {
+	public static F3<Integer, Address, Overlay, StringBroadcast> createNodeFunc = new F3<Integer, Address, Overlay, StringBroadcast>() {
 		@Override
 		public StringBroadcast f(Integer i, Address address,
-				List<Address> neighbors) {
+				Overlay neighbors) {
 			// Create a static overlay to bootstrap our set of neighbors
-			Overlay bootstrapView = new StaticOverlay(neighbors);
-			StringBroadcast bc = new StringBroadcast(bootstrapView);
+			StringBroadcast bc = new StringBroadcast(neighbors);
 			return bc;
 		}
 	};

@@ -1,4 +1,4 @@
-package org.princehouse.mica.util;
+package org.princehouse.mica.util.harness;
 
 import java.io.File;
 import java.io.FilenameFilter;
@@ -13,6 +13,9 @@ import org.princehouse.mica.base.model.Runtime;
 import org.princehouse.mica.base.net.model.Address;
 import org.princehouse.mica.base.net.tcpip.TCPAddress;
 import org.princehouse.mica.base.simple.SimpleRuntime;
+import org.princehouse.mica.lib.abstractions.Overlay;
+import org.princehouse.mica.util.Functional;
+import org.princehouse.mica.util.SinglyLinkedRingGraph;
 
 import com.beust.jcommander.JCommander;
 import com.beust.jcommander.Parameter;
@@ -65,7 +68,7 @@ public class TestHarness<Q extends Protocol> {
 		@Parameter(names = "-stopAfter", description = "Halt simulation after this many rounds (0 = run forever)")
 		public double stopAfter = 0;
 
-		@Parameter(names = "-graphType", description = "Type of communication graph to use. Valid options: random, complete")
+		@Parameter(names = "-graphType", description = "Type of communication graph to use. Valid options: random, complete, singlering")
 		public String graphType = "random";
 
 	}
@@ -111,19 +114,9 @@ public class TestHarness<Q extends Protocol> {
 	}
 
 
-	public List<Runtime<Q>> launchProtocol(int n,
+	public List<Runtime<Q>> launchProtocol(
 			ProtocolInstanceFactory<Q> factory,
-			TestHarnessGraph g,
-			F<Integer, Address> addressFunc) {
-
-		return launchProtocol(n, factory, g.getNeighbors(), addressFunc);
-	}
-
-
-	public List<Runtime<Q>> launchProtocol(final int n,
-			ProtocolInstanceFactory<Q> factory,
-			F<Integer, List<Integer>> neighborsFunc,
-			F<Integer, Address> addressFunc) {
+			TestHarnessGraph g) {
 
 		List<Runtime<Q>> runtimes = Functional.list();
 	
@@ -131,22 +124,24 @@ public class TestHarness<Q extends Protocol> {
 
 		launchTimers();
 
-		for (int i = 0; i < n; i++) {
+		List<Address> addresses = g.getAddresses();
+		
+		int i = 0;
+		for (Address addr : addresses) {
 			try {
 				// Stagger protocol launching by a few milliseconds
 				Thread.sleep(rng.nextInt(50));
 			} catch (InterruptedException e) {
 			}
 
-			Address address = addressFunc.f(i);
-			List<Address> neighbors = Functional.list(Functional.map(
-					neighborsFunc.f(i), addressFunc));
+			Overlay neighbors = g.getOverlay(addr);
+			
+
 			//Q pinstance = createNodeFunc.f(i, address, neighbors);
-			Q pinstance = factory.createProtocolInstance(i, address, neighbors);
-			Runtime<Q> rt = SimpleRuntime.launchDaemon(pinstance, address, getOptions().roundLength, getOptions().seed);
+			Q pinstance = factory.createProtocolInstance(i++, addr, neighbors);
+			Runtime<Q> rt = SimpleRuntime.launchDaemon(pinstance, addr, getOptions().roundLength, getOptions().seed);
 
 			runtimes.add(rt);
-			
 			
 		}
 
@@ -167,14 +162,13 @@ public class TestHarness<Q extends Protocol> {
 
 	public List<Runtime<Q>> launchProtocolRandomGraph(int n, int degree,
 			ProtocolInstanceFactory<Q> factory) {
-		return launchProtocol(n, 
+		return launchProtocol(
 				factory, 
-				new RandomGraph(n, degree, rng),
-				defaultAddressFunc);
-	}
+				new RandomGraph(n, defaultAddressFunc, degree, rng));
+		}
 
 	public List<Runtime<Q>> launchProtocolCompleteGraph(int n, ProtocolInstanceFactory<Q> factory) {
-		return launchProtocol(n, factory, new CompleteGraph(n), defaultAddressFunc);
+		return launchProtocol(factory, new CompleteGraph(n, defaultAddressFunc));
 	}
 
 	private List<Runtime<Q>> runtimes;
@@ -184,13 +178,12 @@ public class TestHarness<Q extends Protocol> {
 		return runtimes;
 	}
 
-	public void runGraph(int n, 
+	public void runGraph( 
 			ProtocolInstanceFactory<Q> factory,
-			TestHarnessGraph graph,
-			F<Integer,Address> addressFunc
+			TestHarnessGraph graph
 			) {
 
-		runtimes = launchProtocol(n, factory, graph, addressFunc);
+		runtimes = launchProtocol(factory, graph);
 
 		// wait for interrupt
 		try {
@@ -215,7 +208,6 @@ public class TestHarness<Q extends Protocol> {
 		for (Runtime<Q> rt : runtimes) {
 			rt.stop();
 		}
-
 	}
 
 	public void stop() {
@@ -230,22 +222,22 @@ public class TestHarness<Q extends Protocol> {
 	 * @param <Q>
 	 */
 	public static interface ProtocolInstanceFactory<Q extends Protocol> {
-		public Q createProtocolInstance(int nodeId, Address address, List<Address> view);		
+		public Q createProtocolInstance(int nodeId, Address address, Overlay overlay);		
 	};
 	
 	// backwards compatibility method; do not use
-	public static <R extends Protocol> ProtocolInstanceFactory<R> factoryFromCNF(final F3<Integer, Address, List<Address>, R> createNodeFunc) {
+	public static <R extends Protocol> ProtocolInstanceFactory<R> factoryFromCNF(final F3<Integer, Address, Overlay, R> createNodeFunc) {
 		return new ProtocolInstanceFactory<R>() {
 			@Override
 			public R createProtocolInstance(int nodeId, Address address,
-					List<Address> view) {
-				return createNodeFunc.f(nodeId, address, view);
+					Overlay overlay) {
+				return createNodeFunc.f(nodeId, address, overlay);
 			}
 		};
 	}
 	
 	// backwards compatibility
-	public static <ProtocolClass extends Protocol> void main(String[] argv, F3<Integer, Address, List<Address>, ProtocolClass> createNodeFunc) {
+	public static <ProtocolClass extends Protocol> void main(String[] argv, F3<Integer, Address, Overlay, ProtocolClass> createNodeFunc) {
 		TestHarness.main(argv, TestHarness.factoryFromCNF(createNodeFunc));
 	}
 
@@ -268,8 +260,11 @@ public class TestHarness<Q extends Protocol> {
 		TestHarnessOptions options = parseOptions(argv);
 		runMain(options, factory);
 	}
+	
+	
+	
 
-	public void runMain(String[] argv, F3<Integer, Address, List<Address>, Q> createNodeFunc) {
+	public void runMain(String[] argv, F3<Integer, Address, Overlay, Q> createNodeFunc) {
 		runMain(argv, TestHarness.factoryFromCNF(createNodeFunc));
 	}
 	
@@ -285,8 +280,8 @@ public class TestHarness<Q extends Protocol> {
 	public void runRandomGraph(long seed, int n, int nodeDegree,
 			ProtocolInstanceFactory<Q> factory) {
 		rng = new Random(seed);
-		TestHarnessGraph graph = new RandomGraph(n,nodeDegree,rng);
-		runGraph(n, factory, graph, defaultAddressFunc);
+		TestHarnessGraph graph = new RandomGraph(n,defaultAddressFunc, nodeDegree,rng);
+		runGraph(factory, graph);
 	}
 
 	private TestHarnessGraph graph = null;
@@ -319,11 +314,16 @@ public class TestHarness<Q extends Protocol> {
 		// initialize random number generator
 		rng = new Random(options.seed);
 
+		F<Integer,Address> addressFunc = defaultAddressFunc;
+		List<Address> addresses = Functional.list(Functional.map(Functional.range(options.n), addressFunc));
+		
 		// initialize communications graph
 		if(options.graphType.equals("random")) {
-			setGraph(new RandomGraph(options.n, options.rdegree, rng));
+			setGraph(new RandomGraph(addresses, options.rdegree, rng));
 		} else if(options.graphType.equals("complete")) {
-			setGraph(new CompleteGraph(options.n));
+			setGraph(new CompleteGraph(addresses));
+		} else if(options.graphType.equals("singlering")) {
+			setGraph(new SinglyLinkedRingGraph(addresses));
 		}
 
 		// initialize log
@@ -366,10 +366,7 @@ public class TestHarness<Q extends Protocol> {
 			throw new RuntimeException("Invalid graph.  graphType options \"complete\" and \"random\"");
 		}
 
-		runGraph(getOptions().n, 
-				factory, 
-				graph,
-				defaultAddressFunc);
+		runGraph(factory, graph);
 	}
 
 }

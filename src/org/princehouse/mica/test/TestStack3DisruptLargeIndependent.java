@@ -14,9 +14,8 @@ import org.princehouse.mica.lib.MinAddressLeaderElection;
 import org.princehouse.mica.lib.SpanningTreeOverlay;
 import org.princehouse.mica.lib.abstractions.MergeCorrelated;
 import org.princehouse.mica.lib.abstractions.Overlay;
-import org.princehouse.mica.lib.abstractions.StaticOverlay;
 import org.princehouse.mica.util.Randomness;
-import org.princehouse.mica.util.TestHarness;
+import org.princehouse.mica.util.harness.TestHarness;
 
 import fj.F3;
 
@@ -40,13 +39,10 @@ public class TestStack3DisruptLargeIndependent extends TestHarness<MergeCorrelat
 
 		SimpleRuntime.DEFAULT_INTERVAL = 5000;
 
-		F3<Integer, Address, List<Address>, MergeCorrelated> createNodeFunc = new F3<Integer, Address, List<Address>, MergeCorrelated>() {
+		F3<Integer, Address, Overlay, MergeCorrelated> createNodeFunc = new F3<Integer, Address, Overlay, MergeCorrelated>() {
 			@Override
 			public MergeCorrelated f(Integer i, Address address,
-					List<Address> neighbors) {
-
-				Overlay view = new StaticOverlay(neighbors);
-
+					Overlay view) {
 				MinAddressLeaderElection leaderElection = new MinAddressLeaderElection(view);
 			
 				SpanningTreeOverlay tree = new SpanningTreeOverlay(leaderElection,view);

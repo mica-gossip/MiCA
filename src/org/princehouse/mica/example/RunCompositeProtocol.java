@@ -1,14 +1,11 @@
 package org.princehouse.mica.example;
 
-import java.util.List;
-
 import org.princehouse.mica.base.net.model.Address;
 import org.princehouse.mica.lib.abstractions.Overlay;
-import org.princehouse.mica.lib.abstractions.StaticOverlay;
-import org.princehouse.mica.util.TestHarness;
+import org.princehouse.mica.util.harness.TestHarness;
 
 
-public class DemoCompositeProtocol {
+public class RunCompositeProtocol {
 	
 	/** 
 	 * See TestHarness.TestHarnessOptions for command line options 
@@ -18,9 +15,8 @@ public class DemoCompositeProtocol {
 		TestHarness.main(args, new TestHarness.ProtocolInstanceFactory<FourLayerTreeStack>() {
 			@Override
 			public FourLayerTreeStack createProtocolInstance(int nodeId,
-					Address address, List<Address> view) {
-				Overlay bootstrapView = new StaticOverlay(view);
-				return new FourLayerTreeStack(bootstrapView, nodeId);
+					Address address, Overlay overlay) {
+				return new FourLayerTreeStack(overlay, nodeId);
 			}
 		});
 	}

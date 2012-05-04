@@ -585,4 +585,12 @@ public class Functional {
 		}
 		return temp;
 	}
+
+	public static Iterable<Integer> range(Integer n) {
+		List<Integer> temp = list();
+		for(int i = 0; i < n; i++) {
+			temp.add(i);
+		}
+		return temp;
+	}
 }
