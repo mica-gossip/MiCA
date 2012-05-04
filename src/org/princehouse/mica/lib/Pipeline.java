@@ -32,6 +32,14 @@ public class Pipeline<P extends Protocol> extends BaseProtocol {
 	private static final long serialVersionUID = -3286147351797635135L;
 	
 	private int k;
+	public int getK() {
+		return k;
+	}
+
+	public void setK(int k) {
+		this.k = k;
+	}
+
 	private ProtocolFactory<P> factory = null;
 	private LinkedList<P> pipe = new LinkedList<P>();
 	
@@ -51,16 +59,63 @@ public class Pipeline<P extends Protocol> extends BaseProtocol {
 		}
 	}
 
+	private Protocol merged = null;
+	
 	@Select
 	public Distribution<Address> select() {
-		return buildMerge().getSelectDistribution();
+		return getMerged().getSelectDistribution();
+	}
+	
+	@Override
+	public void preUpdate(Address address) { 
+		getMerged().preUpdate(address);
+	}
+	
+	/**
+	 * Called when a protocol has been polled out of the pipeline
+	 * @param protocol
+	 */
+	public void retire(P protocol) {	
+	}
+	
+	private void advancePipeline() {
+		while(pipe.size() > getK()-1) {
+			retire(pipe.poll());
+		}
+		
+		while(pipe.size() < getK()) {
+			pipe.addFirst(create());
+		}
+	}
+	
+	/**
+	 * Called to create a new protocol instance to be added to the pipeline
+	 * (by default, this calls the factory method)
+	 */
+	public P create() {
+		return factory.createProtocol();
+	}
+	
+	private Protocol getMerged() {
+		if(merged == null) {
+			// advance the pipeline
+			advancePipeline();
+			merged = buildMerge();
+		}
+		return merged;
+	}
+	
+	@Override
+	public void postUpdate() {
+		getMerged().postUpdate();
+		merged = null;
 	}
 	
 	@GossipUpdate
 	public void update(Pipeline<P> that) {
-		buildMerge().executeUpdate(that.buildMerge());
+		getMerged().executeUpdate(that.buildMerge());
 	}
-	
+		
 	@SuppressWarnings("unchecked")
 	private Protocol buildMerge() {
 		// merge together everything in the pipeline!
@@ -69,6 +124,7 @@ public class Pipeline<P extends Protocol> extends BaseProtocol {
 	
 	@GossipRate
 	public double rate() {
-		return buildMerge().getFrequency();
+		merged =  buildMerge();
+		return merged.getFrequency();
 	}
 }
