@@ -2,7 +2,6 @@ package org.princehouse.mica.lib;
 
 import java.util.LinkedList;
 import java.util.List;
-
 import org.princehouse.mica.base.BaseProtocol;
 import org.princehouse.mica.base.annotations.GossipRate;
 import org.princehouse.mica.base.annotations.GossipUpdate;
@@ -12,26 +11,55 @@ import org.princehouse.mica.base.net.model.Address;
 import org.princehouse.mica.lib.abstractions.MergeCorrelated;
 import org.princehouse.mica.util.Distribution;
 
+/*
+ * The Pipeline class maintains a queue of k instances of a given protocol.
+ * 
+ * At the start of each gossip initiation, the oldest protocol instance is dequeued and a new instance queued.
+ * 
+ * Each round, the entire pipeline is merged with the MergeCorrelated operator, which builds a balanced tree of 
+ * binary merge operations.  The gossip rate, select, and update operations are derived from this merge tree.
+ * 
+ * When every protocol in the pipeline has the same select distribution, the behavior is identical to Danny Dolev's
+ * original pipeline --- the whole pipeline gossips in unison to a single selected neighbor, and the gossip rate is
+ * preserved.
+ * 
+ * However, if pipelined instances have differing select distributions, the Pipeline's gossip rate will increase 
+ * and instances will gossip individually or in smaller groups as necessary to preserve individual select distributions.
+ * 
+ * The Pipeline currently requires all Pipeline instances to be using the same k value.  Each round, the pipeline's length
+ * will be adjusted to be exactly k in length.
+ * 
+ */
+
+/**
+ * @author lonnie
+ *
+ * @param <P>
+ */
 public class Pipeline<P extends Protocol> extends BaseProtocol {
-	
-	public static abstract class ProtocolFactory<Q extends Protocol> {
-		/*
-		 * Called to create a new protocol instance for the pipeline
-		 */
-		public abstract Q createProtocol();
-	
-		/**
-		 * Called immediately before a protocol is removed from the pipeline.
-		 * Does nothing by default; you don't need to override this if you're
-		 * cool with having old protocols be garbage collected.
-		 * @param pinstance
-		 */
-		public void destroyProtocol(Q pinstance) {}
-	}
-	
 	private static final long serialVersionUID = -3286147351797635135L;
 	
+
+	/**
+	 * 
+	 * @param k  Number of instances to pipeline
+	 * @param factory Tells the pipeline how to create new protocol instances.
+	 */
+	public Pipeline(int k, ProtocolFactory<P> factory) {
+		this.k = k;
+		this.factory = factory;
+		for(int i = 0; i < k; i++) {
+			pipe.add(factory.createProtocol());
+		}
+	}
+
+
+	
+	/**
+	 * Number of instances to pipeline
+	 */
 	private int k;
+	
 	public int getK() {
 		return k;
 	}
@@ -40,7 +68,14 @@ public class Pipeline<P extends Protocol> extends BaseProtocol {
 		this.k = k;
 	}
 
+	/**
+	 * The ProtocolFactory is supplied to the Pipeline constructor. It tells the Pipeline how to create new protocol instances.
+	 */
 	private ProtocolFactory<P> factory = null;
+	
+	/**
+	 * The Pipeline queue.
+	 */
 	private LinkedList<P> pipe = new LinkedList<P>();
 	
 	public LinkedList<P> getPipe() {
@@ -49,14 +84,6 @@ public class Pipeline<P extends Protocol> extends BaseProtocol {
 
 	public void setPipe(LinkedList<P> pipe) {
 		this.pipe = pipe;
-	}
-
-	public Pipeline(int k, ProtocolFactory<P> factory) {
-		this.k = k;
-		this.factory = factory;
-		for(int i = 0; i < k; i++) {
-			pipe.add(factory.createProtocol());
-		}
 	}
 
 	private Protocol merged = null;
@@ -113,6 +140,7 @@ public class Pipeline<P extends Protocol> extends BaseProtocol {
 	
 	@GossipUpdate
 	public void update(Pipeline<P> that) {
+		// TODO handle discrepancies in pipeline sizes that could arise from inconsistent k values
 		getMerged().executeUpdate(that.buildMerge());
 	}
 		
@@ -126,5 +154,26 @@ public class Pipeline<P extends Protocol> extends BaseProtocol {
 	public double rate() {
 		merged =  buildMerge();
 		return merged.getFrequency();
+	}
+
+	/**
+	 * 
+	 * @author lonnie
+	 *
+	 * @param <Q>
+	 */
+	public static abstract class ProtocolFactory<Q extends Protocol> {
+		/*
+		 * Called to create a new protocol instance for the pipeline
+		 */
+		public abstract Q createProtocol();
+	
+		/**
+		 * Called immediately before a protocol is removed from the pipeline.
+		 * Does nothing by default; you don't need to override this if you're
+		 * cool with having old protocols be garbage collected.
+		 * @param pinstance
+		 */
+		public void destroyProtocol(Q pinstance) {}
 	}
 }

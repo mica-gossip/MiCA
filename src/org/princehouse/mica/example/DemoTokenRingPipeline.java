@@ -14,77 +14,83 @@ import org.princehouse.mica.lib.abstractions.SinglyLinkedRingOverlay;
 import org.princehouse.mica.util.harness.TestHarness;
 import org.princehouse.mica.util.harness.TestHarness.ProtocolInstanceFactory;
 
-
+/*
+ * DemoTokenRingPipeline runs a demo of pipelining the token ring protocol along a static ring. 
+ */
 public class DemoTokenRingPipeline extends TestHarness<MergeCorrelated> implements ProtocolInstanceFactory<MergeCorrelated> {
-
+	
+	/**
+	 * Called by the test harness to generate a protocol instance (i.e., pipeline + leader election) for each node.
+	 */
+	@Override
+	public MergeCorrelated createProtocolInstance(final int nodeId, Address address,
+			Overlay overlay) {
+		
+		// Number of nodes in system
+		int n = getOptions().n;
+		
+		// Leader election protocol 
+		MinAddressLeaderElection leader = new MinAddressLeaderElection(overlay);	
+		
+		// Pipeline running n copies of the ChattyTokenRing protocol
+		Pipeline<TokenRing> pipeline = new Pipeline<TokenRing>(n, new TokenRingFactory( (SinglyLinkedRingOverlay) overlay, leader,  n, nodeId));
+		
+		// Merge together the pipeline and leader election
+		return MergeCorrelated.merge(leader, pipeline);
+	}
+	
+	
+	/**
+	 * Run pipeline example with command line arguments. See TestHarness class for more details.
+	 * @param args
+	 */
 	public static void main(String[] args) {
-
 		new DemoTokenRingPipeline().runMain(args);
 	}
 
+	/**
+	 * Run the pipeline example with command line arguments. See TestHarness class for more details.
+	 * @param args
+	 */
 	public void runMain(String[] args) {
 		runMain(args,this);
 	}
 
-
+	/**
+	 * Force the test harness to generate a ring overlay
+	 */
 	@Override
 	public void processOptions() {
 		TestHarness.TestHarnessOptions options = getOptions();
 		options.graphType = "singlering";
 		super.processOptions();
 	}
-
 	
-	public static class ChattyTokenRing extends TokenRing {
+	/**
+	 * This factory is used by the pipeline to create individual token ring instances.
+	 * 
+	 * @author lonnie
+	 */
+	public static class TokenRingFactory extends Pipeline.ProtocolFactory<TokenRing> implements Serializable {
 		private static final long serialVersionUID = 1L;
-		private String msg;
-		public ChattyTokenRing(SinglyLinkedRingOverlay overlay, LeaderElection leader, NetworkSizeCounter size, String msg) {
-			super(overlay, leader, size);
-			this.msg = msg;
-		}
-		@Override
-		public void act() {
-			System.out.println(msg);
-		}
-	}
-	
-	public static class StaticNetworkSizeCounter implements NetworkSizeCounter, Serializable {
-		private static final long serialVersionUID = 1L;
-
-		public StaticNetworkSizeCounter(int n) {
-			this.n  = n;
-		}
 		
-		private int n;
-		
-		@Override
-		public int size() {
-			return n;
-		}			
-	}
-	
-	@Override
-	public MergeCorrelated createProtocolInstance(final int nodeId, Address address,
-			Overlay overlay) {
-		int n = getOptions().n;
-		MinAddressLeaderElection leader = new MinAddressLeaderElection(overlay);		
-		Pipeline<TokenRing> pipeline = new Pipeline<TokenRing>(n, new PFactory( (SinglyLinkedRingOverlay) overlay, leader,  n, nodeId));
-		
-		return MergeCorrelated.merge(leader, pipeline);
-	}
-	
-	public static class PFactory extends Pipeline.ProtocolFactory<TokenRing> implements Serializable {
-		/**
-		 * 
-		 */
-		private static final long serialVersionUID = 1L;
+		// Keep a "generation" counter for each pipeline, so we can watch progress being 
+		// made as the debug messages scroll by.
 		private int generation = 0;
+		
+		// Ring overlay to gossip along
 		private SinglyLinkedRingOverlay ring = null;
+		
+		// Number of nodes in system
 		private int n;
+		
+		// Id of the local node, for debugging
 		private int nodeId;
+		
+		// Leader election protocol
 		private LeaderElection leader;
 		
-		public PFactory(SinglyLinkedRingOverlay ring, LeaderElection leader, int n, int nodeId) {
+		public TokenRingFactory(SinglyLinkedRingOverlay ring, LeaderElection leader, int n, int nodeId) {
 			this.ring = ring;
 			this.n = n;
 			this.leader = leader;
@@ -93,9 +99,9 @@ public class DemoTokenRingPipeline extends TestHarness<MergeCorrelated> implemen
 		
 		@Override
 		public TokenRing createProtocol() {
-			NetworkSizeCounter networkSize = new StaticNetworkSizeCounter(n);
-			TokenRing tokenRing = new ChattyTokenRing(ring, leader, networkSize, String.format("[Act: Node %s gen %s]",nodeId, generation++));
-			//return MergeCorrelated.merge(tokenRing,leader);
+			NetworkSizeCounter networkSize = new DemoTokenRing.StaticNetworkSizeCounter(n);
+			// Create the token ring instance
+			TokenRing tokenRing = new DemoTokenRing.ChattyTokenRing(ring, leader, networkSize, String.format("[Act: Node %s gen %s]",nodeId, generation++));
 			return tokenRing;
 		}
 	};
