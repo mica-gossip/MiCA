@@ -3,6 +3,7 @@ package org.princehouse.mica.lib.abstractions;
 
 import java.io.Serializable;
 
+import org.princehouse.mica.base.model.RuntimeState;
 import org.princehouse.mica.base.net.model.Address;
 import org.princehouse.mica.base.simple.SelectException;
 import org.princehouse.mica.base.simple.Selector;
@@ -26,9 +27,9 @@ public class StaticOverlay implements Overlay, Serializable {
 	}
 	
 	@Override
-	public Distribution<Address> getView() {
+	public Distribution<Address> getView(RuntimeState rts) {
 		try {
-			return Selector.asDistribution(view);
+			return Selector.asDistribution(view, rts);
 		} catch (SelectException e) {
 			throw new RuntimeException(e);
 		}

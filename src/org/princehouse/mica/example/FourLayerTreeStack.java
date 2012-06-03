@@ -1,16 +1,9 @@
 package org.princehouse.mica.example;
 
-import java.util.List;
-
-import org.princehouse.mica.base.net.model.Address;
 import org.princehouse.mica.lib.MinAddressLeaderElection;
 import org.princehouse.mica.lib.SpanningTreeOverlay;
 import org.princehouse.mica.lib.abstractions.MergeCorrelated;
 import org.princehouse.mica.lib.abstractions.Overlay;
-import org.princehouse.mica.lib.abstractions.RoundRobinOverlay;
-import org.princehouse.mica.util.TestHarness;
-
-import fj.F3;
 
 /**
  * This is a merged four-protocol, self-stabilizing stack that sits on top of an
@@ -35,9 +28,8 @@ import fj.F3;
  * @author lonnie
  * 
  */
-public class DemoCompositeProtocolDeterministic extends MergeCorrelated {
+public class FourLayerTreeStack extends MergeCorrelated {
 	private static final long serialVersionUID = 1L;
-	
 	
 	// Four sub-protocols
 	private MinAddressLeaderElection leaderElection;
@@ -50,22 +42,20 @@ public class DemoCompositeProtocolDeterministic extends MergeCorrelated {
 	 * @param view An overlay instance.  StaticOverlay can be used to run on a fixed network graph.
 	 * @param nodeID A unique id used for logging.
 	 */
-	public DemoCompositeProtocolDeterministic(Overlay view, int nodeID) {
+	public FourLayerTreeStack(Overlay view, int nodeID) {
 		super();
 		
 		// Instantiate the four sub-protocols.  setName() is optional, but having named protocols makes the 
 		// logs easier to read
 		leaderElection = new MinAddressLeaderElection(view);
-		leaderElection.setName(String.format("leader-%d", nodeID));
-
+		
 		tree = new SpanningTreeOverlay(leaderElection, view);
-		tree.setName(String.format("tree-%d", nodeID));
+		
 
 		counting = new TreeCountNodes(tree);
-		counting.setName(String.format("count-%d", nodeID));
-
+		
 		labeling = new TreeLabelNodes(tree, counting);
-		labeling.setName(String.format("label-%d", nodeID));
+		
 
 		// The Merge operator merges two protocols, in order to accomodate four we merge pairs into 
 		// merged sub-protocols.
@@ -73,30 +63,5 @@ public class DemoCompositeProtocolDeterministic extends MergeCorrelated {
 		setP2(MergeCorrelated.merge(tree, counting));  // set merged protocol 2
 	}
 	
-	/** 
-	 * See TestHarness.TestHarnessOptions for command line options 
-	 * @param args
-	 */
-	public static void main(String[] args) {
-		TestHarness.main(args, createNodeFunc);
-	}
 
-	/**
-	 * This createNodeFunc is used by the test harness to create individual node instances.
-	 * 
-	 * F3 is a fancy way of creating a callable object that can be passed 
-	 * as a parameter to the test harness.  The f() function is what's important.
-	 * 
-	 * 
-	 */
-	public static F3<Integer, Address, List<Address>, DemoCompositeProtocolDeterministic> createNodeFunc = new F3<Integer, Address, List<Address>, DemoCompositeProtocolDeterministic>() {
-		@Override
-		public DemoCompositeProtocolDeterministic f(Integer i, Address address,
-				List<Address> neighbors) {
-			// Create a static overlay to bootstrap our set of neighbors
-			Overlay bootstrapView = new RoundRobinOverlay(neighbors);
-			return new DemoCompositeProtocolDeterministic(bootstrapView, i);
-		}
-	};
-	
 }

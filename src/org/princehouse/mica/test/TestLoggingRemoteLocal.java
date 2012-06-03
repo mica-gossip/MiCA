@@ -1,14 +1,11 @@
 package org.princehouse.mica.test;
 
-import java.util.List;
-
 import org.princehouse.mica.base.BaseProtocol;
 import org.princehouse.mica.base.annotations.GossipUpdate;
 import org.princehouse.mica.base.annotations.SelectUniformRandom;
 import org.princehouse.mica.base.net.model.Address;
 import org.princehouse.mica.lib.abstractions.Overlay;
-import org.princehouse.mica.lib.abstractions.StaticOverlay;
-import org.princehouse.mica.util.TestHarness;
+import org.princehouse.mica.util.harness.TestHarness;
 
 import fj.F3;
 
@@ -59,15 +56,13 @@ public class TestLoggingRemoteLocal extends BaseProtocol {
 	public static void main(String[] args) {
 		TestHarness.main(args, createNodeFunc);
 	}
-
 	
-	public static F3<Integer, Address, List<Address>, TestLoggingRemoteLocal> createNodeFunc = new F3<Integer, Address, List<Address>, TestLoggingRemoteLocal>() {
+	public static F3<Integer, Address, Overlay, TestLoggingRemoteLocal> createNodeFunc = new F3<Integer, Address, Overlay, TestLoggingRemoteLocal>() {
 		@Override
 		public TestLoggingRemoteLocal f(Integer i, Address address,
-				List<Address> neighbors) {
+				Overlay neighbors) {
 			// Create a static overlay to bootstrap our set of neighbors
-			Overlay bootstrapView = new StaticOverlay(neighbors);
-			return new TestLoggingRemoteLocal(bootstrapView);
+			return new TestLoggingRemoteLocal(neighbors);
 		}
 	};
 	

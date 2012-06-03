@@ -13,7 +13,6 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 
-import org.princehouse.mica.base.BaseProtocol;
 import org.princehouse.mica.base.annotations.GossipRate;
 import org.princehouse.mica.base.annotations.GossipUpdate;
 import org.princehouse.mica.base.model.CompilerException;
@@ -174,8 +173,7 @@ class SimpleRuntimeAgent<P extends Protocol> extends RuntimeAgent<P> {
 			try {
 				ois = new ObjectInputStream(connection.getInputStream());
 			} catch (SocketException e) {
-				((BaseProtocol) pinstance)
-				.logCsv("gossip-init-connection-failure");
+				rt.logJson(rt.getRuntimeState(pinstance).getAddress(), "gossip-init-connection-failure", null);
 				return;
 			}
 			try {
@@ -183,9 +181,6 @@ class SimpleRuntimeAgent<P extends Protocol> extends RuntimeAgent<P> {
 				ResponseMessage<P> rpm = (ResponseMessage<P>) ois.readObject();
 
 				rt.setProtocolInstance(rpm.protocolInstance);
-
-				if (Runtime.LOGGING_CSV)
-					((BaseProtocol) rpm.protocolInstance).logstate();
 
 				rt.logJson("state", rpm.protocolInstance.getLogState());
 
@@ -431,8 +426,6 @@ class SimpleRuntimeAgent<P extends Protocol> extends RuntimeAgent<P> {
 			srt.setForeignState(ois.getForeignObjectSet(), rqm.runtimeState);
 			try {
 				runGossipUpdate(runtime, p1, pinstance);
-				((BaseProtocol) pinstance).logstate();
-
 			} catch (RuntimeException e) {
 				runtime.handleUpdateException(e);
 			}
@@ -524,10 +517,7 @@ class SimpleRuntimeAgent<P extends Protocol> extends RuntimeAgent<P> {
 	@Override
 	public void handleConnectException(Runtime<?> runtime, P pinstance,
 			Address partner, ConnectException ce) {
-		((BaseProtocol) pinstance).logCsv("connect-exception,%s", partner);
-
-		// TODO add hook for user defined connect error handlers
-
+		runtime.logJson(runtime.getRuntimeState(pinstance).getAddress(), "connect-exception", partner);
 	}
 
 }

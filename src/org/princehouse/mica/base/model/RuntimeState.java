@@ -24,11 +24,28 @@ public class RuntimeState implements Serializable {
 		random = new Random();
 	}
 	
+	/**
+	 * Local round counter, represents how many times this runtime has gossiped
+	 */
+	private int round = 0;
+	
 	private Address address = null;
 	
 	public Address getAddress() {
 		return address;
 	}
+	
+	public int getRound() {
+		return round;
+	}
+	public void setRound(int round) {
+		this.round = round;
+	}
+	
+	public void incrementRound() {
+		setRound(getRound()+1);
+	}
+	
 	public void setAddress(Address address) {
 		// long tid = Thread.currentThread().getId();
 		// int hc = hashCode();

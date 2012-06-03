@@ -37,7 +37,7 @@ class SelectMethodSelector<Q extends Protocol> extends Selector<Q> {
 	public Distribution<Address> select(Runtime<?> rt, Q pinstance) throws SelectException {
 		try {
 			Object obj = method.invoke(pinstance);
-			return Selector.asDistribution(obj);
+			return Selector.asDistribution(obj, rt.getRuntimeState(pinstance));
 		} catch (IllegalArgumentException e) {
 			throw new InvalidSelectElement(Select.class, method);
 		} catch (IllegalAccessException e) {

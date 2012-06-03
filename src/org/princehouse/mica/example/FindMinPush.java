@@ -28,7 +28,6 @@ public class FindMinPush extends BaseProtocol implements Serializable {
 		this.view = view;
 	}
 	
-
 	@GossipUpdate
 	public void update(FindMinPush other) {
 		FindMinPush o = (FindMinPush) other;

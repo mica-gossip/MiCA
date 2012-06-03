@@ -1,9 +1,6 @@
 package org.princehouse.mica.test;
 
-import fj.F3;
-
 import java.net.UnknownHostException;
-import java.util.List;
 
 import org.princehouse.mica.base.net.model.Address;
 import org.princehouse.mica.example.TreeCountNodes;
@@ -12,8 +9,9 @@ import org.princehouse.mica.lib.MinAddressLeaderElection;
 import org.princehouse.mica.lib.SpanningTreeOverlay;
 import org.princehouse.mica.lib.abstractions.MergeCorrelated;
 import org.princehouse.mica.lib.abstractions.Overlay;
-import org.princehouse.mica.lib.abstractions.StaticOverlay;
-import org.princehouse.mica.util.TestHarness;
+import org.princehouse.mica.util.harness.TestHarness;
+
+import fj.F3;
 
 
 /**
@@ -29,24 +27,18 @@ public class TestStackCorr3 extends TestHarness<MergeCorrelated> {
 	 */
 	public static void main(String[] args)  {
 
-		F3<Integer, Address, List<Address>, MergeCorrelated> createNodeFunc = new F3<Integer, Address, List<Address>, MergeCorrelated>() {
+		F3<Integer, Address, Overlay, MergeCorrelated> createNodeFunc = new F3<Integer, Address, Overlay, MergeCorrelated>() {
 			@Override
 			public MergeCorrelated f(Integer i, Address address,
-					List<Address> neighbors) {
-
-				Overlay view = new StaticOverlay(neighbors);
+					Overlay view) {
 
 				MinAddressLeaderElection leaderElection = new MinAddressLeaderElection(view);
-				leaderElection.setName(String.format("leader-%d",i));
 
 				SpanningTreeOverlay tree = new SpanningTreeOverlay(leaderElection,view);
-				tree.setName(String.format("tree-%d",i));
 
 				TreeCountNodes counting = new TreeCountNodes(tree);
-				counting.setName(String.format("count-%d",i));
 
 				TreeLabelNodes labeling = new TreeLabelNodes(tree,counting);
-				labeling.setName(String.format("label-%d",i));
 
 				return MergeCorrelated.merge(
 						MergeCorrelated.merge(

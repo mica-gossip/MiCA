@@ -45,7 +45,7 @@ public class SelectFieldSelector<Q extends Protocol> extends Selector<Q> {
 		} catch (IllegalAccessException e) {
 			throw new RuntimeException(e);
 		}
-		return asDistribution(obj);
+		return asDistribution(obj, rt.getRuntimeState(pinstance));
 	}
 
 	

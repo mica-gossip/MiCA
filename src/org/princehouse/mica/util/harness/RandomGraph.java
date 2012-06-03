@@ -1,13 +1,15 @@
-package org.princehouse.mica.util;
+package org.princehouse.mica.util.harness;
 
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Random;
 import java.util.Vector;
 
+import org.princehouse.mica.base.net.model.Address;
+
 import fj.F;
 
-public class RandomGraph implements TestHarnessGraph {
+public class RandomGraph extends TestHarnessBaseGraph {
 	
 	public class Edge {
 		
@@ -26,8 +28,20 @@ public class RandomGraph implements TestHarnessGraph {
 	private Random rng;
 	
 	// only works on even degrees for the time being
-	public RandomGraph(int n, int degree, Random rng) {
+	public RandomGraph(List<Address> addresses, int degree, Random rng) {
+		super(addresses);
+		build(rng, degree);
+	}
+	
+	public RandomGraph(int n, F<Integer,Address> addressFunc, int degree, Random rng) {
+		super(n,addressFunc);
+		build(rng, degree);
+	}
+	
+	
+	private void build(Random rng, int degree) {
 		this.rng = rng;
+		int n = size();
 		edges = new Vector<Edge>();
 		// create some starting edges
 		for(int j = 0; j < degree; j+=2) 

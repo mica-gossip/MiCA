@@ -8,7 +8,6 @@ import java.util.Random;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.ReentrantLock;
 
-import org.princehouse.mica.base.BaseProtocol;
 import org.princehouse.mica.base.model.Compiler;
 import org.princehouse.mica.base.model.Protocol;
 import org.princehouse.mica.base.model.Runtime;
@@ -172,19 +171,10 @@ AcceptConnectionHandler {
 
 		Random rng = new Random(randomSeed);
 
-
-		if(Runtime.LOGGING_CSV)
-			((BaseProtocol) pinstance).logstate();
-
 		logJson("state",pinstance.getLogState());
-
-
 
 		while (running) {
 			double rate = getRate(pinstance);
-
-			if(Runtime.LOGGING_CSV)
-				((BaseProtocol) pinstance).logCsv("rate,%g",rate);
 
 			logJson("rate",rate);
 
@@ -252,13 +242,12 @@ AcceptConnectionHandler {
 						logJson("post-update-throwable", new Object[]{"postUpdate() threw throwable", t});
 					}
 
+					getRuntimeState().incrementRound();
+					
 					lock.unlock();
 				} else {
 					// failed to acquire lock within time limit; gossip again
 					// next round
-					if(Runtime.LOGGING_CSV)
-						((BaseProtocol) pinstance).logCsv("lockfail-active");
-
 					logJson("lockfail-active");
 				}
 			} catch (IOException e) {

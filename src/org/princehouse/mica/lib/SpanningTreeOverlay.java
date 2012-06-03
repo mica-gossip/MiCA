@@ -10,6 +10,7 @@ import java.util.Set;
 
 import org.princehouse.mica.base.ExternalSelectProtocol;
 import org.princehouse.mica.base.annotations.GossipUpdate;
+import org.princehouse.mica.base.model.RuntimeState;
 import org.princehouse.mica.base.net.model.Address;
 import org.princehouse.mica.lib.abstractions.LeaderElection;
 import org.princehouse.mica.lib.abstractions.Overlay;
@@ -177,7 +178,7 @@ public class SpanningTreeOverlay extends ExternalSelectProtocol implements Roote
 	}
 
 	@Override
-	public Distribution<Address> getView() {
+	public Distribution<Address> getView(RuntimeState rts) {
 		Set<Address> view = new HashSet<Address>();
 		Address parent = getParent();
 		if(parent != null)
@@ -186,14 +187,6 @@ public class SpanningTreeOverlay extends ExternalSelectProtocol implements Roote
 		return Distribution.uniform(view);
 	}
 
-	@Override
-	public String getStateString() {
-		String tmp = String.format("root=%s dist=%s parent=%s children=", isRoot(), getDistanceFromRoot(), getParent());
-		for(Address c : getChildren()) {
-			tmp += String.format("%s|",c);
-		}
-		return tmp;
-	}
 
 	@Override
 	public Overlay getChildrenAsOverlay() {

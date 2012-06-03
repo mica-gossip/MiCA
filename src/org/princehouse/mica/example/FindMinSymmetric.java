@@ -36,8 +36,4 @@ public class FindMinSymmetric extends BaseProtocol implements Serializable {
 		o.x = temp;
 	}
 
-	@Override
-	public String getStateString() {
-		return String.format("%s",x);
-	}
 }

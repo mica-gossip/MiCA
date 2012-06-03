@@ -14,6 +14,7 @@ import org.princehouse.mica.base.net.model.Address;
 import org.princehouse.mica.base.simple.SelectException;
 import org.princehouse.mica.util.ClassUtils;
 import org.princehouse.mica.util.Distribution;
+import org.princehouse.mica.util.Functional;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
@@ -46,9 +47,6 @@ public abstract class Runtime<P extends Protocol> {
 	 */
 	public abstract ReentrantLock getProtocolInstanceLock();
 
-
-	// If true, enable the "old style" .csv file logging 
-	public static boolean LOGGING_CSV = true;
 	// Enable new JSON logs
 	public static boolean LOGGING_JSON = true;
 
@@ -56,12 +54,7 @@ public abstract class Runtime<P extends Protocol> {
 	 * Universal debugging printstream.  System.err by default; adjust as necessary.
 	 */
 	public static PrintStream debug = System.out;
-
-	// Make the log thread-safe
-	private static final ReentrantLock loglock = new ReentrantLock();
-	private static long startingTimestamp = 0;
-	private static int logEventCounter = 0;
-
+	
 	private static int uidCounter = 0;
 	private static final ReentrantLock uidlock = new ReentrantLock();
 
@@ -78,7 +71,7 @@ public abstract class Runtime<P extends Protocol> {
 		return x;
 	}
 
-
+	// json log file for this runtime instance
 	private File logfile = null;
 
 	// initial value; can be changed with command line options
@@ -218,50 +211,6 @@ public abstract class Runtime<P extends Protocol> {
 		runtimeLoglock.unlock();
 	}
 
-	/*
-	 * Append a message to the local log, creating the log file if it does not exist already.
-	 * Log messages should be comma-separated fields.
-	 * 
-	 * "event_counter,timestamp," will be prepended to the supplied message.
-	 * 
-	 * @param msg Log message
-	 */
-	public static void log(String msg) {
-
-		loglock.lock();
-
-		File logfile = new File("log.csv");
-
-		long timestamp = new Date().getTime();
-		if(startingTimestamp == 0) {
-			startingTimestamp = timestamp;
-			if(logfile.exists()) {
-				logfile.delete();
-			}
-		}
-		timestamp -= startingTimestamp;
-
-		FileOutputStream fos = null;
-		try {
-			fos = new FileOutputStream(logfile, logfile.exists());
-		} catch (FileNotFoundException e) {
-			e.printStackTrace();
-			loglock.unlock();
-			return;
-		}
-		PrintStream out = new PrintStream(fos);
-		out.printf("%d,%d,",logEventCounter++,timestamp);
-		out.println(msg);
-		try {
-			fos.close();
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
-		loglock.unlock();
-	}
-
-
-
 	public abstract <T extends Protocol> RuntimeAgent<T> compile(T pinstance);
 
 	/**
@@ -281,6 +230,11 @@ public abstract class Runtime<P extends Protocol> {
 		if(logfile.exists()) {
 			logfile.delete();
 		}
+		
+		logJson("runtime-init", Functional.<String,Object>mapFromPairs(
+				"round_ms", intervalMS,
+				"random_seed", randomSeed
+				));					
 		
 		setRuntime(this);
 	};
@@ -364,7 +318,6 @@ public abstract class Runtime<P extends Protocol> {
 		if(current != null && !current.equals(rt)) { 
 			throw new RuntimeException("attempt to replace active runtime");
 		}
-
 		setRuntime(null);
 	}
 
