@@ -46,7 +46,12 @@ import org.princehouse.mica.lib.abstractions.SinglyLinkedRingOverlay;
  * ring counter-clockwise (i.e., from successor to predecessor)
  * 
  * Override act() if you want the node to do something when it has the token.
- * 
+ *
+ * Depends on several input services: 
+ *   ring, a SinglyLinkedRingOverlay
+ *   leader, a LeaderElection implementation
+ *   networkSize, a NetworkSizeCounter implementation 
+ *   
  * @author lonnie
  * 
  */
