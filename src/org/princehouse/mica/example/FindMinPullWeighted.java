@@ -42,7 +42,7 @@ public class FindMinPullWeighted extends BaseProtocol implements Serializable {
 		for(int i = 0; i < view.size(); i++) {
 			dist.put(view.get(i), (double) (i+1) );
 		}
-		return dist.normalize();  // Note: It is very important to normalize the distribution before returning it!
+		return dist.ipnormalize();  // Note: It is very important to normalize the distribution before returning it!
 	}
 	
 	

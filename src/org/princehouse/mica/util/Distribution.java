@@ -45,19 +45,32 @@ public class Distribution<T> extends HashMap<T,Double> {
 	 * 
 	 * @return
 	 */
-	public Distribution<T> normalize() {
-		double s = getSum();
-		if(s > 0) {
-			for(T obj : keySet()) {
-				put(obj,get(obj) / s);
-			} 
-		}
-		else {
-			this.clear();
+	public Distribution<T> ipnormalize() {
+		return ipscale(1.0 / getSum());
+	}
+
+	/**
+	 * Return a scaled copy of dist 
+	 * 
+	 * @param d
+	 * @return
+	 */
+	public Distribution<T> scale(double d) {
+		return copy().ipscale(d);
+	}
+	
+	/**
+	 * In-place scaling
+	 * 
+	 * @param d
+	 * @return
+	 */
+	public Distribution<T> ipscale(double d) {
+		for(T k : keySet()) {
+			put(k,get(k)*d);
 		}
 		return this;
 	}
-
 	
 	/**
 	 * In-place "bump"
@@ -72,7 +85,7 @@ public class Distribution<T> extends HashMap<T,Double> {
 		double x = get(key);
 		double dprime = delta / (1.0 - x - delta);
 		put(key, x+dprime);
-		normalize();
+		ipnormalize();
 		assert(Math.abs(get(key) - (x + delta)) < 1e-7); // sanity check
 		return this;
 	}
@@ -102,18 +115,21 @@ public class Distribution<T> extends HashMap<T,Double> {
 		return pmd;
 	}
 	
-	/**
-	 * Creates a new PMD.  Not in-place
-	 * 
-	 * @param other
-	 * @return
-	 */
 	public static <T> Distribution<T> convolve(Distribution<T> d1, Distribution<T> d2, F2<Double,Double,Double> f) {
 		Distribution<T> pmd = create();
 		for(T x : Functional.union(d1.keySet(), d2.keySet()))
 			pmd.put(x, f.f(d1.get(x), d2.get(x)));
 		return pmd;
 	}
+	
+	public static <T> Distribution<T> max(Distribution<T> d1, Distribution<T> d2) {
+		return Distribution.convolve(d1, d2, Functional.max);
+	}
+
+	public static <T> Distribution<T> min(Distribution<T> d1, Distribution<T> d2) {
+		return Distribution.convolve(d1, d2, Functional.min);
+	}
+
 	
 	public static <T> Distribution<T> uniform(Collection<T> c) {
 		Distribution<T> pmd = create();
@@ -169,11 +185,8 @@ public class Distribution<T> extends HashMap<T,Double> {
 		});
 	}
 	
-	
-	public T sample(long rseed) {
-		
-		double sample = new Random().nextDouble() * getSum();  // if normalized, don't need getsum
-		
+	public T sample(Random rng) {
+		double sample = rng.nextDouble();
 		if(size() <= 0) {
 			return null;
 		}
@@ -186,7 +199,11 @@ public class Distribution<T> extends HashMap<T,Double> {
 				sample -= y;
 			}
 		}
-		throw new RuntimeException("code should never reach this point");
+		throw new RuntimeException("code should never reach this point");	
+	}
+	
+	public T sample(long rseed) {
+		return sample(new Random(rseed));
 	}
 	
 	public T sample() {
@@ -206,13 +223,16 @@ public class Distribution<T> extends HashMap<T,Double> {
 		return getSum() == 0;
 	}
 
-
-	public Distribution<T> copynormalize() {
+	public Distribution<T> copy() {
 		Distribution<T> tmp = new Distribution<T>();
 		for(T k : keySet()) {
 			tmp.put(k,get(k));
 		}
-		return tmp.normalize();
+		return tmp;
+	}
+
+	public Distribution<T> copynormalize() {
+		return copy().ipnormalize();
 	}
 	
 	/**
