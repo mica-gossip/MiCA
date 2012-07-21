@@ -1,9 +1,6 @@
 package org.princehouse.mica.lib.abstractions;
 
-import static org.princehouse.mica.util.Randomness.weightedChoice;
-
-import java.util.Random;
-
+import org.princehouse.mica.base.BaseProtocol;
 import org.princehouse.mica.base.annotations.GossipRate;
 import org.princehouse.mica.base.annotations.Select;
 import org.princehouse.mica.base.model.Protocol;
@@ -18,7 +15,7 @@ import org.princehouse.mica.util.Distribution;
  * @author lonnie
  *
  */
-public class MergeIndependent extends MergeAbstract {
+public class MergeIndependent extends MergeBase {
 
 
 	/**
@@ -41,15 +38,12 @@ public class MergeIndependent extends MergeAbstract {
 	 */
 	@Select
 	public Distribution<Address> select() {
-
-		Distribution<Address> d1 = getP1().getSelectDistribution();
-		Distribution<Address> d2 = getP2().getSelectDistribution();
-
-		if(d1.isEmpty() && d2.isEmpty()) {
-			return null;
-		}
-		// d1 + d2 - d1 * d2
-		return d1.add(d2).add(d1.multiply(d2));
+		double rate1 = getP1().getFrequency();
+		double rate2 = getP2().getFrequency();
+		double w = rate1 / (rate1 + rate2);
+		Distribution<Address> d1 = getP1().getSelectDistribution().scale(w);
+		Distribution<Address> d2 = getP2().getSelectDistribution().scale(1-w);
+		return d1.add(d2);
 	}
 
 	/**
@@ -58,10 +52,9 @@ public class MergeIndependent extends MergeAbstract {
 	 */
 	@GossipRate
 	public double mergedRate() {
-		Distribution<Address> d1 = getP1().getSelectDistribution();
-		Distribution<Address> d2 = getP2().getSelectDistribution();
-		double c = d1.multiply(d2).getSum();
-		return (getP1().getFrequency() + getP2().getFrequency()) * (2.0 - c) / 2.0;
+		double rate1 = getP1().getFrequency();
+		double rate2 = getP2().getFrequency();
+		return rate1 + rate2;
 	}
 
 
@@ -72,15 +65,16 @@ public class MergeIndependent extends MergeAbstract {
 	 * @return
 	 */
 	@Override
-	public MergeSelectionCase decideSelectionCase(Address x, Random rng) {
+	public Distribution<MergeSelectionCase> decideSelectionCase(Address x) {
+		double rate1 = getP1().getFrequency();
+		double rate2 = getP2().getFrequency();
+		double w = rate1 / (rate1 + rate2);
+
 		Distribution<Address> d1 = getP1().getSelectDistribution();
 		Distribution<Address> d2 = getP2().getSelectDistribution();
 
-		d1 = d1.copynormalize();
-		d2 = d2.copynormalize();
-
-		double a = d1.get(x);
-		double b = d2.get(x);
+		double a = d1.get(x) * w;
+		double b = d2.get(x) * (1-w);
 
 		if (a < 1e-5 && b < 1e-5) {
 			System.err
@@ -92,22 +86,12 @@ public class MergeIndependent extends MergeAbstract {
 			throw new RuntimeException("broken component distributions");
 		}
 
-		double alpha = a * (1 - b) / (a + b - a * b);
-		double beta = b * (1 - a) / (a + b - a * b);
-		double gamma = a * b / (a + b - a * b);
-
-		double[] weights = { alpha, beta, gamma };
-
-		switch (weightedChoice(getRuntimeState().getRandom(), weights)) {
-		case 0:
-			return MergeSelectionCase.P1;
-		case 1:
-			return MergeSelectionCase.P2;
-		case 2:
-			return MergeSelectionCase.BOTH;
-		default:
-			throw new RuntimeException();
-		}
+		double alpha = a / (a+b);
+		double beta = b / (a+b);
+		Distribution<MergeSelectionCase> outcomes = Distribution.create();		
+		outcomes.put(MergeSelectionCase.P1, alpha);
+		outcomes.put(MergeSelectionCase.P2, beta);
+		return outcomes;
 	}
 
 	/**
@@ -123,4 +107,11 @@ public class MergeIndependent extends MergeAbstract {
 	}
 
 	private static final long serialVersionUID = 1L;
+	
+	public static MergeOperator operator = new MergeOperator() {
+		@Override
+		public MergeBase merge(BaseProtocol p1, BaseProtocol p2) {
+			return new MergeIndependent(p1,p2);
+		}
+	};
 }

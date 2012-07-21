@@ -103,6 +103,7 @@ public class Pipeline<P extends Protocol> extends BaseProtocol {
 	 * @param protocol
 	 */
 	public void retire(P protocol) {	
+		// FIXME
 	}
 	
 	private void advancePipeline() {
@@ -147,7 +148,7 @@ public class Pipeline<P extends Protocol> extends BaseProtocol {
 	@SuppressWarnings("unchecked")
 	private Protocol buildMerge() {
 		// merge together everything in the pipeline!
-		return MergeCorrelated.merge( (List<Protocol>) pipe);	
+		return MergeCorrelated.operator.merge( (List<BaseProtocol>) pipe);	
 	}
 	
 	@GossipRate

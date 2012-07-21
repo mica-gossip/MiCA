@@ -1,11 +1,10 @@
 package org.princehouse.mica.lib.abstractions;
 
-import java.util.Random;
-
 import org.princehouse.mica.base.BaseProtocol;
 import org.princehouse.mica.base.annotations.GossipUpdate;
 import org.princehouse.mica.base.model.Protocol;
 import org.princehouse.mica.base.net.model.Address;
+import org.princehouse.mica.util.Distribution;
 
 // FIXME shares other than 0.5 not implemented!!
 /**
@@ -18,31 +17,9 @@ import org.princehouse.mica.base.net.model.Address;
  * @author lonnie
  * 
  */
-public abstract class MergeAbstract extends BaseProtocol {
+public abstract class MergeBase extends BaseProtocol {
 
 	private Protocol p1;
-	
-	private double p1share = 0.5;
-	
-	public double getShare1() {
-		return p1share;
-	}
-
-	public void setShare1(double p1share) {
-		this.p1share = p1share;
-		this.p2share = (1.0 - p1share);
-	}
-
-	public double getShare2() {
-		return p2share;
-	}
-
-	public void setShare2(double p2share) {
-		this.p2share = p2share;
-		this.p1share = (1.0 - p1share);
-	}
-
-	private double p2share = 0.5;
 	
 	private MergeSelectionCase subProtocolGossipCase = MergeSelectionCase.NA;
 	
@@ -97,17 +74,12 @@ public abstract class MergeAbstract extends BaseProtocol {
 	 * @param p1 First subprotocol
 	 * @param p2 Second subprotocol
 	 */
-	public MergeAbstract(Protocol p1, Protocol p2) {
-		this(p1,p2,0.5);
-	}
-
-	public MergeAbstract(Protocol p1, Protocol p2, double p1share) {
+	public MergeBase(Protocol p1, Protocol p2) {
 		setP1(p1);
 		setP2(p2);
-		setShare1(p1share);
 	}
 
-	public MergeAbstract() {
+	public MergeBase() {
 		this(null, null);
 	}
 
@@ -120,7 +92,7 @@ public abstract class MergeAbstract extends BaseProtocol {
 	 * @param that
 	 */
 	@GossipUpdate
-	public void update(MergeAbstract that) {
+	public void update(MergeBase that) {
 		switch (getSubProtocolGossipCase()) {
 		case P1:
 			// only protocol 1 gossips
@@ -145,7 +117,7 @@ public abstract class MergeAbstract extends BaseProtocol {
 	 */
 	@Override
 	public void preUpdate(Address selected) {
-		setSubProtocolGossipCase(decideSelectionCase(selected, getRuntimeState().getRandom()));
+		setSubProtocolGossipCase(decideSelectionCase(selected).sample(getRuntimeState().getRandom()));
 		logJson("merge-choose-subprotocol",getSubProtocolGossipCase());
 		switch(getSubProtocolGossipCase()) {
 		case P1:
@@ -186,7 +158,7 @@ public abstract class MergeAbstract extends BaseProtocol {
 	 * @param rng Random number generator
 	 * @return
 	 */
-	public abstract MergeSelectionCase decideSelectionCase(Address x, Random rng);
+	public abstract Distribution<MergeSelectionCase> decideSelectionCase(Address x);
 	
 	
 	private static final long serialVersionUID = 1L;

@@ -612,4 +612,18 @@ public class Functional {
 			temp.add(list.get(i));
 		return temp;
 	}
+	
+	public static F2<Double,Double,Double> min = new F2<Double,Double,Double>() {
+		@Override
+		public Double f(Double arg0, Double arg1) {
+			return Math.min(arg0,arg1);
+		}
+	};
+	
+	public static F2<Double,Double,Double> max = new F2<Double,Double,Double>() {
+		@Override
+		public Double f(Double arg0, Double arg1) {
+			return Math.max(arg0,arg1);
+		}
+	};
 }
