@@ -9,7 +9,7 @@ import java.util.Set;
 
 import org.princehouse.mica.base.BaseProtocol;
 import org.princehouse.mica.base.annotations.GossipUpdate;
-import org.princehouse.mica.base.annotations.SelectUniformRandom;
+import org.princehouse.mica.base.annotations.ViewUniformRandom;
 import org.princehouse.mica.base.net.model.Address;
 import org.princehouse.mica.lib.abstractions.Broadcast;
 import org.princehouse.mica.lib.abstractions.Overlay;
@@ -20,7 +20,7 @@ public abstract class NaiveBroadcast<Message extends Serializable> extends BaseP
 
 	private static final long serialVersionUID = 1L;
 
-	@SelectUniformRandom
+	@ViewUniformRandom
 	public Overlay overlay;
 	
 	public NaiveBroadcast(Overlay overlay) {
@@ -40,7 +40,7 @@ public abstract class NaiveBroadcast<Message extends Serializable> extends BaseP
 	public void sendMessage(Message m) {
 		//logJson("send-message", m);
 		received.add(m);
-		Distribution<Address> dist = getSelectDistribution();
+		Distribution<Address> dist = getView();
 		Set<Address> view = new HashSet<Address>();
 		for(Map.Entry<Address,Double> entry  : dist.entrySet()) {
 			// enumerate nodes with non-zero probability of selection

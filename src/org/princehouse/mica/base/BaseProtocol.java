@@ -55,9 +55,9 @@ public abstract class BaseProtocol implements Protocol, Serializable {
 	}
 
 	@Override
-	final public Distribution<Address> getSelectDistribution() {
+	final public Distribution<Address> getView() {
 		try {
-			return Runtime.getRuntime().getSelectDistribution(this);
+			return Runtime.getRuntime().getView(this);
 		} catch (SelectException e) {
 			throw new RuntimeException(e);
 		}
@@ -79,7 +79,7 @@ public abstract class BaseProtocol implements Protocol, Serializable {
 
 
 	@Override 
-	public double getFrequency() {
+	public double getRate() {
 		return Runtime.getRuntime().getRate(this);
 	}
 

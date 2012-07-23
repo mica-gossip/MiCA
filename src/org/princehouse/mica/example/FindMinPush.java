@@ -6,7 +6,7 @@ import java.util.Set;
 
 import org.princehouse.mica.base.BaseProtocol;
 import org.princehouse.mica.base.annotations.GossipUpdate;
-import org.princehouse.mica.base.annotations.SelectUniformRandom;
+import org.princehouse.mica.base.annotations.ViewUniformRandom;
 import org.princehouse.mica.base.net.model.Address;
 
 /**
@@ -20,7 +20,7 @@ public class FindMinPush extends BaseProtocol implements Serializable {
 
 	private int x; 
 
-	@SelectUniformRandom
+	@ViewUniformRandom
 	public Set<Address> view;
 	
 	public FindMinPush(int x, Set<Address> view) {

@@ -60,8 +60,7 @@ public class SpanningTreeOverlay extends ExternalSelectProtocol implements Roote
 		return parent;
 	}
 
-	// FIXME arbitrary big number? real professional...
-	private static final int MAXDIST = 1000000;
+	private static final int MAXDIST = Integer.MAX_VALUE;
 	
 	private Collection<Address> getKnown() {
 		return distanceFromRoot.keySet();
@@ -174,11 +173,11 @@ public class SpanningTreeOverlay extends ExternalSelectProtocol implements Roote
 
 	@Override
 	public boolean isRoot() {
-		return leaderElection.isLeader() || (getSelectDistribution().keySet().size() == 0);
+		return leaderElection.isLeader() || (getView().keySet().size() == 0);
 	}
 
 	@Override
-	public Distribution<Address> getView(RuntimeState rts) {
+	public Distribution<Address> getOverlay(RuntimeState rts) {
 		Set<Address> view = new HashSet<Address>();
 		Address parent = getParent();
 		if(parent != null)

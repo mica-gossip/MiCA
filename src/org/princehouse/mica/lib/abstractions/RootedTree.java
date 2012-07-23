@@ -30,7 +30,7 @@ public interface RootedTree extends TreeOverlay {
 			this.tree = t;
 		}
 		@Override
-		public Distribution<Address> getView(RuntimeState rts) {
+		public Distribution<Address> getOverlay(RuntimeState rts) {
 			return Distribution.uniform(tree.getChildren());
 		}
 	}

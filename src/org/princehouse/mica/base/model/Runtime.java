@@ -331,12 +331,15 @@ public abstract class Runtime<P extends Protocol> {
 	}
 
 	/**
-	 * NOTE: must never return null.  return an empty distribution instead.
+	 * Returns null if view is an empty distribution
+	 * 
+	 * Throws MalformedViewException if view has non-one, non-empty magnitude
+	 * 
 	 * @param p
 	 * @return
 	 * @throws SelectException 
 	 */
-	public abstract Distribution<Address> getSelectDistribution(Protocol p) throws SelectException;
+	public abstract Distribution<Address> getView(Protocol p) throws SelectException;
 
 	public abstract void executeUpdate(Protocol p1, Protocol p2);
 

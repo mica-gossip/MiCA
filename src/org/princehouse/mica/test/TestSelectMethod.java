@@ -6,7 +6,7 @@ import java.util.Set;
 
 import org.princehouse.mica.base.BaseProtocol;
 import org.princehouse.mica.base.annotations.GossipUpdate;
-import org.princehouse.mica.base.annotations.Select;
+import org.princehouse.mica.base.annotations.View;
 import org.princehouse.mica.base.model.Runtime;
 import org.princehouse.mica.base.net.model.Address;
 import org.princehouse.mica.base.net.tcpip.TCPAddress;
@@ -34,7 +34,7 @@ public class TestSelectMethod extends BaseProtocol {
 	public Set<Address> view; 
 
 	
-	@Select
+	@View
 	public Distribution<Address> select() {
 		System.out.printf("[%s: execute select method]\n", this);
 		return Distribution.uniform(view);

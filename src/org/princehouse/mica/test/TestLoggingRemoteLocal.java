@@ -2,7 +2,7 @@ package org.princehouse.mica.test;
 
 import org.princehouse.mica.base.BaseProtocol;
 import org.princehouse.mica.base.annotations.GossipUpdate;
-import org.princehouse.mica.base.annotations.SelectUniformRandom;
+import org.princehouse.mica.base.annotations.ViewUniformRandom;
 import org.princehouse.mica.base.net.model.Address;
 import org.princehouse.mica.lib.abstractions.Overlay;
 import org.princehouse.mica.util.harness.TestHarness;
@@ -35,7 +35,7 @@ import fj.F3;
 public class TestLoggingRemoteLocal extends BaseProtocol {
 	private static final long serialVersionUID = 1L;
 	
-	@SelectUniformRandom
+	@ViewUniformRandom
 	public Overlay view;
 	
 	public TestLoggingRemoteLocal(Overlay view) {

@@ -207,19 +207,16 @@ public class RenameClassClassAdapter implements ClassVisitor {
 
 		@Override
 		public AnnotationVisitor visitAnnotation(String arg0, boolean arg1) {
-			// TODO Auto-generated method stub
 			return null;
 		}
 
 		@Override
 		public void visitAttribute(Attribute arg0) {
-			// TODO Auto-generated method stub
 			
 		}
 
 		@Override
 		public void visitEnd() {
-			// TODO Auto-generated method stub
 			
 		}
 		
@@ -228,14 +225,13 @@ public class RenameClassClassAdapter implements ClassVisitor {
 	
 	public RenameClassClassAdapter(String srcName, String dstName, ClassVisitor cv) {
 		src = srcName; dst = dstName;
-		// FIXME this is a hack; it does basic string substitution.  This will majorly fail
+		// hack. it does basic string substitution.  This will majorly fail
 		// if one class name is a substring of another
 		typeTransform = Pattern.compile(src);
 	}
 
 
 	private String searchAndReplace(String in) {
-		// FIXME hack
 		if(in == null) 
 			return null;
 		Matcher m = typeTransform.matcher(in);
@@ -250,29 +246,23 @@ public class RenameClassClassAdapter implements ClassVisitor {
 	}
 
 	public String translateName(String in) {
-		// FIXME hack
 		return searchAndReplace(in);
 	}
 	
 	private String translateDescriptor(String in) {
-		// FIXME hack
 		return searchAndReplace(in);
 	}
 	
 	private String translateSignature(String in) {
-		// FIXME hack
 		return searchAndReplace(in);
 	}
 	
 	private String translateInternalName(String in) {
-		// FIXME hack
 		return searchAndReplace(in);
 	}
 	@Override
 	public void visit(int arg0, int arg1, String arg2, String arg3,
-			String arg4, String[] arg5) {
-		// TODO Auto-generated method stub
-		
+			String arg4, String[] arg5) {		
 	}
 
 	@Override

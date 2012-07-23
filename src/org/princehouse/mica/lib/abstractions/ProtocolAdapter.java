@@ -3,11 +3,9 @@ package org.princehouse.mica.lib.abstractions;
 import org.princehouse.mica.base.BaseProtocol;
 import org.princehouse.mica.base.annotations.GossipRate;
 import org.princehouse.mica.base.annotations.GossipUpdate;
-import org.princehouse.mica.base.annotations.Select;
+import org.princehouse.mica.base.annotations.View;
 import org.princehouse.mica.base.net.model.Address;
 import org.princehouse.mica.util.Distribution;
-
-// FIXME needs pre, post update, etc
 
 /**
  * ProtocolAdapter wraps another protocol, passing rate/select/update directly through
@@ -35,14 +33,14 @@ public class ProtocolAdapter extends BaseProtocol {
 		this.protocol = protocol;
 	}
 
-	@Select
+	@View
 	public Distribution<Address> select() {
-		return getProtocol().getSelectDistribution();
+		return getProtocol().getView();
 	}
 	
 	@GossipRate
 	public double rate() {
-		return getProtocol().getFrequency();
+		return getProtocol().getRate();
 	}
 	
 	@GossipUpdate

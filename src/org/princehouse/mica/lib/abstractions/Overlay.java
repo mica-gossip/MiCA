@@ -16,5 +16,5 @@ import org.princehouse.mica.util.Distribution;
  */
 public interface Overlay {
 	
-	public Distribution<Address> getView(RuntimeState rts);
+	public Distribution<Address> getOverlay(RuntimeState rts);
 }

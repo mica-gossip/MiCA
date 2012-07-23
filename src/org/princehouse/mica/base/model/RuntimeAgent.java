@@ -51,7 +51,7 @@ public abstract class RuntimeAgent<P extends Protocol> {
 	 * @return
 	 * @throws SelectException 
 	 */
-	public abstract Distribution<Address> getSelectDistribution(Runtime<?> runtime,
+	public abstract Distribution<Address> getView(Runtime<?> runtime,
 			P pinstance) throws SelectException;
 
 	/**

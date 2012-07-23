@@ -8,6 +8,7 @@ import java.util.Random;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.ReentrantLock;
 
+import org.princehouse.mica.base.MalformedViewException;
 import org.princehouse.mica.base.model.Compiler;
 import org.princehouse.mica.base.model.Protocol;
 import org.princehouse.mica.base.model.Runtime;
@@ -325,12 +326,20 @@ AcceptConnectionHandler {
 	}
 
 	@Override
-	public Distribution<Address> getSelectDistribution(
+	public Distribution<Address> getView(
 			Protocol protocol) throws SelectException {
-		Distribution<Address> dist = compile(protocol).getSelectDistribution(this, protocol);
-		if(dist == null)
-			dist = new Distribution<Address>(); // empty
+		
+		Distribution<Address> dist = compile(protocol).getView(this, protocol);
 
+		if(dist != null && dist.isEmpty())
+			return null;
+
+		if(!dist.isOne()) {
+			throw new MalformedViewException();
+		}
+		
+		assert(dist.isOne());
+		
 		return dist;
 	}
 

@@ -9,7 +9,7 @@ import java.util.Set;
 
 import org.princehouse.mica.base.BaseProtocol;
 import org.princehouse.mica.base.annotations.GossipUpdate;
-import org.princehouse.mica.base.annotations.SelectUniformRandom;
+import org.princehouse.mica.base.annotations.ViewUniformRandom;
 import org.princehouse.mica.base.net.model.Address;
 
 
@@ -40,7 +40,7 @@ abstract public class CTRWPeerSampler extends BaseProtocol {
 	
 	public Queue<SamplingMessage> messages = new LinkedList<SamplingMessage>();
 	
-	@SelectUniformRandom
+	@ViewUniformRandom
 	public Set<Address> select() {
 		SamplingMessage m = messages.peek(); // next message in the queue
 		if(m == null) 
@@ -54,7 +54,7 @@ abstract public class CTRWPeerSampler extends BaseProtocol {
 		}		
 	}
 	
-	@SelectUniformRandom
+	@ViewUniformRandom
 	public Set<Address> view;
 	
 	public CTRWPeerSampler(Set<Address> view) {

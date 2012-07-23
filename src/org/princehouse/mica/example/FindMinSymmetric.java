@@ -6,7 +6,7 @@ import java.util.Set;
 
 import org.princehouse.mica.base.BaseProtocol;
 import org.princehouse.mica.base.annotations.GossipUpdate;
-import org.princehouse.mica.base.annotations.SelectUniformRandom;
+import org.princehouse.mica.base.annotations.ViewUniformRandom;
 import org.princehouse.mica.base.net.model.Address;
 
 
@@ -19,7 +19,7 @@ public class FindMinSymmetric extends BaseProtocol implements Serializable {
 
 	public int x; 
 
-	@SelectUniformRandom
+	@ViewUniformRandom
 	public Set<Address> view;
 	
 	public FindMinSymmetric(int x, Set<Address> view) {

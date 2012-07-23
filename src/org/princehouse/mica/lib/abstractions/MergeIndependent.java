@@ -2,7 +2,7 @@ package org.princehouse.mica.lib.abstractions;
 
 import org.princehouse.mica.base.BaseProtocol;
 import org.princehouse.mica.base.annotations.GossipRate;
-import org.princehouse.mica.base.annotations.Select;
+import org.princehouse.mica.base.annotations.View;
 import org.princehouse.mica.base.model.Protocol;
 import org.princehouse.mica.base.net.model.Address;
 import org.princehouse.mica.util.Distribution;
@@ -36,13 +36,30 @@ public class MergeIndependent extends MergeBase {
 	 * 
 	 * @return
 	 */
-	@Select
+	@View
 	public Distribution<Address> select() {
-		double rate1 = getP1().getFrequency();
-		double rate2 = getP2().getFrequency();
+		double rate1 = getP1().getRate();
+		double rate2 = getP2().getRate();
+		
+		
 		double w = rate1 / (rate1 + rate2);
-		Distribution<Address> d1 = getP1().getSelectDistribution().scale(w);
-		Distribution<Address> d2 = getP2().getSelectDistribution().scale(1-w);
+		Distribution<Address> d1 = getP1().getView();
+		Distribution<Address> d2 = getP2().getView();
+		
+		// handle cases where one or both protocols are not gossiping
+		if(d1 == null) {
+			if(d2 == null) {
+				return null;
+			} else {
+				return d2;
+			}
+		} else if(d2 == null) {
+			return d1;
+		}
+		
+		d1 = d1.scale(w);
+		d2 = d2.scale(1-w);
+		
 		return d1.add(d2);
 	}
 
@@ -52,8 +69,24 @@ public class MergeIndependent extends MergeBase {
 	 */
 	@GossipRate
 	public double mergedRate() {
-		double rate1 = getP1().getFrequency();
-		double rate2 = getP2().getFrequency();
+		double rate1 = getP1().getRate();
+		double rate2 = getP2().getRate();
+
+		Distribution<Address> d1 = getP1().getView();
+		Distribution<Address> d2 = getP2().getView();
+
+	
+		if(d1 == null) {
+			if(d2 == null) {
+				return 0;
+			} else {
+				return rate2;
+			}
+		} else if(d2 == null) {
+			return rate1;
+		}
+
+		
 		return rate1 + rate2;
 	}
 
@@ -66,13 +99,30 @@ public class MergeIndependent extends MergeBase {
 	 */
 	@Override
 	public Distribution<MergeSelectionCase> decideSelectionCase(Address x) {
-		double rate1 = getP1().getFrequency();
-		double rate2 = getP2().getFrequency();
+		double rate1 = getP1().getRate();
+		double rate2 = getP2().getRate();
 		double w = rate1 / (rate1 + rate2);
 
-		Distribution<Address> d1 = getP1().getSelectDistribution();
-		Distribution<Address> d2 = getP2().getSelectDistribution();
+		Distribution<Address> d1 = getP1().getView();
+		Distribution<Address> d2 = getP2().getView();
 
+		Distribution<MergeSelectionCase> outcomes = Distribution.create();		
+
+		
+		// handle cases where one both protocols don't gossip 
+		if(d1 == null) {
+			if(d2 == null) {
+				outcomes.put(MergeSelectionCase.NEITHER, 1.0);
+				return outcomes;
+			} else {
+				outcomes.put(MergeSelectionCase.P2, 1.0);
+				return outcomes;
+			}
+		} else if(d2 == null) {
+			outcomes.put(MergeSelectionCase.P1, 1.0);
+			return outcomes;
+		}
+		
 		double a = d1.get(x) * w;
 		double b = d2.get(x) * (1-w);
 
@@ -88,7 +138,6 @@ public class MergeIndependent extends MergeBase {
 
 		double alpha = a / (a+b);
 		double beta = b / (a+b);
-		Distribution<MergeSelectionCase> outcomes = Distribution.create();		
 		outcomes.put(MergeSelectionCase.P1, alpha);
 		outcomes.put(MergeSelectionCase.P2, beta);
 		return outcomes;

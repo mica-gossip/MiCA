@@ -42,7 +42,7 @@ public class SinglyLinkedRingGraph extends TestHarnessBaseGraph {
 		}
 		private Address succ;
 		@Override
-		public Distribution<Address> getView(RuntimeState rts) {
+		public Distribution<Address> getOverlay(RuntimeState rts) {
 			return Distribution.singleton(getSuccessor());
 		}
 		@Override

@@ -6,7 +6,7 @@ import java.util.Set;
 
 import org.princehouse.mica.base.BaseProtocol;
 import org.princehouse.mica.base.annotations.GossipUpdate;
-import org.princehouse.mica.base.annotations.SelectUniformRandom;
+import org.princehouse.mica.base.annotations.ViewUniformRandom;
 import org.princehouse.mica.base.model.Runtime;
 import org.princehouse.mica.base.net.model.Address;
 import org.princehouse.mica.base.net.tcpip.TCPAddress;
@@ -29,7 +29,7 @@ public class TestRuntimeStateProtocol extends BaseProtocol {
 
 	public Address a;
 
-	@SelectUniformRandom
+	@ViewUniformRandom
 	public Set<Address> view; 
 
 	public TestRuntimeStateProtocol(Address a, Set<Address> view) {

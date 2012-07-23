@@ -2,7 +2,7 @@ package org.princehouse.mica.lib;
 
 import org.princehouse.mica.base.BaseProtocol;
 import org.princehouse.mica.base.annotations.GossipUpdate;
-import org.princehouse.mica.base.annotations.Select;
+import org.princehouse.mica.base.annotations.View;
 import org.princehouse.mica.base.net.model.Address;
 import org.princehouse.mica.lib.abstractions.LeaderElection;
 import org.princehouse.mica.lib.abstractions.NetworkSizeCounter;
@@ -59,7 +59,7 @@ public abstract class TokenRing extends BaseProtocol {
 
 	private static final long serialVersionUID = 1L;
 
-	@Select
+	@View
 	public SinglyLinkedRingOverlay ring = null;
 	private LeaderElection leader = null;
 	private NetworkSizeCounter kcount = null;

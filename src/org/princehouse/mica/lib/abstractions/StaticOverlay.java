@@ -27,7 +27,7 @@ public class StaticOverlay implements Overlay, Serializable {
 	}
 	
 	@Override
-	public Distribution<Address> getView(RuntimeState rts) {
+	public Distribution<Address> getOverlay(RuntimeState rts) {
 		try {
 			return Selector.asDistribution(view, rts);
 		} catch (SelectException e) {

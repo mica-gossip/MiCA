@@ -4,7 +4,7 @@ package org.princehouse.mica.base.simple;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 
-import org.princehouse.mica.base.annotations.Select;
+import org.princehouse.mica.base.annotations.View;
 import org.princehouse.mica.base.model.Protocol;
 import org.princehouse.mica.base.model.Runtime;
 import org.princehouse.mica.base.net.model.Address;
@@ -39,7 +39,7 @@ class SelectMethodSelector<Q extends Protocol> extends Selector<Q> {
 			Object obj = method.invoke(pinstance);
 			return Selector.asDistribution(obj, rt.getRuntimeState(pinstance));
 		} catch (IllegalArgumentException e) {
-			throw new InvalidSelectElement(Select.class, method);
+			throw new InvalidSelectElement(View.class, method);
 		} catch (IllegalAccessException e) {
 			rt.tolerate(e);
 		} catch (InvocationTargetException e) {

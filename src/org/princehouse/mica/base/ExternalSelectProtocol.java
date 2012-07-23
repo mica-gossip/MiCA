@@ -1,6 +1,6 @@
 package org.princehouse.mica.base;
 
-import org.princehouse.mica.base.annotations.Select;
+import org.princehouse.mica.base.annotations.View;
 
 /**
  * ExternalSelectProtocol delegates its selection to a another object, of any
@@ -15,7 +15,7 @@ public abstract class ExternalSelectProtocol extends BaseProtocol {
 	
 	private Object select = null;
 	
-	@Select
+	@View
 	final public Object getSelect() {
 		return select;
 	}

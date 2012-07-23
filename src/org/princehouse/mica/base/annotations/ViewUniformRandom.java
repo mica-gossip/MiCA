@@ -10,4 +10,4 @@ import java.lang.annotation.RetentionPolicy;
  *
  */
 @Retention(RetentionPolicy.RUNTIME)
-public @interface SelectUniformRandom {}
+public @interface ViewUniformRandom {}

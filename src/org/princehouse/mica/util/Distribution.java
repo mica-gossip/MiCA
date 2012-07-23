@@ -11,6 +11,7 @@ import fj.F2;
 
 public class Distribution<T> extends HashMap<T,Double> {
 
+	public static final double MAGNITUDE_EPS = 10e-7;
 	/**
 	 * 
 	 */
@@ -32,7 +33,7 @@ public class Distribution<T> extends HashMap<T,Double> {
 			return 0.0;
 	}
 
-	public double getSum() {
+	public double magnitude() {
 		double s = 0.0;
 		for(T obj : keySet()) {
 			s += get(obj);
@@ -46,7 +47,7 @@ public class Distribution<T> extends HashMap<T,Double> {
 	 * @return
 	 */
 	public Distribution<T> ipnormalize() {
-		return ipscale(1.0 / getSum());
+		return ipscale(1.0 / magnitude());
 	}
 
 	/**
@@ -216,11 +217,11 @@ public class Distribution<T> extends HashMap<T,Double> {
 		for(T k : keySet()) {
 			out.printf("%-30s %f\n", k, get(k));
 		}
-		out.printf("  sum: %f\n",getSum());
+		out.printf("  sum: %f\n",magnitude());
 	}
 	
 	public boolean isEmpty() {
-		return getSum() == 0;
+		return magnitude() <= MAGNITUDE_EPS;
 	}
 
 	public Distribution<T> copy() {
@@ -245,6 +246,15 @@ public class Distribution<T> extends HashMap<T,Double> {
 		Distribution<T> dist = new Distribution<T>();
 		dist.put(key, 1.0);
 		return dist;
+	}
+
+	/** 
+	 * Returns true if this distribution sums to one, within MAGNITUDE_EPS tolerance
+	 * @return
+	 */
+	public boolean isOne() {
+		double magnitude = magnitude();
+		return Math.abs(1.0 - magnitude) <= MAGNITUDE_EPS;
 	}
 	
 }

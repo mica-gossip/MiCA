@@ -6,7 +6,7 @@ import java.util.List;
 
 import org.princehouse.mica.base.BaseProtocol;
 import org.princehouse.mica.base.annotations.GossipUpdate;
-import org.princehouse.mica.base.annotations.Select;
+import org.princehouse.mica.base.annotations.View;
 import org.princehouse.mica.base.net.model.Address;
 import org.princehouse.mica.lib.abstractions.RootedTree;
 import org.princehouse.mica.util.Distribution;
@@ -44,7 +44,7 @@ public class TreeLabelNodes extends BaseProtocol {
 		return temp;
 	}
 	
-	@Select
+	@View
 	public Distribution<Address> select() {
 		return Distribution.uniform(getChildren());
 	}

@@ -9,7 +9,7 @@ import java.util.Set;
 
 import org.princehouse.mica.base.BaseProtocol;
 import org.princehouse.mica.base.annotations.GossipUpdate;
-import org.princehouse.mica.base.annotations.Select;
+import org.princehouse.mica.base.annotations.View;
 import org.princehouse.mica.base.net.model.Address;
 import org.princehouse.mica.lib.abstractions.Overlay;
 import org.princehouse.mica.util.Distribution;
@@ -23,7 +23,7 @@ public class FicusQueryInstaller extends BaseProtocol {
 	private static final long serialVersionUID = 1L;
 
 
-	@Select
+	@View
 	public Overlay baseView;
 
 	

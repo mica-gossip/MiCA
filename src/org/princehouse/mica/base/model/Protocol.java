@@ -25,14 +25,14 @@ public interface Protocol {
 	 * @return Address distribution
 	 * @throws  
 	 */
-	public Distribution<Address> getSelectDistribution();
+	public Distribution<Address> getView();
 	
 	/**
 	 * Execute the rate function for this Protocol instance.
 	 * 
 	 * @return
 	 */
-	public double getFrequency();
+	public double getRate();
 
 	/**
 	 * Execute the update function of this protocol on another local protocol instance

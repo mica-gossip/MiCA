@@ -7,7 +7,7 @@ import java.util.List;
 
 import org.princehouse.mica.base.BaseProtocol;
 import org.princehouse.mica.base.annotations.GossipUpdate;
-import org.princehouse.mica.base.annotations.Select;
+import org.princehouse.mica.base.annotations.View;
 import org.princehouse.mica.base.net.model.Address;
 import org.princehouse.mica.util.Distribution;
 
@@ -35,7 +35,7 @@ public class FindMinPullWeighted extends BaseProtocol implements Serializable {
 	 * Example of an arbitrary select distribution, instead of the uniform random
 	 * @return
 	 */
-	@Select
+	@View
 	public Distribution<Address> select() {
 		// Gossip with each subsequent neighbor with increasing frequency
 		Distribution<Address> dist = new Distribution<Address>();

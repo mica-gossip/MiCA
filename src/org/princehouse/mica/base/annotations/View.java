@@ -9,6 +9,6 @@ import java.lang.annotation.RetentionPolicy;
  *  or a Distribution<Address> member.
  */
 @Retention(RetentionPolicy.RUNTIME)
-public @interface Select {
+public @interface View {
 
 }

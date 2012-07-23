@@ -21,7 +21,7 @@ public class TestFindMinSymmetricNH extends TestHarness<FindMinSymmetric> {
 			@Override
 			public FindMinSymmetric f(Integer i, Address address,
 					Overlay neighbors) {
-				FindMinSymmetric node = new FindMinSymmetric(i, neighbors.getView(null).keySet());
+				FindMinSymmetric node = new FindMinSymmetric(i, neighbors.getOverlay(null).keySet());
 				//node.setName(String.format("Node%d",i));
 				return node;
 			}

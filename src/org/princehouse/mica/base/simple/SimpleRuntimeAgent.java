@@ -129,7 +129,7 @@ class SimpleRuntimeAgent<P extends Protocol> extends RuntimeAgent<P> {
 	@Override
 	public Address select(Runtime<?> rt, P pinstance, double randomValue) throws SelectException {
 		// Sanity check to prevent self-gossip added by Josh Endries
-		Distribution<Address> dist = getSelectDistribution(rt, pinstance);
+		Distribution<Address> dist = getView(rt, pinstance);
 		if (dist == null || dist.size() == 0) {
 			/*
 			 * Either the distribution doesn't exist or it's empty.
@@ -478,7 +478,7 @@ class SimpleRuntimeAgent<P extends Protocol> extends RuntimeAgent<P> {
 	}
 
 	@Override
-	public Distribution<Address> getSelectDistribution(Runtime<?> rt,
+	public Distribution<Address> getView(Runtime<?> rt,
 			P pinstance) throws SelectException {
 		return selector.select(rt, pinstance);
 	}

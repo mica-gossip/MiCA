@@ -7,8 +7,8 @@ import java.lang.reflect.Method;
 import java.util.Collection;
 import java.util.List;
 
-import org.princehouse.mica.base.annotations.Select;
-import org.princehouse.mica.base.annotations.SelectUniformRandom;
+import org.princehouse.mica.base.annotations.View;
+import org.princehouse.mica.base.annotations.ViewUniformRandom;
 import org.princehouse.mica.base.model.Protocol;
 import org.princehouse.mica.base.model.Runtime;
 import org.princehouse.mica.base.model.RuntimeState;
@@ -31,15 +31,15 @@ public abstract class Selector<Q extends Protocol> {
 		if(obj instanceof Distribution) {
 			return (Distribution<Address>) obj;
 		} else if(obj instanceof Protocol) {
-			return ((Protocol) obj).getSelectDistribution();
+			return ((Protocol) obj).getView();
 		} else if(obj instanceof Collection) {
 			return Distribution.uniform((Collection<Address>)obj);
 		} else if(obj instanceof Overlay) {
-			return ((Overlay)obj).getView(rts);
+			return ((Overlay)obj).getOverlay(rts);
 		} else if(obj instanceof Address) {
 			return Distribution.singleton((Address)obj);
 		} else {
-			throw new InvalidSelectValue(Select.class, obj);
+			throw new InvalidSelectValue(View.class, obj);
 		}
 	}
 	
@@ -49,7 +49,7 @@ public abstract class Selector<Q extends Protocol> {
 			// TODO add sanity check for addresses
 			return (Collection<Address>) value;
 		} else if(value instanceof Overlay) {
-			Distribution<Address> dist = ((Overlay)value).getView(rts);
+			Distribution<Address> dist = ((Overlay)value).getOverlay(rts);
 			return dist.keySet();
 		} else {
 			throw new RuntimeException(String.format("Don't know how to extract view from %s instance", value.getClass().getName()));
@@ -87,7 +87,7 @@ public abstract class Selector<Q extends Protocol> {
 	// Decider to delegate gossip select function for @Select annotation
 	public static class SelectDecider extends SelectorAnnotationDecider {
 		public SelectDecider() {
-			super(Select.class);
+			super(View.class);
 		}
 		public <P extends Protocol> Selector<P> getSelector(AnnotatedElement element) throws InvalidSelectElement {
 			if (element instanceof Method) {
@@ -103,7 +103,7 @@ public abstract class Selector<Q extends Protocol> {
 	// Decider to delegate gossip select function for @Select annotation
 	public static class SelectUniformRandomDecider extends SelectorAnnotationDecider {
 		public SelectUniformRandomDecider() {
-			super(SelectUniformRandom.class);
+			super(ViewUniformRandom.class);
 		}
 		public <P extends Protocol> Selector<P> getSelector(AnnotatedElement element) throws InvalidSelectElement {
 			if (element instanceof Field) {

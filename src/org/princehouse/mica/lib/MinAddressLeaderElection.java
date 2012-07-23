@@ -2,7 +2,7 @@ package org.princehouse.mica.lib;
 
 import org.princehouse.mica.base.BaseProtocol;
 import org.princehouse.mica.base.annotations.GossipUpdate;
-import org.princehouse.mica.base.annotations.SelectUniformRandom;
+import org.princehouse.mica.base.annotations.ViewUniformRandom;
 import org.princehouse.mica.base.net.model.Address;
 import org.princehouse.mica.lib.abstractions.LeaderElection;
 import org.princehouse.mica.lib.abstractions.Overlay;
@@ -22,7 +22,7 @@ public class MinAddressLeaderElection extends BaseProtocol implements LeaderElec
 	private static final long serialVersionUID = 1L;
 	private Address leader;
 
-	@SelectUniformRandom
+	@ViewUniformRandom
 	public Overlay overlay;
 	
 	public MinAddressLeaderElection(Overlay overlay) {

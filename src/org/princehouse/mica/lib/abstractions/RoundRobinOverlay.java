@@ -25,7 +25,7 @@ public class RoundRobinOverlay implements Overlay, Serializable {
 	}
 	
 	@Override
-	public Distribution<Address> getView(RuntimeState rts) {
+	public Distribution<Address> getOverlay(RuntimeState rts) {
 		if(sequence == null || sequence.size() == 0)
 			return null;
 		return Distribution.singleton(sequence.get(rts.getRound() % sequence.size()));

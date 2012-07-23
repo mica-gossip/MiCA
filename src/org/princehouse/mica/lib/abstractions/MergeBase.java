@@ -5,8 +5,6 @@ import org.princehouse.mica.base.annotations.GossipUpdate;
 import org.princehouse.mica.base.model.Protocol;
 import org.princehouse.mica.base.net.model.Address;
 import org.princehouse.mica.util.Distribution;
-
-// FIXME shares other than 0.5 not implemented!!
 /**
  * Merge two protocols in such a way that the composite protocol gossips both
  * subprotocols to the same target peer as frequently as possible, while still
@@ -109,6 +107,9 @@ public abstract class MergeBase extends BaseProtocol {
 			break;
 		case NA:
 			throw new RuntimeException("Merge error: No selection choice! Did you override preUpdate and forget to call super()?");
+		case NEITHER:
+			// nobody gossips
+			break;
 		}
 	}
 
