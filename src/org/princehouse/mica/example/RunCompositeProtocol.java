@@ -16,6 +16,7 @@ public class RunCompositeProtocol {
 			@Override
 			public FourLayerTreeStack createProtocolInstance(int nodeId,
 					Address address, Overlay overlay) {
+				
 				return new FourLayerTreeStack(overlay, nodeId);
 			}
 		});

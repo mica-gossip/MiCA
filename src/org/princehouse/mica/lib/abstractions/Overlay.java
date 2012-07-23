@@ -3,6 +3,7 @@ package org.princehouse.mica.lib.abstractions;
 
 import org.princehouse.mica.base.model.RuntimeState;
 import org.princehouse.mica.base.net.model.Address;
+import org.princehouse.mica.base.simple.SelectException;
 import org.princehouse.mica.util.Distribution;
 
 
@@ -16,5 +17,5 @@ import org.princehouse.mica.util.Distribution;
  */
 public interface Overlay {
 	
-	public Distribution<Address> getOverlay(RuntimeState rts);
+	public Distribution<Address> getOverlay(RuntimeState rts) throws SelectException;
 }

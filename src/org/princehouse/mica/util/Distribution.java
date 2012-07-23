@@ -117,9 +117,25 @@ public class Distribution<T> extends HashMap<T,Double> {
 	}
 	
 	public static <T> Distribution<T> convolve(Distribution<T> d1, Distribution<T> d2, F2<Double,Double,Double> f) {
+		if(d1 == null && d2 == null) 
+			return null;
+		
+		if(d1 == null)
+			d1 = new Distribution<T>();
+		
+		if(d2 == null)
+			d2 = new Distribution<T>();
+		
+				
+		Set<T> keyUnion = Functional.union(d1.keySet(), d2.keySet());
+		
+		if(keyUnion.size() == 0)
+			return null;
+		
 		Distribution<T> pmd = create();
-		for(T x : Functional.union(d1.keySet(), d2.keySet()))
+		for(T x : keyUnion) {
 			pmd.put(x, f.f(d1.get(x), d2.get(x)));
+		}
 		return pmd;
 	}
 	
@@ -131,12 +147,24 @@ public class Distribution<T> extends HashMap<T,Double> {
 		return Distribution.convolve(d1, d2, Functional.min);
 	}
 
-	
+
+	/**
+	 * Return a uniform distribution over the elements of collection c.
+	 * Note that if c contains duplicate elements, they will have a correspondingly increased share of probability
+	 * @param c
+	 * @return
+	 */
 	public static <T> Distribution<T> uniform(Collection<T> c) {
+		if(c.size() == 0)
+			return null;
 		Distribution<T> pmd = create();
 		double n = 1.0 / (double) c.size();
 		for(T obj : c) {
-			pmd.put(obj, n);
+			double temp = n;
+			if(pmd.containsKey(obj)) {
+				temp += pmd.get(obj);
+			}
+			pmd.put(obj, temp);
 		}
 		return pmd;
 	}

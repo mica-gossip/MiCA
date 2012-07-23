@@ -329,18 +329,16 @@ AcceptConnectionHandler {
 	public Distribution<Address> getView(
 			Protocol protocol) throws SelectException {
 		
-		Distribution<Address> dist = compile(protocol).getView(this, protocol);
+		Distribution<Address> view = compile(protocol).getView(this, protocol);
 
-		if(dist != null && dist.isEmpty())
+		if(view != null && view.isEmpty())
 			return null;
 
-		if(!dist.isOne()) {
-			throw new MalformedViewException();
+		if(view != null && !view.isOne()) {
+			throw new MalformedViewException(protocol, view);
 		}
-		
-		assert(dist.isOne());
-		
-		return dist;
+				
+		return view;
 	}
 
 	@Override

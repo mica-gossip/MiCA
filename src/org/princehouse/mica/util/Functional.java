@@ -16,8 +16,6 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
-import org.princehouse.mica.base.model.Protocol;
-
 import fj.Effect;
 import fj.F;
 import fj.F2;
@@ -33,7 +31,7 @@ public class Functional {
 	}
 
 	public static <T> List<T> prepend(List<T> list, T obj) {
-		list.add(0,obj);
+		list.add(0, obj);
 		return list;
 	}
 
@@ -66,18 +64,16 @@ public class Functional {
 		};
 	}
 
-	public static <A,B> A foldl(F2<A,B,A> f, A initial, Iterable<B> it) {
-		for(B element : it) {
+	public static <A, B> A foldl(F2<A, B, A> f, A initial, Iterable<B> it) {
+		for (B element : it) {
 			initial = f.f(initial, element);
 		}
 		return initial;
 	}
 
-	public static <T> T foldl(F2<T,T,T> func, Iterable<T> it) {
+	public static <T> T foldl(F2<T, T, T> func, Iterable<T> it) {
 		Iterator<T> iter = it.iterator();
-		return foldl(func,
-				iter.next(),
-				iteratorAsIterable(iter));
+		return foldl(func, iter.next(), iteratorAsIterable(iter));
 	}
 
 	/**
@@ -125,7 +121,8 @@ public class Functional {
 	// stupid that it gives a warning for instanceof.... runtime generics are
 	// erased, it's impossible to supply a type parameter
 	/**
-	 * Return the supplied iterable as a java.util.List.  If it is already a list, return it instead of creating a new one.
+	 * Return the supplied iterable as a java.util.List. If it is already a
+	 * list, return it instead of creating a new one.
 	 */
 	public static <T> List<T> list(Iterable<T> iterable) {
 		if (iterable instanceof List) {
@@ -512,85 +509,83 @@ public class Functional {
 		};
 	}
 
-	public static <A> F<A, Boolean> or(
-			final F<A, Boolean> a,
+	public static <A> F<A, Boolean> or(final F<A, Boolean> a,
 			final F<A, Boolean> b) {
-		return new F<A,Boolean>() {
+		return new F<A, Boolean>() {
 			@Override
 			public Boolean f(A arg) {
 				return a.f(arg) || b.f(arg);
-			}	
+			}
 		};
 	}
 
 	// first class "or" function
-	public static <A> F2<F<A,Boolean>,F<A,Boolean>,F<A,Boolean>> or1() {
-		return new F2<F<A,Boolean>,F<A,Boolean>,F<A,Boolean>>() {
+	public static <A> F2<F<A, Boolean>, F<A, Boolean>, F<A, Boolean>> or1() {
+		return new F2<F<A, Boolean>, F<A, Boolean>, F<A, Boolean>>() {
 			@Override
 			public F<A, Boolean> f(F<A, Boolean> arg0, F<A, Boolean> arg1) {
-				return or(arg0,arg1);
+				return or(arg0, arg1);
 			}
 		};
 	}
 
-	public static <A> F<A, Boolean> and(
-			final F<A, Boolean> a,
+	public static <A> F<A, Boolean> and(final F<A, Boolean> a,
 			final F<A, Boolean> b) {
-		return new F<A,Boolean>() {
+		return new F<A, Boolean>() {
 			@Override
 			public Boolean f(A arg) {
 				return a.f(arg) && b.f(arg);
-			}	
+			}
 		};
 	}
 
 	// first class "and" function
-	public static <A> F2<F<A,Boolean>,F<A,Boolean>,F<A,Boolean>> and1() {
-		return new F2<F<A,Boolean>,F<A,Boolean>,F<A,Boolean>>() {
+	public static <A> F2<F<A, Boolean>, F<A, Boolean>, F<A, Boolean>> and1() {
+		return new F2<F<A, Boolean>, F<A, Boolean>, F<A, Boolean>>() {
 			@Override
 			public F<A, Boolean> f(F<A, Boolean> arg0, F<A, Boolean> arg1) {
-				return and(arg0,arg1);
+				return and(arg0, arg1);
 			}
 		};
 	}
 
-	public static <K,V> Map<K,V> map() {
-		return new HashMap<K,V>();
+	public static <K, V> Map<K, V> map() {
+		return new HashMap<K, V>();
 	}
 
 	public static <T> List<T> list(T t) {
 		List<T> l = list();
-		return append(l,t);
+		return append(l, t);
 	}
 
 	/**
 	 * Return a /new/ set consisting of all elements in a which are not in b
+	 * 
 	 * @param a
 	 * @param b
 	 * @return
 	 */
-	public static <T> Set<T> setDifference(Set<T> a,
-			Set<T> b) {
+	public static <T> Set<T> setDifference(Set<T> a, Set<T> b) {
 		Set<T> temp = new HashSet<T>(a);
 		temp.removeAll(b);
 		return temp;
 	}
 
 	@SuppressWarnings("unchecked")
-	public static <A,B> Map<A,B> mapFromPairs(Object... pairs) {
-		Map<A,B> temp = map();
-		if(pairs.length % 2 != 0) {
+	public static <A, B> Map<A, B> mapFromPairs(Object... pairs) {
+		Map<A, B> temp = map();
+		if (pairs.length % 2 != 0) {
 			throw new RuntimeException("pairs must be an even-length array");
 		}
-		for(int i = 0; i < pairs.length; i+=2) {
-			temp.put( (A) pairs[i], (B) pairs[i+1]);
+		for (int i = 0; i < pairs.length; i += 2) {
+			temp.put((A) pairs[i], (B) pairs[i + 1]);
 		}
 		return temp;
 	}
 
 	public static Iterable<Integer> range(Integer n) {
 		List<Integer> temp = list();
-		for(int i = 0; i < n; i++) {
+		for (int i = 0; i < n; i++) {
 			temp.add(i);
 		}
 		return temp;
@@ -608,22 +603,22 @@ public class Functional {
 	 */
 	public static <T> List<T> sublist(List<T> list, int start, int end) {
 		List<T> temp = Functional.list();
-		for(int i = start; i < end; i++) 
+		for (int i = start; i < end; i++)
 			temp.add(list.get(i));
 		return temp;
 	}
-	
-	public static F2<Double,Double,Double> min = new F2<Double,Double,Double>() {
+
+	public static F2<Double, Double, Double> min = new F2<Double, Double, Double>() {
 		@Override
 		public Double f(Double arg0, Double arg1) {
-			return Math.min(arg0,arg1);
+			return Math.min(arg0, arg1);
 		}
 	};
-	
-	public static F2<Double,Double,Double> max = new F2<Double,Double,Double>() {
+
+	public static F2<Double, Double, Double> max = new F2<Double, Double, Double>() {
 		@Override
 		public Double f(Double arg0, Double arg1) {
-			return Math.max(arg0,arg1);
+			return Math.max(arg0, arg1);
 		}
 	};
 }

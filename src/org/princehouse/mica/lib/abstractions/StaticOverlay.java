@@ -3,10 +3,12 @@ package org.princehouse.mica.lib.abstractions;
 
 import java.io.Serializable;
 
+import org.princehouse.mica.base.MalformedViewException;
 import org.princehouse.mica.base.model.RuntimeState;
 import org.princehouse.mica.base.net.model.Address;
 import org.princehouse.mica.base.simple.SelectException;
 import org.princehouse.mica.base.simple.Selector;
+import org.princehouse.mica.model.NeedsRuntimeException;
 import org.princehouse.mica.util.Distribution;
 
 
@@ -16,18 +18,28 @@ import org.princehouse.mica.util.Distribution;
  * @author lonnie
  *
  */
-public class StaticOverlay implements Overlay, Serializable {
-
+public class StaticOverlay implements Overlay, Serializable {	
 	private static final long serialVersionUID = 1L;
 	
-	public Object view = null;
+	private Object view = null;
 	
 	public StaticOverlay(Object view) {
 		this.view = view;
+		
+		// sanity check
+		try {
+			Distribution<Address> sanityCheck = getOverlay(null);
+			if(sanityCheck != null && !sanityCheck.isOne()) {
+				throw new MalformedViewException(view, sanityCheck);
+			}
+		} catch (NeedsRuntimeException e) {
+			// ignore
+		}
+		
 	}
 	
 	@Override
-	public Distribution<Address> getOverlay(RuntimeState rts) {
+	public Distribution<Address> getOverlay(RuntimeState rts) throws NeedsRuntimeException {
 		try {
 			return Selector.asDistribution(view, rts);
 		} catch (SelectException e) {

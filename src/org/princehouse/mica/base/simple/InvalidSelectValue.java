@@ -35,6 +35,6 @@ public class InvalidSelectValue extends SelectException {
 	}
 	
 	public String toString() {
-		return String.format("%s annotation cannot be paired with %s value %s",aclass.getName(),value.getClass().getName(),value);
+		return String.format("%s annotation cannot be paired with %s value %s",aclass.getName(), (value == null ? "(null)" : value.getClass().getName()),value);
 	}
 }

@@ -7,6 +7,7 @@ import java.lang.reflect.Method;
 import java.util.Collection;
 import java.util.List;
 
+import org.princehouse.mica.base.MalformedViewException;
 import org.princehouse.mica.base.annotations.View;
 import org.princehouse.mica.base.annotations.ViewUniformRandom;
 import org.princehouse.mica.base.model.Protocol;
@@ -35,16 +36,23 @@ public abstract class Selector<Q extends Protocol> {
 		} else if(obj instanceof Collection) {
 			return Distribution.uniform((Collection<Address>)obj);
 		} else if(obj instanceof Overlay) {
-			return ((Overlay)obj).getOverlay(rts);
+			
+			Distribution<Address> view = ((Overlay)obj).getOverlay(rts);
+			if(view != null && !view.isOne()) {
+				throw new MalformedViewException(obj, view);
+			}
+			return view;
 		} else if(obj instanceof Address) {
 			return Distribution.singleton((Address)obj);
+		} else if(obj == null) {
+			return null;
 		} else {
 			throw new InvalidSelectValue(View.class, obj);
 		}
 	}
 	
 	@SuppressWarnings("unchecked")
-	protected static Collection<Address> getCollectionFromValue(Object value, RuntimeState rts) {
+	protected static Collection<Address> getCollectionFromValue(Object value, RuntimeState rts) throws SelectException {
 		if(value instanceof Collection) {
 			// TODO add sanity check for addresses
 			return (Collection<Address>) value;

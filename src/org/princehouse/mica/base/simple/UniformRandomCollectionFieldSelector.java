@@ -36,7 +36,11 @@ class UniformRandomCollectionFieldSelector<Q extends Protocol> extends Selector<
 			e.printStackTrace();
 			return null;
 		}
-		return getCollectionFromValue(obj, pinstance.getRuntimeState());
+		try {
+			return getCollectionFromValue(obj, pinstance.getRuntimeState());
+		} catch (SelectException e) {
+			throw new RuntimeException(e);
+		}
 	}
 
 	@Override
