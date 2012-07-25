@@ -1,0 +1,26 @@
+#!/usr/bin/python
+
+# Usage: micavis [log location]
+# 
+# log location can be either a directory path containing .log files, or a 
+# zip file containing log files
+#
+# default log dir is <micavis_dir>/../../../mica_log
+
+import sys, os
+
+micavis_dir = os.path.split('__file__')[1]
+
+sys.path.insert(0,os.path.abspath(micavis_dir + "/../.."))
+
+args = sys.argv[:]
+
+if len(args) == 1:
+    default_loc = os.path.abspath(
+       micavis_dir + "/../../../mica_log")
+    args += [default_loc]
+
+from micavis.gui import main
+
+main(args)
+

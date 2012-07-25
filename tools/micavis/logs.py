@@ -1,4 +1,4 @@
-import os, re, sys, json
+import os, re, sys, json, tarfile, zipfile
 
 def EVENTS_TIMESTAMP_CMP(ev1, ev2): 
     return cmp(ev1['timestamp'], ev2['timestamp'])
@@ -6,14 +6,79 @@ def EVENTS_TIMESTAMP_CMP(ev1, ev2):
 def EVENTS_FILTER_EVENTTYPE(etype):
     return lambda e: e['event_type'] == etype
 
+class LogCollection(object):
+    def __init__(self, path):
+        self.path = path
+
+    def logs(self):
+        raise Exception('not implemented. should return a list of ReadableFilelike objects')
+
+class ReadableFilelike(object):
+    def __init__(self, path):
+        self.path = path
+
+    def open(self):
+        raise Exception('not implemented. should return an open file that can be closed')
+
+class LogFile(ReadableFilelike):
+    def open(self):
+        return open(self.path,'r') 
+
+class LogDir(LogCollection):
+    def logs(self):
+        logpaths = [os.path.join(self.path,x) 
+                    for x in os.listdir(self.path) if x.endswith('log')]
+        return [LogFile(p) for p in logpaths]
+
+class LogTarFile(ReadableFilelike):
+    def open(self):
+        tf, member = self.path
+        return tf.extractfile(member)
+
+class LogDirTarFile(LogCollection):
+    def logs(self):
+        tf = tarfile.open(self.path,'r')
+        members = tf.getmembers()
+        logs = [tarinfo for tarinfo in members if tarinfo.name.endswith('.log')]
+        return [LogTarFile((tf, tarinfo)) for tarinfo in logs]
+
+class LogZipFile(ReadableFilelike):
+    def open(self):
+        tf, member = self.path
+        return tf.open(member)
+
+class LogDirZipFile(LogCollection):
+    def logs(self):
+        zf = zipfile.ZipFile(self.path,'r')
+        members = zf.infolist()
+        logs = [zipinfo for zipinfo in members if zipinfo.filename.endswith('.log')]
+        return [LogZipFile((zf, zipinfo)) for zipinfo in logs]
+
+
 # returns a list of event
-def read_mica_logs(logdir, order_func = EVENTS_TIMESTAMP_CMP, filter_func = None):
-    events = []
-    for filename in [os.path.join(logdir,x) for x in os.listdir(logdir) if x.endswith('log')]:
-        with open(filename,'r') as f:
-            for line in f.xreadlines():
-               event = json.loads(line)
-               events.append(event)
+def read_mica_logs(logdir, order_func = EVENTS_TIMESTAMP_CMP, 
+                   filter_func = None):
+    events = []    
+    if os.path.isdir(logdir):
+        logdir = LogDir(logdir)
+    elif tarfile.is_tarfile(logdir):
+        logdir = LogDirTarFile(logdir)
+    elif zipfile.is_zipfile(logdir):
+        logdir = LogDirZipFile(logdir)
+    else:
+        raise Exception("unrecognized log file format %s" % logdir)
+
+    for logobj in logdir.logs():
+        f = logobj.open()
+        while True:
+            # xreadlines not implemented by TarFile
+            line = f.readline()
+            if line == '':
+                break  # EOF
+            event = json.loads(line)
+            events.append(event)
+        f.close()
+
 
     if filter_func != None:
         events = filter(filter_func, events)

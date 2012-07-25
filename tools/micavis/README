@@ -1,4 +1,19 @@
 Dependencies:
 
 libigraph and python-igraph  (http://igraph.sourceforge.net/download.html)
+
+1. Install libigraph FROM SOURCES (checked in to dependencies).  Ubuntu 12.04 packaged version is wrong
+
+aptitude install build-essential libxml2-dev libglpk-dev libgmp3-dev libblas-dev liblapack-dev libarpack2-dev python-dev
+
+in igraph directory:
+  ./configure
+  sudo make install
+
+2.  Build Python-igraph.  In python igraph directory:
+  sudo python setup.py install
+
+  # igraph compiled .so is in /usr/local/lib... tell ubuntu about that
+  sudo ldconfig    
+  
    (Ubuntu: apt-get install libigraph-dev, but the python extension must be downloaded and built separately.  You will need python-dev package)
