@@ -6,6 +6,7 @@ import org.princehouse.mica.base.net.model.Address;
 import org.princehouse.mica.base.net.model.Connection;
 import org.princehouse.mica.base.simple.SelectException;
 import org.princehouse.mica.util.Distribution;
+import org.princehouse.mica.util.Logging.SelectEvent;
 
 /**
  * Represents the "compiled" protocol to the MiCA Runtime.
@@ -36,7 +37,7 @@ public abstract class RuntimeAgent<P extends Protocol> {
 	 * @return Address of the chosen gossip peer
 	 * @throws SelectException 
 	 */
-	public abstract Address select(Runtime<?> runtime, P pinstance, double randomValue) throws SelectException;
+	public abstract SelectEvent select(Runtime<?> runtime, P pinstance, double randomValue) throws SelectException;
 
 	// Called on subprotocols as well as the top protocol; Runtime type
 	// parameter doesn't necessarily match pinstance type

@@ -26,6 +26,7 @@ import org.princehouse.mica.base.simple.Selector.SelectorAnnotationDecider;
 import org.princehouse.mica.util.Distribution;
 import org.princehouse.mica.util.Functional;
 import org.princehouse.mica.util.FunctionalReflection;
+import org.princehouse.mica.util.Logging.SelectEvent;
 import org.princehouse.mica.util.MarkingObjectInputStream;
 import org.princehouse.mica.util.NotFoundException;
 import org.princehouse.mica.util.TooManyException;
@@ -54,7 +55,7 @@ class SimpleRuntimeAgent<P extends Protocol> extends RuntimeAgent<P> {
 	 *            Top-level protocol class
 	 */
 	protected static class RequestMessage<P extends Protocol> implements
-	Serializable {
+			Serializable {
 		private static final long serialVersionUID = 1L;
 
 		public RequestMessage(P protocolInstance, RuntimeState runtimeState) {
@@ -86,7 +87,7 @@ class SimpleRuntimeAgent<P extends Protocol> extends RuntimeAgent<P> {
 	 *            Top-level Protocol class
 	 */
 	protected static class ResponseMessage<P extends Protocol> implements
-	Serializable {
+			Serializable {
 		private static final long serialVersionUID = 1L;
 		private P protocolInstance;
 		private RuntimeState runtimeState;
@@ -127,29 +128,18 @@ class SimpleRuntimeAgent<P extends Protocol> extends RuntimeAgent<P> {
 	}
 
 	@Override
-	public Address select(Runtime<?> rt, P pinstance, double randomValue) throws SelectException {
+	public SelectEvent select(Runtime<?> rt, P pinstance, double randomValue)
+			throws SelectException {
 		// Sanity check to prevent self-gossip added by Josh Endries
-		Distribution<Address> dist = getView(rt, pinstance);
-		if (dist == null || dist.size() == 0) {
-			/*
-			 * Either the distribution doesn't exist or it's empty.
-			 */
-			return null;
-		} else {
-			Address a = dist.sample(rt.getRandom().nextLong());
-			if (rt.getAddress().equals(a)) {
-				/*
-				 * Settle down now, we don't want to start talking to
-				 * ourselves...
-				 */
-				return null;
-			} else {
-				/*
-				 * We were lucky enough to get an address, toss it back!
-				 */
-				return a;
-			}
+		// (and since moved into SimpleRuntimeAgent --- select() can return
+		// self's address, but the runtime
+		// will not gossip in this case
+		SelectEvent rvalue = new SelectEvent();
+		rvalue.view = getView(rt, pinstance);
+		if (rvalue.view != null && rvalue.view.size() > 0) {
+			rvalue.selected = rvalue.view.sample(rt.getRandom().nextLong());
 		}
+		return rvalue;
 	}
 
 	@Override
@@ -173,7 +163,8 @@ class SimpleRuntimeAgent<P extends Protocol> extends RuntimeAgent<P> {
 			try {
 				ois = new ObjectInputStream(connection.getInputStream());
 			} catch (SocketException e) {
-				rt.logJson(rt.getRuntimeState(pinstance).getAddress(), "gossip-init-connection-failure", null);
+				rt.logJson(rt.getRuntimeState(pinstance).getAddress(),
+						"gossip-init-connection-failure", null);
 				return;
 			}
 			try {
@@ -182,10 +173,10 @@ class SimpleRuntimeAgent<P extends Protocol> extends RuntimeAgent<P> {
 
 				rt.setProtocolInstance(rpm.protocolInstance);
 
-				rt.logJson("state", rpm.protocolInstance.getLogState());
-
 				// Update runtime state
 				rt.getRuntimeState().update(rpm.runtimeState);
+				rt.logJson("state-gossip-initiator",
+						rpm.protocolInstance.getLogState());
 
 			} catch (ClassNotFoundException e) {
 				rt.punt(e);
@@ -244,21 +235,20 @@ class SimpleRuntimeAgent<P extends Protocol> extends RuntimeAgent<P> {
 		}
 
 		/*
-		Runtime.debug
-		.printf("SimpleRuntimeAgent processing for %s:\n   select = %s\n   update = %s\n   freq = %s\n",
-				pclass.getName(), selector, updateMethod,
-				frequencyMethod);
-				*/
+		 * Runtime.debug .printf(
+		 * "SimpleRuntimeAgent processing for %s:\n   select = %s\n   update = %s\n   freq = %s\n"
+		 * , pclass.getName(), selector, updateMethod, frequencyMethod);
+		 */
 	}
 
 	private void locateUpdateMethod() throws TooManyException,
-	NotFoundException {
+			NotFoundException {
 		// TODO sanity check that update has the right signature
 		try {
 			updateMethod = Functional.findExactlyOne(
 					(Iterable<Method>) FunctionalReflection.getMethods(pclass),
 					FunctionalReflection
-					.<Method> hasAnnotation(GossipUpdate.class));
+							.<Method> hasAnnotation(GossipUpdate.class));
 		} catch (TooManyException e) {
 			// If multiple options are found, see if one overrides the others by
 			// sorting by declaring class subclass relation
@@ -279,13 +269,13 @@ class SimpleRuntimeAgent<P extends Protocol> extends RuntimeAgent<P> {
 	}
 
 	private void locateFrequencyMethod() throws TooManyException,
-	NotFoundException {
+			NotFoundException {
 		// TODO sanity check that freq has the right signature
 		try {
 			frequencyMethod = Functional.findExactlyOne(
 					(Iterable<Method>) FunctionalReflection.getMethods(pclass),
 					FunctionalReflection
-					.<Method> hasAnnotation(GossipRate.class));
+							.<Method> hasAnnotation(GossipRate.class));
 		} catch (TooManyException e) {
 			@SuppressWarnings({ "unchecked", "rawtypes" })
 			List<Method> options = (List) e.getOptions();// Functional.mapcast(
@@ -305,18 +295,19 @@ class SimpleRuntimeAgent<P extends Protocol> extends RuntimeAgent<P> {
 	}
 
 	private void locateSelectMethod(Class<?> klass) throws NotFoundException,
-	TooManyException, SelectException {
+			TooManyException, SelectException {
 		/*
 		 * Search through fields and functions looking for syntactic sugar
 		 * Select annotations
 		 */
 
-		// first class function that tells us if an AnnotatedElement has any of the registered select annotations
+		// first class function that tells us if an AnnotatedElement has any of
+		// the registered select annotations
 		F<AnnotatedElement, Boolean> hasSelectAnnotation1 = Functional
 				.<F<AnnotatedElement, Boolean>> foldl(Functional
 						.<AnnotatedElement> or1(), Functional.map(
-								Selector.registeredDeciders,
-								SelectorAnnotationDecider.getAccept));
+						Selector.registeredDeciders,
+						SelectorAnnotationDecider.getAccept));
 
 		AnnotatedElement selectElement = null;
 		try {
@@ -325,7 +316,8 @@ class SimpleRuntimeAgent<P extends Protocol> extends RuntimeAgent<P> {
 			try {
 				selectElement = Functional.findExactlyOne(
 						(Iterable<AnnotatedElement>) FunctionalReflection
-						.getAnnotatedElements(klass), hasSelectAnnotation1);
+								.getAnnotatedElements(klass),
+						hasSelectAnnotation1);
 			} catch (NotFoundException nf) {
 				Class<?> base = klass.getSuperclass();
 				if (base == null)
@@ -371,16 +363,19 @@ class SimpleRuntimeAgent<P extends Protocol> extends RuntimeAgent<P> {
 		final AnnotatedElement temp = selectElement;
 
 		// Which Selectors accept this element?
-		List<SelectorAnnotationDecider> acceptingDeciders = Functional.list(Functional.filter(Selector.registeredDeciders, new F<SelectorAnnotationDecider,Boolean>() {
-			@Override
-			public Boolean f(SelectorAnnotationDecider d) {
-				return d.accept(temp);
-			}
-		}));
+		List<SelectorAnnotationDecider> acceptingDeciders = Functional
+				.list(Functional.filter(Selector.registeredDeciders,
+						new F<SelectorAnnotationDecider, Boolean>() {
+							@Override
+							public Boolean f(SelectorAnnotationDecider d) {
+								return d.accept(temp);
+							}
+						}));
 
-		switch(acceptingDeciders.size()) {
+		switch (acceptingDeciders.size()) {
 		case 0:
-			throw new RuntimeException("Something has gone horribly wrong. Even though a decider chose this selectElement earlier, no deciders now accept it!");
+			throw new RuntimeException(
+					"Something has gone horribly wrong. Even though a decider chose this selectElement earlier, no deciders now accept it!");
 		case 1:
 			selector = acceptingDeciders.get(0).getSelector(selectElement);
 			break;
@@ -395,15 +390,18 @@ class SimpleRuntimeAgent<P extends Protocol> extends RuntimeAgent<P> {
 	 * RequestMessage from the incoming connection and sends back a
 	 * ResponseMessage.
 	 * 
+	 * receiverState is modified in-place by the update method; for this reason,
+	 * setProtocolInstance is never called
+	 * 
 	 * @param runtime
 	 *            Current Runtime
-	 * @param pinstance
+	 * @param receiverState
 	 *            Protocol instance
 	 * @param connection
 	 * @throws IOException
 	 */
 	@SuppressWarnings("unchecked")
-	public void acceptConnection(Runtime<?> runtime, P pinstance,
+	public void acceptConnection(Runtime<?> runtime, P receiverState,
 			Connection connection) throws IOException {
 
 		MarkingObjectInputStream ois = null; // can distinguish deserialized
@@ -417,7 +415,7 @@ class SimpleRuntimeAgent<P extends Protocol> extends RuntimeAgent<P> {
 		}
 		try {
 			RequestMessage<P> rqm = (RequestMessage<P>) ois.readObject();
-			P p1 = rqm.protocolInstance;
+			P initiatorState = rqm.protocolInstance;
 
 			// foreign state is used by the visiting node to access remote
 			// runtime state data
@@ -425,15 +423,19 @@ class SimpleRuntimeAgent<P extends Protocol> extends RuntimeAgent<P> {
 
 			srt.setForeignState(ois.getForeignObjectSet(), rqm.runtimeState);
 			try {
-				runGossipUpdate(runtime, p1, pinstance);
+				runGossipUpdate(runtime, initiatorState, receiverState);
 			} catch (RuntimeException e) {
 				runtime.handleUpdateException(e);
 			}
+
+			runtime.logJson("state-gossip-receiver",
+					receiverState.getLogState());
+
 			srt.clearForeignState();
 
 			ObjectOutputStream oos = new ObjectOutputStream(
 					connection.getOutputStream());
-			ResponseMessage<P> rpm = new ResponseMessage<P>(p1,
+			ResponseMessage<P> rpm = new ResponseMessage<P>(initiatorState,
 					rqm.runtimeState);
 			oos.writeObject(rpm);
 			oos.close();
@@ -474,12 +476,11 @@ class SimpleRuntimeAgent<P extends Protocol> extends RuntimeAgent<P> {
 				// RuntimeException
 			}
 		}
-
 	}
 
 	@Override
-	public Distribution<Address> getView(Runtime<?> rt,
-			P pinstance) throws SelectException {
+	public Distribution<Address> getView(Runtime<?> rt, P pinstance)
+			throws SelectException {
 		return selector.select(rt, pinstance);
 	}
 
@@ -517,7 +518,8 @@ class SimpleRuntimeAgent<P extends Protocol> extends RuntimeAgent<P> {
 	@Override
 	public void handleConnectException(Runtime<?> runtime, P pinstance,
 			Address partner, ConnectException ce) {
-		runtime.logJson(runtime.getRuntimeState(pinstance).getAddress(), "connect-exception", partner);
+		runtime.logJson(runtime.getRuntimeState(pinstance).getAddress(),
+				"connect-exception", partner);
 	}
 
 }

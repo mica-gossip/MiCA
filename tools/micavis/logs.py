@@ -118,6 +118,7 @@ def query_timestamp_range(events):
 # address selected each other address
 #   graph[src][dst]
 def build_comm_matrix(unique_address_list, events):
+    print "Building communication matrix"
     tot = 0
     n = len(unique_address_list)
     matrix = [ [0.] * n for i in xrange(n) ]
@@ -127,7 +128,7 @@ def build_comm_matrix(unique_address_list, events):
     for e in selevts:
         tot += 1
         src = e['address']
-        dst = e['data']
+        dst = e['data']['selected']
         matrix[index[src]][index[dst]] += 1.0
 
     for i in xrange(n):
@@ -138,6 +139,7 @@ def build_comm_matrix(unique_address_list, events):
 
 
 def matrix_edge_generator(comm_matrix):
+    print "Identifying communication matrix edges"
     # matrix must be square!
     n = len(comm_matrix)
     for i in xrange(n):

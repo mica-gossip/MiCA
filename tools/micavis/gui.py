@@ -363,7 +363,9 @@ class IGraphDrawingArea(gtk.DrawingArea):
     recent_node_color = (0.7, 0.7, 0.4) 
     failure_node_color = (1., 0.3, 0.3) 
     node_outline_width = 4
-    select_edge_color = (0.4, 0.8, 1.0)
+    view_max_outline_width = 8
+    select_edge_color = (1.0, 1.0, 0.5)
+    view_edge_color = (0.4, 0.8, 1.0)
 
     # cr = cairo context
     def draw_event(self, event, cr, node_color = current_node_color):
@@ -398,6 +400,22 @@ class IGraphDrawingArea(gtk.DrawingArea):
         # FIXME implement
         pass
 
+    def draw_event_state_initial(self, event, cr):
+        self.draw_event_state(event,cr)
+
+    def draw_event_state_gossip_initiator(self, event, cr):
+        self.draw_event_state(event,cr)
+
+    def draw_event_state_gossip_receiver(self, event, cr):
+        self.draw_event_state(event,cr)
+
+    def draw_event_state_pre_update(self, event, cr):
+        self.draw_event_state(event,cr)
+
+    def draw_event_state_post_update(self, event, cr):
+        self.draw_event_state(event,cr)
+
+
     def draw_event_rate(self, event, cr):
         # data : float
         # FIXME implement
@@ -408,24 +426,44 @@ class IGraphDrawingArea(gtk.DrawingArea):
         pass
 
     def draw_event_accept_lock_fail(self, event, cr):
-        # data: {}
-        self.draw_node(cr, event['address'], fill_color=self.failure_node_color)
+        self.draw_event_failure(event,cr)
+
         
     def draw_event_accept_lock_succeed(self, event, cr):
         # data : {}
         # FIXME implement
         pass
-    
-    def draw_event_gossip_init_connection_failure(self, event, cr):
+
+    def draw_event_failure(self, event, cr):
         # data : None
         self.draw_node(cr, event['address'], fill_color=self.failure_node_color)
 
+    def draw_event_failure_self_gossip_attempt(self, event, cr):
+        self.draw_event_failure(event,cr)
+
+    def draw_event_gossip_init_connection_failure(self, event, cr):
+        self.draw_event_failure(event,cr)
+
     def draw_event_select(self, event, cr):
         # data : selected address
-        self.draw_arrow_between_nodes(cr, 
-                                      event['address'], 
-                                      event['data'], 
-                                      color=self.select_edge_color)
+        address = event['address']
+        select_event = event['data']  # a JSON-converted Logging.SelectEvent object
+        selected = select_event['selected']
+        view = select_event['view']
+        if isinstance(view, dict):
+            # view is a distribution, not null.  draw the distribution
+            for key,value in view.items():
+                value = float(value)
+                line_width = max(1.0, self.view_max_outline_width * value)
+                cr.set_line_width(line_width)
+                if key == selected:
+                    color = self.select_edge_color
+                else:
+                    color = self.view_edge_color
+                self.draw_arrow_between_nodes(cr, address, key, color=color)
+        else:
+            # draw null select
+            self.draw_event_failure(event,cr)
 
     # currently just draws a line between node centers
     def draw_arrow_between_nodes(self, cr, src_addr, dst_addr, color):

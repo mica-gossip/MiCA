@@ -18,6 +18,7 @@ import org.princehouse.mica.base.net.model.AcceptConnectionHandler;
 import org.princehouse.mica.base.net.model.Address;
 import org.princehouse.mica.base.net.model.Connection;
 import org.princehouse.mica.util.Distribution;
+import org.princehouse.mica.util.Logging;
 import org.princehouse.mica.util.WeakHashSet;
 
 
@@ -172,7 +173,7 @@ AcceptConnectionHandler {
 
 		Random rng = new Random(randomSeed);
 
-		logJson("state",pinstance.getLogState());
+		logJson("state-initial",pinstance.getLogState());
 
 		while (running) {
 			double rate = getRate(pinstance);
@@ -198,21 +199,31 @@ AcceptConnectionHandler {
 
 					RuntimeAgent<P> agent = compile(getProtocolInstance());
 
-					partner = agent.select(this,
+					Logging.SelectEvent se = agent.select(this,
 							getProtocolInstance(), rng.nextDouble());
 
+					partner = se.selected;
+					
 					Runtime.debug.printf("%s select %s\n", this, partner);
-					logJson("select", String.format("%s",partner));
-					if (partner == null) {
+					
+					logJson("select", se);
+					//logJson("select", String.format("%s",partner));
+					
+					try {
+						// preUpdate is called even if partner is invalid (null or self address)
+						getProtocolInstance().preUpdate(partner);
+						logJson("state-pre-update", getProtocolInstance().getLogState());
+					} catch(Throwable t) {
+						logJson("pre-update-throwable", new Object[]{"preUpdate() threw throwable", t});
+					}
+					
+					if(getAddress().equals(partner)) {
+						logJson("failure-self-gossip-attempt");
+						continue;
+					} else if (partner == null) {
 						agent.handleNullSelect(this, getProtocolInstance());
 						lock.unlock();
 						continue;
-					}
-
-					try {
-						getProtocolInstance().preUpdate(partner);
-					} catch(Throwable t) {
-						logJson("pre-update-throwable", new Object[]{"preUpdate() threw throwable", t});
 					}
 
 
@@ -239,6 +250,7 @@ AcceptConnectionHandler {
 
 					try {
 						getProtocolInstance().postUpdate();
+						logJson("state-post-update", getProtocolInstance().getLogState());
 					} catch(Throwable t) {
 						logJson("post-update-throwable", new Object[]{"postUpdate() threw throwable", t});
 					}
