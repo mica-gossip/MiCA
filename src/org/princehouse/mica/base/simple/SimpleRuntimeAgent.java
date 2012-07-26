@@ -177,6 +177,7 @@ class SimpleRuntimeAgent<P extends Protocol> extends RuntimeAgent<P> {
 				rt.getRuntimeState().update(rpm.runtimeState);
 				rt.logJson("state-gossip-initiator",
 						rpm.protocolInstance.getLogState());
+				rt.logJson("view",rpm.protocolInstance.getView());
 
 			} catch (ClassNotFoundException e) {
 				rt.punt(e);
@@ -430,6 +431,7 @@ class SimpleRuntimeAgent<P extends Protocol> extends RuntimeAgent<P> {
 
 			runtime.logJson("state-gossip-receiver",
 					receiverState.getLogState());
+			runtime.logJson("view",receiverState.getView());
 
 			srt.clearForeignState();
 

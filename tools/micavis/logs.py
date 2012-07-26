@@ -28,6 +28,7 @@ class LogDir(LogCollection):
     def logs(self):
         logpaths = [os.path.join(self.path,x) 
                     for x in os.listdir(self.path) if x.endswith('log')]
+
         return [LogFile(p) for p in logpaths]
 
 class LogTarFile(ReadableFilelike):
@@ -53,118 +54,6 @@ class LogDirZipFile(LogCollection):
         members = zf.infolist()
         logs = [zipinfo for zipinfo in members if zipinfo.filename.endswith('.log')]
         return [LogZipFile((zf, zipinfo)) for zipinfo in logs]
-
-
-def ep_select_event_formatter(event):
-    if event['event_type'] != 'select':
-        return event
-    view = event['data']['view']
-    if view:
-        for k, v in view.items():
-            view[k] = float(v)
-    return event
-
-default_event_processors = [
-    ep_select_event_formatter,
-]
-
-# returns a list of events
-def read_mica_logs(logdir, order_func = EVENTS_TIMESTAMP_CMP, 
-                   filter_func = lambda e: True,
-                   event_processors = default_event_processors):
-    
-    # event processors are functions:  event -> event,  possibly modifying the event
-
-    if os.path.isdir(logdir):
-        logdir = LogDir(logdir)
-    elif tarfile.is_tarfile(logdir):
-        logdir = LogDirTarFile(logdir)
-    elif zipfile.is_zipfile(logdir):
-        logdir = LogDirZipFile(logdir)
-    else:
-        raise Exception("unrecognized log file format %s" % logdir)
-
-    events = []
-
-    for logobj in logdir.logs():
-        f = logobj.open()
-        while True:
-            # xreadlines not implemented by TarFile
-            line = f.readline()
-            if line == '':
-                break  # EOF
-            event = json.loads(line)
-            if not filter_func(event):
-                continue
-            for event_processor in event_processors:
-                event = event_processor(event)
-            events.append(event)
-        f.close()
-
-    if order_func:
-        events.sort(cmp=order_func)
-
-    return events
-            
-# return a list of all unique addresses that appear in an event list
-def query_unique_addresses(events):
-    return list(set((e['address'] for e in events)))
-        
-
-# returns a dict of addresss->(x,y) coordinates for all nodes
-# x and y are in the range [0,1)
-def assign_addresses(events):
-    # FIXME: this is just a hack to get things working
-    # returns random placements
-    import random
-    d = {}
-    for addr in query_unique_addresses(events):
-        x = random.random()
-        y = random.random()
-        d[addr] = (x, y)
-    return d
-    
-# return (min, max) timestamps in the given events
-def query_timestamp_range(events):
-    assert(len(events) > 0)
-    stamps = [e['timestamp'] for e in events]
-    stamps.sort()
-    return stamps[0], stamps[-1]
-
-
-# returns a matrix weighted by the (relatively normalized) number of times each
-# address selected each other address
-#   graph[src][dst]
-def build_comm_matrix(unique_address_list, events):
-    print "Building communication matrix"
-    tot = 0
-    n = len(unique_address_list)
-    matrix = [ [0.] * n for i in xrange(n) ]
-    index = dict((a,i) for i,a in enumerate(unique_address_list))
-    selevts = filter(EVENTS_FILTER_EVENTTYPE("select"), events)
-    assert(len(selevts) > 0)
-    for e in selevts:
-        tot += 1
-        src = e['address']
-        dst = e['data']['selected']
-        matrix[index[src]][index[dst]] += 1.0
-
-    for i in xrange(n):
-        for j in xrange(n):
-            matrix[i][j] /= tot
-
-    return matrix
-
-
-def matrix_edge_generator(comm_matrix):
-    print "Identifying communication matrix edges"
-    # matrix must be square!
-    n = len(comm_matrix)
-    for i in xrange(n):
-        for j in xrange(n):
-            if comm_matrix[i][j] > 0:
-                yield (i,j)
-
 
 class CurrentValueTracker(object):
     """
@@ -257,3 +146,155 @@ default_value is the value assigned to a key if no suitable events have occurred
         self.scanpoint = j
         return rval
     
+
+class RedundantEventEliminator(CurrentValueTracker):
+    def __init__(self, filter_func, value_func, value_equality_func = operator.eq):
+        CurrentValueTracker.__init__(self, [], filter_func, value_func, 
+                                     value_equality_func = value_equality_func)
+                         
+    def __call__(self, event):
+        if self.feed(event):
+            return None
+        else:
+            return event
+
+    # for redundant event filtering mode: 
+    #   returns True if the fed event is redundant and can be safely filtered, False otherwise
+    def feed(self, event):
+        if not self.filter_func(event):
+            return False
+        
+        key, value = self.value_func(event)
+        
+        if key in self.values and self.value_equality_func(value, self.values[key]):
+            return True
+        else:
+            self.values[key] = value
+            return False
+
+
+def ep_view_event_formatter(event):
+    if event['event_type'] != 'view':
+        return event
+    view = event['data']
+    if view:
+        for k, v in view.items():
+            view[k] = float(v)
+    return event
+
+ep_redundant_state_update_eliminator = RedundantEventEliminator(
+    filter_func = lambda e: e['event_type'].startswith('state-'),
+    value_func = lambda e: (e['address'], e['data']))
+
+ep_redundant_view_update_eliminator = RedundantEventEliminator(
+    filter_func = lambda e: e['event_type'] == 'view',
+    value_func = lambda e: (e['address'], e['data']))
+    
+
+default_event_processors = [
+    ep_view_event_formatter,
+    ep_redundant_state_update_eliminator,
+    ep_redundant_view_update_eliminator,
+]
+
+# returns a list of events
+def read_mica_logs(logdir, order_func = EVENTS_TIMESTAMP_CMP, 
+                   filter_func = lambda e: True,
+                   event_processors = default_event_processors):
+    
+    # event processors are functions:  event -> event,  possibly modifying the event
+
+    if os.path.isdir(logdir):
+        logdir = LogDir(logdir)
+    elif tarfile.is_tarfile(logdir):
+        logdir = LogDirTarFile(logdir)
+    elif zipfile.is_zipfile(logdir):
+        logdir = LogDirZipFile(logdir)
+    else:
+        raise Exception("unrecognized log file format %s" % logdir)
+
+    events = []
+
+    for logobj in logdir.logs():
+        f = logobj.open()
+        while True:
+            # xreadlines not implemented by TarFile
+            line = f.readline()
+            if line == '':
+                break  # EOF
+            event = json.loads(line)
+            if not filter_func(event):
+                continue
+            for event_processor in event_processors:
+                event = event_processor(event)
+                if not event: # event has been filtered
+                    break
+            if event:
+                events.append(event)
+        f.close()
+
+    if order_func:
+        events.sort(cmp=order_func)
+
+    return events
+            
+# return a list of all unique addresses that appear in an event list
+def query_unique_addresses(events):
+    return list(set((e['address'] for e in events)))
+        
+
+# returns a dict of addresss->(x,y) coordinates for all nodes
+# x and y are in the range [0,1)
+def assign_addresses(events):
+    # FIXME: this is just a hack to get things working
+    # returns random placements
+    import random
+    d = {}
+    for addr in query_unique_addresses(events):
+        x = random.random()
+        y = random.random()
+        d[addr] = (x, y)
+    return d
+    
+# return (min, max) timestamps in the given events
+def query_timestamp_range(events):
+    assert(len(events) > 0)
+    stamps = [e['timestamp'] for e in events]
+    stamps.sort()
+    return stamps[0], stamps[-1]
+
+
+# returns a matrix weighted by the (relatively normalized) number of times each
+# address selected each other address
+#   graph[src][dst]
+def build_comm_matrix(unique_address_list, events):
+    print "Building communication matrix"
+    tot = 0
+    n = len(unique_address_list)
+    matrix = [ [0.] * n for i in xrange(n) ]
+    index = dict((a,i) for i,a in enumerate(unique_address_list))
+    selevts = filter(EVENTS_FILTER_EVENTTYPE("select"), events)
+    assert(len(selevts) > 0)
+    for e in selevts:
+        tot += 1
+        src = e['address']
+        dst = e['data']['selected']
+        matrix[index[src]][index[dst]] += 1.0
+
+    for i in xrange(n):
+        for j in xrange(n):
+            matrix[i][j] /= tot
+
+    return matrix
+
+
+def matrix_edge_generator(comm_matrix):
+    print "Identifying communication matrix edges"
+    # matrix must be square!
+    n = len(comm_matrix)
+    for i in xrange(n):
+        for j in xrange(n):
+            if comm_matrix[i][j] > 0:
+                yield (i,j)
+
+

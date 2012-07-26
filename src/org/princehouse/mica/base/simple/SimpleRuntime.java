@@ -173,10 +173,11 @@ AcceptConnectionHandler {
 
 		Random rng = new Random(randomSeed);
 
-		logJson("state-initial",pinstance.getLogState());
-
+		logJson("state-initial",getProtocolInstance().getLogState());
+		logJson("view",getProtocolInstance().getView());
+		
 		while (running) {
-			double rate = getRate(pinstance);
+			double rate = getRate(getProtocolInstance());
 
 			logJson("rate",rate);
 
@@ -213,6 +214,8 @@ AcceptConnectionHandler {
 						// preUpdate is called even if partner is invalid (null or self address)
 						getProtocolInstance().preUpdate(partner);
 						logJson("state-pre-update", getProtocolInstance().getLogState());
+						logJson("view",getProtocolInstance().getView());
+
 					} catch(Throwable t) {
 						logJson("pre-update-throwable", new Object[]{"preUpdate() threw throwable", t});
 					}
@@ -251,6 +254,8 @@ AcceptConnectionHandler {
 					try {
 						getProtocolInstance().postUpdate();
 						logJson("state-post-update", getProtocolInstance().getLogState());
+						logJson("view",getProtocolInstance().getView());
+
 					} catch(Throwable t) {
 						logJson("post-update-throwable", new Object[]{"postUpdate() threw throwable", t});
 					}

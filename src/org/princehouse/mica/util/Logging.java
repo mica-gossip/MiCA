@@ -11,6 +11,6 @@ public class Logging {
 
 	public static class SelectEvent {
 		public Address selected = null;
-		public Distribution<Address> view = null;
+		transient public Distribution<Address> view = null;
  	};
 }

@@ -69,8 +69,8 @@ class MicaVisGui:
 
         # current_node_state[addr] -> the latest state assigned to node "addr" w.r.t. the cursor self.get_current_i()
         self.current_node_view = logs.CurrentValueTracker(events,
-                                                           filter_func = lambda e: e['event_type'] == 'select',
-                                                           value_func = lambda e: (e['address'],e['data']['view']))
+                                                           filter_func = lambda e: e['event_type'] == 'view',
+                                                           value_func = lambda e: (e['address'],e['data']))
         self.add_cursor_listener(self.current_node_view.set_i)
 
     def add_cursor_listener(self, f):
@@ -496,22 +496,29 @@ class IGraphDrawingArea(gtk.DrawingArea):
     def draw_event_gossip_init_connection_failure(self, event, cr):
         self.draw_event_failure(event,cr)
 
-    def draw_event_select(self, event, cr):
-        # data : selected address
-        address = event['address']
-        select_event = event['data']  # a JSON-converted Logging.SelectEvent object
-        selected = select_event['selected']
-        view = select_event['view']
+    def draw_event_view(self, event, cr):
+        if self.config_draw_current_view_graph:
+            return # don't bother drawing if we're already drawing the current view graph
+
+        view = event['data']
         if isinstance(view, dict):
             # view is a distribution, not null.  draw the distribution
             for neighbor_address, probability_mass in view.items():
                 line_width = max(1.0, self.view_max_outline_width * probability_mass)
                 cr.set_line_width(line_width)
-                if neighbor_address == selected:
-                    color = self.select_edge_color
-                else:
-                    color = self.view_edge_color
-                self.draw_arrow_between_nodes(cr, address, neighbor_address, color=color)
+                self.draw_arrow_between_nodes(cr, address, neighbor_address, color=self.view_edge_color)
+        else:
+            # draw null select
+            self.draw_event_failure(event,cr)
+            
+
+    def draw_event_select(self, event, cr):
+        # data : selected address
+        address = event['address']
+        select_event = event['data']  # a JSON-converted Logging.SelectEvent object
+        selected = select_event['selected']
+        if selected:
+            self.draw_arrow_between_nodes(cr, address, selected, color=self.select_edge_color)
         else:
             # draw null select
             self.draw_event_failure(event,cr)
