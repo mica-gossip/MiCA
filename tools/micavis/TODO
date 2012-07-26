@@ -1,11 +1,5 @@
-
-* log accumulator
-     track current values for every node
-
-* log post-processors
-    - insert state-change events 
-      (or, perhaps, delete all state events that do not change state)
-
+* fix display tree performance by making it dynamic 
+  - eliminate major performance bottleneck
 
 * add boolean options to GUI
      show comm graph
