@@ -1,0 +1,20 @@
+
+* log accumulator
+     track current values for every node
+
+* log post-processors
+    - insert state-change events 
+      (or, perhaps, delete all state events that do not change state)
+
+
+* add boolean options to GUI
+     show comm graph
+     show current view
+
+* add round display to GUI
+     show current round value
+
+
+* clickable nodes
+     - identify clicked node
+     - display state somewhere [terminal would probably work fine]
