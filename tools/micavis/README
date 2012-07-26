@@ -16,4 +16,3 @@ in igraph directory:
   # igraph compiled .so is in /usr/local/lib... tell ubuntu about that
   sudo ldconfig    
   
-   (Ubuntu: apt-get install libigraph-dev, but the python extension must be downloaded and built separately.  You will need python-dev package)

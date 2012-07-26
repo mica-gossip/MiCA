@@ -1,4 +1,4 @@
-import os, re, sys, json, tarfile, zipfile
+import os, re, sys, json, tarfile, zipfile, operator
 
 def EVENTS_TIMESTAMP_CMP(ev1, ev2): 
     return cmp(ev1['timestamp'], ev2['timestamp'])
@@ -55,10 +55,26 @@ class LogDirZipFile(LogCollection):
         return [LogZipFile((zf, zipinfo)) for zipinfo in logs]
 
 
-# returns a list of event
+def ep_select_event_formatter(event):
+    if event['event_type'] != 'select':
+        return event
+    view = event['data']['view']
+    if view:
+        for k, v in view.items():
+            view[k] = float(v)
+    return event
+
+default_event_processors = [
+    ep_select_event_formatter,
+]
+
+# returns a list of events
 def read_mica_logs(logdir, order_func = EVENTS_TIMESTAMP_CMP, 
-                   filter_func = None):
-    events = []    
+                   filter_func = lambda e: True,
+                   event_processors = default_event_processors):
+    
+    # event processors are functions:  event -> event,  possibly modifying the event
+
     if os.path.isdir(logdir):
         logdir = LogDir(logdir)
     elif tarfile.is_tarfile(logdir):
@@ -68,6 +84,8 @@ def read_mica_logs(logdir, order_func = EVENTS_TIMESTAMP_CMP,
     else:
         raise Exception("unrecognized log file format %s" % logdir)
 
+    events = []
+
     for logobj in logdir.logs():
         f = logobj.open()
         while True:
@@ -76,12 +94,12 @@ def read_mica_logs(logdir, order_func = EVENTS_TIMESTAMP_CMP,
             if line == '':
                 break  # EOF
             event = json.loads(line)
+            if not filter_func(event):
+                continue
+            for event_processor in event_processors:
+                event = event_processor(event)
             events.append(event)
         f.close()
-
-
-    if filter_func != None:
-        events = filter(filter_func, events)
 
     if order_func:
         events.sort(cmp=order_func)
@@ -147,3 +165,95 @@ def matrix_edge_generator(comm_matrix):
             if comm_matrix[i][j] > 0:
                 yield (i,j)
 
+
+class CurrentValueTracker(object):
+    """
+filter_func is a function:  event -> boolean
+    value_func will only be run on events for which filter_func is true
+
+value_func is a function:  event -> (K,T)
+    where k is a key bucket and T is the type of value being recorded for each key
+
+value_equality_func is a function: T x T -> boolean
+    it says whether two values are equal or not. defaults to python '==' equality
+
+default_value is the value assigned to a key if no suitable events have occurred
+    """
+    def __init__(self, events, filter_func, value_func, i=0, value_equality_func = operator.eq, default_value = None):
+        self.events = events
+        self.filter_func = filter_func
+        self.value_func = value_func
+        self.default_value = default_value
+        self.value_equality_func = value_equality_func
+        self.values = {} # maps key -> (event_i, value),  where event_i <= i and no greater event_j <= i returns true for filter_func
+             # returns (-1,default_value) if no suitable event sets the value
+        self.set_i(i)
+
+        # if the cursor is advanced <= forward_scan_limit events, then we update the existing value 
+        # cache by scanning the newly added interval.  Else, we delete the value cache and let it be passively
+        # rebuild
+        self.forward_scan_limit = 20
+
+
+    def set_i(self, i):
+        # scanpoint = the place to resume the backwards scanning, i.e, invariant is that [scanpoint,self.i] has already been scanned
+        if not hasattr(self, 'i'):
+            # advanced beyond the forward scan limit; clear the cache and let it get rebuilt passively
+            self.values.clear()
+            self.i = i
+            self.scanpoint = i            
+        elif i == self.i:
+            return
+        elif (i > self.i) and (i - self.i) <= self.forward_scan_limit:
+            # active forward scan
+            for j in xrange(self.i+1, i+1):
+                e = self.events[j]
+                if not self.filter_func(e):
+                    continue
+                k,v = self.value_func(e)
+                self.values[k] = (j,v)  # overwrite older values, if they exist
+            self.i = i 
+            # scanpoint is unchanged
+        elif i < self.i:
+            # remove all values that were set in the future
+            for k,(j,v) in self.values.items():
+                if j > i:
+                    del self.values[k]
+            self.i = i
+            self.scanpoint = i
+        else:
+            # advanced beyond the forward scan limit; clear the cache and let it get rebuilt passively
+            self.values.clear()
+            self.i = i
+            self.scanpoint = i
+            
+    
+    def __getitem__(self, key):
+        j, val = self.get(key)
+        return val
+
+    def get(self, key):
+        if key in self.values:
+            return self.values[key]
+
+        j = self.scanpoint
+        
+        while j >= 0:
+            e = self.events[j]
+            if not self.filter_func(e):
+                j -= 1
+                continue
+            k,v = self.value_func(e)
+            rval = (j,v)
+            self.values[k] = rval
+            if key == k:
+                self.scanpoint = j
+                return rval
+            j -= 1
+
+        # j < 0
+        rval = (-1,self.default_value)
+        self.values[key] = rval
+        self.scanpoint = j
+        return rval
+    

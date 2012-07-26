@@ -148,7 +148,8 @@ public class MergeCorrelated extends MergeBase {
 		
 		outcomes.put(MergeSelectionCase.P1, alpha);
 		outcomes.put(MergeSelectionCase.P2, beta);
-		outcomes.put(MergeSelectionCase.BOTH, gamma);
+		outcomes.put(MergeSelectionCase.BOTH_P1P2, gamma / 2.0);
+		outcomes.put(MergeSelectionCase.BOTH_P2P1, gamma / 2.0);
 
 		return outcomes;
 	}

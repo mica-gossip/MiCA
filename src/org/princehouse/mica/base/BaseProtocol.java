@@ -109,9 +109,10 @@ public abstract class BaseProtocol implements Protocol, Serializable {
 	}
 	
 	public void logJson(String eventType, final Object obj) {
-		InstanceLogObject logobj = new InstanceLogObject();
-		logobj.data = obj;
-		Runtime.getRuntime().logJson(getAddress(), eventType, logobj);
+//		InstanceLogObject logobj = new InstanceLogObject();
+//		logobj.data = obj;
+//		Runtime.getRuntime().logJson(getAddress(), eventType, logobj);
+		Runtime.getRuntime().logJson(getAddress(), eventType, obj);
 	}
 
 	/**

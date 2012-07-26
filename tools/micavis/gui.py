@@ -16,6 +16,7 @@ class GraphWindow(object):
     # graph = igraph instance
     # node_name_map = map from address_str => vertex id
     def __init__(self, gui, graph, node_name_map):
+        
         window = gtk.Window()
         self.gui = gui
         vbox = gtk.VBox(False, 0)
@@ -49,6 +50,7 @@ class MicaVisGui:
 
     def __init__(self, events):
         self.current = 0
+        self.cursor_listeners = []   # functions that updated cursor ("current") values will be passed to, whenever it changes
         self.adj = None
         self.events = events
         self.create_event_window()
@@ -59,6 +61,23 @@ class MicaVisGui:
         if self.adj is None:
             print "Warning: gui.adj is None, graph window creation failed somehow"
 
+        # current_node_state[addr] -> the latest state assigned to node "addr" w.r.t. the cursor self.get_current_i()
+        self.current_node_state = logs.CurrentValueTracker(events, 
+                                                           filter_func = lambda e: e['event_type'].startswith('state-'),
+                                                           value_func = lambda e: (e['address'],e['data']) )
+        self.add_cursor_listener(self.current_node_state.set_i)
+
+        # current_node_state[addr] -> the latest state assigned to node "addr" w.r.t. the cursor self.get_current_i()
+        self.current_node_view = logs.CurrentValueTracker(events,
+                                                           filter_func = lambda e: e['event_type'] == 'select',
+                                                           value_func = lambda e: (e['address'],e['data']['view']))
+        self.add_cursor_listener(self.current_node_view.set_i)
+
+    def add_cursor_listener(self, f):
+        # TODO currently no way to remove cursor listeners
+        self.cursor_listeners.append(f)
+        f(self.get_current_i())
+                                                          
     # close the window and quit
     def delete_event(self, widget, event, data=None):
         gtk.main_quit()
@@ -76,7 +95,9 @@ class MicaVisGui:
             return
         self.current = i
         self.update_selection()
-        
+        for l in self.cursor_listeners:
+            l(i)
+
     def update_selection(self):
         self.reset_tree_selection()
         self.reset_slider_selection()
@@ -112,6 +133,7 @@ class MicaVisGui:
     def create_default_graph(self):
         g = igraph.Graph(directed=True)
         ual = logs.query_unique_addresses(self.events)
+        self.unique_addresses = ual
         print "Logs report %s unique addresses" % len(ual)
         g.add_vertices(len(ual))
         namemap = dict((n,i) for i,n in enumerate(ual))
@@ -292,6 +314,11 @@ class IGraphDrawingArea(gtk.DrawingArea):
         if graph is None:
             raise Exception
 
+        # --- plot parameters
+        self.config_draw_communication_graph = False
+        self.config_draw_current_view_graph = True
+        # ---
+
         self.gui = gui
         self.border = (15,15) # x,y blank pixel space on the display
         gtk.DrawingArea.__init__(self)
@@ -336,7 +363,15 @@ class IGraphDrawingArea(gtk.DrawingArea):
 
         # Draw the graph
         assert(self.graph != None)
-        plot.add(self.graph, layout = self.node_coordinates)
+
+        if self.config_draw_communication_graph:
+            plot.add(self.graph, layout = self.node_coordinates)
+
+        if self.config_draw_current_view_graph:
+            viewgraph = self.build_current_viewgraph()
+            plot.add(viewgraph, layout = self.node_coordinates)
+
+
         plot.redraw()
 
         context.set_source_surface(cairo_surface)
@@ -358,12 +393,29 @@ class IGraphDrawingArea(gtk.DrawingArea):
  
         return False
 
+    def build_current_viewgraph(self):
+        # construct a graph of the current view, as derived from self.gui.current_node_view
+        # TODO YOU ARE HERE
+        g = igraph.Graph(directed=True)
+        g.add_vertices(len(self.gui.unique_addresses))
+        
+        edges = []
+        for addr in self.gui.unique_addresses:
+            view = self.gui.current_node_view[addr]
+            src_nid = self.node_name_map[addr]            
+            if view:
+                for neighbor_addr in view.keys():
+                    dst_nid = self.node_name_map[neighbor_addr]
+                    edges.append( (src_nid, dst_nid) )
+        g.add_edges(edges)
+        return g
+
     # ----------------- static drawing parameters
     current_node_color = (0.9, 0.9, 0.6) 
     recent_node_color = (0.7, 0.7, 0.4) 
     failure_node_color = (1., 0.3, 0.3) 
     node_outline_width = 4
-    view_max_outline_width = 8
+    view_max_outline_width = 12
     select_edge_color = (1.0, 1.0, 0.5)
     view_edge_color = (0.4, 0.8, 1.0)
 
@@ -452,15 +504,14 @@ class IGraphDrawingArea(gtk.DrawingArea):
         view = select_event['view']
         if isinstance(view, dict):
             # view is a distribution, not null.  draw the distribution
-            for key,value in view.items():
-                value = float(value)
-                line_width = max(1.0, self.view_max_outline_width * value)
+            for neighbor_address, probability_mass in view.items():
+                line_width = max(1.0, self.view_max_outline_width * probability_mass)
                 cr.set_line_width(line_width)
-                if key == selected:
+                if neighbor_address == selected:
                     color = self.select_edge_color
                 else:
                     color = self.view_edge_color
-                self.draw_arrow_between_nodes(cr, address, key, color=color)
+                self.draw_arrow_between_nodes(cr, address, neighbor_address, color=color)
         else:
             # draw null select
             self.draw_event_failure(event,cr)
@@ -528,6 +579,9 @@ def main(args=sys.argv):
     gui = MicaVisGui(events)
     gtk.main()
     
+
+
+
 
 
 

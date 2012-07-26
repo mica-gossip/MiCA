@@ -23,6 +23,8 @@ import com.google.gson.JsonPrimitive;
 import com.google.gson.JsonSerializationContext;
 import com.google.gson.JsonSerializer;
 
+import fj.P2;
+
 /**	
  * The Runtime instance represents the local node in the gossip network. 
  * It runs the local protocol instance with the help of a RuntimeAgent,
@@ -143,7 +145,12 @@ public abstract class Runtime<P extends Protocol> {
 		this.gsonBuilder = gsonBuilder;
 	}
 
+	/**
+	 * Any custom support for json-serialization of various classes should happen here
+	 */
 	public void initGsonBuilder() {
+		
+		// Custom serialization for addresses
 		JsonSerializer<Address> addressSerializer = new JsonSerializer<Address>() {
 			@Override
 			public JsonElement serialize(Address src, Type typeOfSrc, JsonSerializationContext context) {
@@ -151,6 +158,19 @@ public abstract class Runtime<P extends Protocol> {
 			}
 		};
 		getGsonBuilder().registerTypeAdapter(Address.class, addressSerializer);	
+		
+		
+		/*  doesn't work... why not?
+		JsonSerializer<P2<?,?>> p2Serializer = new JsonSerializer<P2<?,?>>() {
+			@Override
+			// FIXME this is a hack --- instead of converting pair elements to a string, should run proper json serialization
+			public JsonElement serialize(P2<?,?> src, Type typeOfSrc,
+					JsonSerializationContext context) {
+				return new JsonPrimitive(String.format("[\"%s\",\"%s\"]", src._1(), src._2()));
+			}
+		};
+		getGsonBuilder().registerTypeAdapter(P2.class, p2Serializer);	 */
+
 	}
 	
 	public void logJson(final String eventType, final Object theEvent) {
