@@ -1,6 +1,3 @@
-* fix display tree performance by making it dynamic 
-  - eliminate major performance bottleneck
-
 * add boolean options to GUI
      show comm graph
      show current view
@@ -8,7 +5,7 @@
 * add round display to GUI
      show current round value
 
-
-* clickable nodes
+* clickable nodes on graph
      - identify clicked node
      - display state somewhere [terminal would probably work fine]
+

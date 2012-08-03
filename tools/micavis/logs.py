@@ -148,13 +148,14 @@ default_value is the value assigned to a key if no suitable events have occurred
     
 
 class RedundantEventEliminator(CurrentValueTracker):
-    def __init__(self, filter_func, value_func, value_equality_func = operator.eq):
+    def __init__(self, filter_func, value_func, value_equality_func = operator.eq, adapter_func = lambda e: None):
         CurrentValueTracker.__init__(self, [], filter_func, value_func, 
                                      value_equality_func = value_equality_func)
+        self.adapter_func = adapter_func
                          
     def __call__(self, event):
         if self.feed(event):
-            return None
+            return self.adapter_func(event)
         else:
             return event
 
@@ -182,13 +183,25 @@ def ep_view_event_formatter(event):
             view[k] = float(v)
     return event
 
+def remove_redundant_state_update(event):
+    del event['data']['state']
+    event['data']['state-unchanged'] = True
+    return event
+
+def remove_redundant_view_update(event):
+    del event['data']['view']
+    event['data']['view-unchanged'] = True
+    return event
+
 ep_redundant_state_update_eliminator = RedundantEventEliminator(
     filter_func = lambda e: e['event_type'].startswith('state-'),
-    value_func = lambda e: (e['address'], e['data']))
+    value_func = lambda e: (e['address'], e['data']['state']),
+    adapter_func = remove_redundant_state_update)
 
 ep_redundant_view_update_eliminator = RedundantEventEliminator(
-    filter_func = lambda e: e['event_type'] == 'view',
-    value_func = lambda e: (e['address'], e['data']))
+    filter_func = lambda e: e['event_type'].startswith('state-'),
+    value_func = lambda e: (e['address'], e['data']['view']),
+    adapter_func = remove_redundant_view_update)
     
 
 default_event_processors = [

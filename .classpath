@@ -6,8 +6,7 @@
 	<classpathentry kind="lib" path="lib/jcommander-1.24-SNAPSHOT.jar"/>
 	<classpathentry kind="lib" path="lib/jgrapht0.8.jar"/>
 	<classpathentry kind="lib" path="lib/asm3-all-3.3.2.jar"/>
-	<classpathentry kind="lib" path="lib/google-gson-stream-2.1.jar"/>
-	<classpathentry kind="lib" path="lib/gson-2.1.jar"/>
 	<classpathentry kind="con" path="org.eclipse.jdt.junit.JUNIT_CONTAINER/4"/>
+	<classpathentry kind="lib" path="lib/gson-2.2.2.jar" sourcepath="lib/gson-2.2.2-javadoc.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>

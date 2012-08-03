@@ -12,6 +12,9 @@ from util import *
 import logs
 from math import *
 
+from event_tree_model import *
+
+
 class GraphWindow(object):
     # graph = igraph instance
     # node_name_map = map from address_str => vertex id
@@ -62,15 +65,21 @@ class MicaVisGui:
             print "Warning: gui.adj is None, graph window creation failed somehow"
 
         # current_node_state[addr] -> the latest state assigned to node "addr" w.r.t. the cursor self.get_current_i()
-        self.current_node_state = logs.CurrentValueTracker(events, 
-                                                           filter_func = lambda e: e['event_type'].startswith('state-'),
-                                                           value_func = lambda e: (e['address'],e['data']) )
+
+
+        self.current_node_state = logs.CurrentValueTracker(
+            events, 
+            filter_func = lambda e: e['event_type'].startswith('state-') and 'state' in e['data'],
+            value_func = lambda e: (e['address'],e['data']['state']) )
+
         self.add_cursor_listener(self.current_node_state.set_i)
 
         # current_node_state[addr] -> the latest state assigned to node "addr" w.r.t. the cursor self.get_current_i()
-        self.current_node_view = logs.CurrentValueTracker(events,
-                                                           filter_func = lambda e: e['event_type'] == 'view',
-                                                           value_func = lambda e: (e['address'],e['data']))
+        self.current_node_view = logs.CurrentValueTracker(
+            events,
+            filter_func = lambda e: e['event_type'].startswith('state-') and 'view' in e['data'],
+            value_func = lambda e: (e['address'],e['data']['view']))
+
         self.add_cursor_listener(self.current_node_view.set_i)
 
     def add_cursor_listener(self, f):
@@ -160,15 +169,10 @@ class MicaVisGui:
         self.event_scrollwindow.set_policy(gtk.POLICY_AUTOMATIC, gtk.POLICY_ALWAYS)
         self.event_vbox = gtk.VBox()
         self.event_vbox.pack_start(self.event_scrollwindow, True)
-
-        # create a TreeStore with one string column to use as the model
-        self.treestore = gtk.TreeStore(int, str, str, str)
-        self.tree_model = self.treestore
-
-        self.init_populate_treestore()
+        self.treemodel = self.initialize_treemodel()
 
         # create the TreeView using treestore
-        self.treeview = gtk.TreeView(self.treestore)
+        self.treeview = gtk.TreeView(self.treemodel)
         self.tree_selection = self.treeview.get_selection()
         self.tree_selection.set_mode(gtk.SELECTION_SINGLE)
         self.tree_selection.connect("changed",self.event_tree_selection_changed)
@@ -217,7 +221,6 @@ class MicaVisGui:
         self.event_window.add(self.event_vbox)
         self.event_window.show_all()
 
-
     def get_current_tree_selection(self):
         model, itr = self.tree_selection.get_selected()
         if itr:
@@ -229,19 +232,10 @@ class MicaVisGui:
     def event_tree_selection_changed(self, widget):
         self.set_current_i(self.get_current_tree_selection())
         
-    def init_populate_treestore(self):
+    def initialize_treemodel_static(self):
         # populate the table with events
+        ts = gtk.TreeStore(int, str, str, str)
 
-        def fmt_tstamp(t):
-            # STUPID HACK to work around 32-bit limitations in pygtk C gui
-            if False and not isinstance(t,long):
-                return t
-            else:
-                onetime_warning("Warning: Timestamps truncated because GUI elements restricted to 32-bit integers")
-                t = t & 0x0FFFFFFF
-                return int(t)
-
-        
         # returns (truncated_string, truncated_status)
         #     true = truncated
         #     false = not truncated
@@ -266,13 +260,13 @@ class MicaVisGui:
                     datas, recurse = trunc(sdata)
                     address = data.get('address',address)
                     if 'timestamp' in data:
-                        tstamp = fmt_tstamp(data['timestamp'])
+                        tstamp = gtk_fmt_tstamp(data['timestamp'])
                 else: 
                     recurse = False
                     datas = str(data)
                         
 
-                p2 = self.treestore.append(parent, [tstamp, address, key, datas])
+                p2 = ts.append(parent, [tstamp, address, key, datas])
                 
                 if recurse:
                     recpop(tstamp, p2, data)
@@ -284,7 +278,7 @@ class MicaVisGui:
             except KeyError:
                 data = ''
 
-            tstamp = fmt_tstamp(event['timestamp'])
+            tstamp = gtk_fmt_tstamp(event['timestamp'])
 
             if isinstance(data,dict):
 
@@ -297,7 +291,7 @@ class MicaVisGui:
                 recurse = False
                 datas = str(data)
 
-            parent = self.treestore.append(None, [
+            parent = ts.append(None, [
                     tstamp,
                     event['address'],
                     event['event_type'],
@@ -307,6 +301,14 @@ class MicaVisGui:
             if recurse:
                 recpop(tstamp, parent, data)
             
+        return ts
+
+    def initialize_treemodel_dynamic(self):
+#        import treemodel
+#        return treemodel.MyTreeModel()
+        return EventTreeModel(self.events)
+
+    initialize_treemodel = initialize_treemodel_dynamic
 
 
 class IGraphDrawingArea(gtk.DrawingArea):
@@ -435,7 +437,7 @@ class IGraphDrawingArea(gtk.DrawingArea):
         try:
             draw_func = getattr(self,fname)
         except AttributeError:
-            print >> sys.stderr, "don't know how to draw event type %s" % etype
+            onetime_warning("warning: don't know how to draw event type %s" % etype)
             return
 
         draw_func(event, cr)
