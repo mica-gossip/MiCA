@@ -70,8 +70,8 @@ class MicaVisGui:
         self.current_node_state = logs.CurrentValueTracker(
             events, 
             filter_func = lambda e: e['event_type'].startswith('state-') and 'state' in e['data'],
-            value_func = lambda e: (e['address'],e['data']['state']) )
-
+            value_func = lambda e: (e['address'],e['data']) )
+#            value_func = lambda e: (e['address'],e['data']['state']) )
         self.add_cursor_listener(self.current_node_state.set_i)
 
         # current_node_state[addr] -> the latest state assigned to node "addr" w.r.t. the cursor self.get_current_i()
@@ -107,6 +107,23 @@ class MicaVisGui:
         for l in self.cursor_listeners:
             l(i)
 
+        self.dump_event(self.events[i])
+
+    # print event info to console when an event is selected
+    def dump_event(self, e):
+        if 'address' not in e:
+            return
+        addr = e['address']
+        state = self.current_node_state[addr]
+        
+        q = [ (0, ('root',state))]
+        while q:
+            i, (n,s) = q.pop()
+            if s is None:
+                s = {}
+            print "%s%s: %s" % ('  '*i,n,s.get('stateType','(None)'))
+            q += [(i+1,ls) for ls in logs.subprotocols(s)]
+        
     def update_selection(self):
         self.reset_tree_selection()
         self.reset_slider_selection()
