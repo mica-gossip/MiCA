@@ -311,3 +311,18 @@ def matrix_edge_generator(comm_matrix):
                 yield (i,j)
 
 
+def subprotocols(protocol_data):
+    # yields a list of (key, sub_data) tuples 
+    # the key must be 
+
+    # data is a {state:  ...   view:  ...  stateType: ...} dict, as
+    # produced by the custom json serialization
+    
+    # returns (state, {childname: childnode,  ...})
+
+    if protocol_data:
+        s = protocol_data.get('state',None)
+        if s:
+            for key in ('p1','p2'):
+                if key in s:
+                    yield (key,s[key])
