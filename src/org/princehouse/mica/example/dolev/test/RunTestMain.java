@@ -7,9 +7,12 @@ import org.princehouse.mica.base.simple.SelectException;
 import org.princehouse.mica.example.dolev.TestStateMachine;
 import org.princehouse.mica.lib.abstractions.Overlay;
 import org.princehouse.mica.util.Functional;
+import org.princehouse.mica.util.Randomness;
 import org.princehouse.mica.util.harness.TestHarness;
 import org.princehouse.mica.util.harness.TestHarness.ProtocolInstanceFactory;
 import org.princehouse.mica.util.harness.TestHarness.TestHarnessOptions;
+
+import com.sun.corba.se.impl.javax.rmi.CORBA.Util;
 
 /**
  * Test the pulse protocol
@@ -44,7 +47,9 @@ public class RunTestMain {
 							throw new RuntimeException(e);
 						}
 						
-						TestStateMachine bc = new TestStateMachine(neighborList, f);
+						List<Address> neighborListShuffled = Randomness.shuffle(Randomness.random, neighborList);
+						
+						TestStateMachine bc = new TestStateMachine(neighborListShuffled, f);
 						return bc;
 			}
 			

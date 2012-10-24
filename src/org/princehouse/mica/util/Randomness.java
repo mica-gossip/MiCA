@@ -1,7 +1,9 @@
 package org.princehouse.mica.util;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.LinkedList;
+import java.util.List;
 import java.util.Random;
 
 public class Randomness {
@@ -87,6 +89,17 @@ public class Randomness {
 		}
 		
 		throw new RuntimeException("program should never reach this point");
+	}
+	
+	public static <T> List<T> shuffle(Random r, List<T> list) {
+		// FIXME make efficient
+		List<T> out = Functional.list();
+		List<T> temp = Functional.list(Functional.extend(Functional.<T>list(), list));
+		while(temp.size() > 0) {
+			int i = r.nextInt(temp.size());
+			out.add(temp.remove(i));
+		}
+		return out;
 	}
 }
 

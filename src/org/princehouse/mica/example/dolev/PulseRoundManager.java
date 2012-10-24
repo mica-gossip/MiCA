@@ -1,9 +1,6 @@
 package org.princehouse.mica.example.dolev;
 
-import java.util.Collections;
-import java.util.Date;
 import java.util.List;
-import java.util.ListIterator;
 import java.util.Set;
 
 import org.princehouse.mica.base.BaseProtocol;
@@ -12,9 +9,12 @@ import org.princehouse.mica.base.annotations.View;
 import org.princehouse.mica.base.net.model.Address;
 import org.princehouse.mica.util.Functional;
 
-import fj.F;
-
 public class PulseRoundManager extends BaseProtocol {
+
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = 1L;
 
 	private int f = 0;
 
@@ -31,7 +31,7 @@ public class PulseRoundManager extends BaseProtocol {
 	@View
 	public Address nextPeer() {
 		int n = neighbors.size();
-		return neighbors.get( (cursor++) % n);
+		return neighbors.get( cursor % n);
 	}
 
 	@GossipUpdate
@@ -40,9 +40,18 @@ public class PulseRoundManager extends BaseProtocol {
 		that.reached.add(this.getAddress());
 	}
 
+	@Override
+	public void preUpdate(Address addr) { 
+		cursor++;
+	}
+	
 	public boolean ready() {
+		return getRemainingCount() <= 0;
+	}
+	
+	public int getRemainingCount() {
 		int n = neighbors.size();
-		return reached.size() >= n - f;
+		return (n - f) - reached.size();
 	}
 	
 	public void reset() {

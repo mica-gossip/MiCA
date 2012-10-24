@@ -9,7 +9,6 @@ import fj.F;
 
 public class CompleteGraph extends TestHarnessBaseGraph {
 	
-	// only works on even degrees for the time being
 	public CompleteGraph(List<Address> addresses) {
 		super(addresses);
 	}

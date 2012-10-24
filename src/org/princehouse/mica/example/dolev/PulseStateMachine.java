@@ -135,8 +135,11 @@ public class PulseStateMachine extends PulseRoundManager {
 	@Override
 	public void postUpdate() {
 		if (ready()) {
+			logJson("pulse-READY");
 			reset();
 			doRound();
+		} else {
+			logJson("pulse-not ready", this.getRemainingCount());
 		}
 	}
 

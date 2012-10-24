@@ -179,7 +179,7 @@ public abstract class Runtime<P extends Protocol> {
 //			out.println(gson.toJson("error:reference_cycle"));
 			// debugging:
 			ClassUtils.findReferenceCycles(logobj);
-			return;
+			//return;
 			
 		} catch (UnsupportedOperationException f) {
 			logJson(origin, String.format("error:logging:%s", f), theEvent.getClass().getName());
