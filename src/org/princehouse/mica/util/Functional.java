@@ -464,13 +464,13 @@ public class Functional {
 	}
 
 	public static <A, B> List<B> mapcast(final List<A> options) {
-		return (List<B>) map(options, new F<A, B>() {
+		return Functional.list(map(options, new F<A, B>() {
 			@SuppressWarnings("unchecked")
 			@Override
 			public B f(A a) {
 				return (B) a;
 			}
-		});
+		}));
 	}
 
 	public static <A, B> HashMap<A, B> hashMap() {

@@ -40,11 +40,22 @@ AcceptConnectionHandler {
 
 	public Address address;
 
-	protected SimpleRuntime(Address address) {
+	public SimpleRuntime(Address address) {
 		super();
-		this.address = address;
+		setAddress(address);
 	}
+	
+	//public SimpleRuntime() { 
+	//	this(null);
+	//}
 
+	public void setAddress(Address address) {
+		if(this.address != null && !this.address.equals(address)) {
+			throw new RuntimeException("previous address non-null; cannot change the address of an existing runtime");
+		}
+		this.address = address;
+		runtimeState.setAddress(address);
+	}
 	/**
 	 * Entry point for SimpleRuntime.  Starts a protocol in a new thread. 
 	 * Uses SimpleRuntime.DEFAULT_INTERVAL as the gossip interval and 
@@ -55,9 +66,9 @@ AcceptConnectionHandler {
 	 * @param daemon Launch thread as a daemon
 	 * @return New Runtime instance
 	 */
-	public static <T extends Protocol> Runtime<T> launch(final T pinstance,
-			final Address address, final boolean daemon) {
-		return launch(pinstance, address, daemon, DEFAULT_INTERVAL, DEFAULT_RANDOM_SEED);
+	public static <T extends Protocol> Runtime<T> launch(Runtime<T> rt, final T pinstance,
+	 final boolean daemon) {
+		return launch(rt, pinstance, daemon, DEFAULT_INTERVAL, DEFAULT_RANDOM_SEED);
 	}
 	
 	/**
@@ -70,13 +81,12 @@ AcceptConnectionHandler {
 	 * @param randomSeed Random seed to use for this runtime
 	 * @return New Runtime instance
 	 */
-	public static <T extends Protocol> Runtime<T> launch(final T pinstance,
-			final Address address, final boolean daemon, final int intervalMS, final long randomSeed) {
-		final Runtime<T> rt = new SimpleRuntime<T>(address);
+	public static <T extends Protocol> Runtime<T> launch(final Runtime<T> rt, final T pinstance,
+			 final boolean daemon, final int intervalMS, final long randomSeed) {
 		Thread t = new Thread() {
 			public void run() {
 				try {
-					rt.run(pinstance, address, intervalMS,
+					rt.run(pinstance, intervalMS,
 							randomSeed);
 				} catch (InterruptedException e) {
 					e.printStackTrace();
@@ -87,18 +97,33 @@ AcceptConnectionHandler {
 		t.start();
 		return rt;
 	}
-
+	
+	/**
+	 * COMPAT MODE --- DO NOT USE
+	 * should explicitly create a runtime and call Runtime.setRuntime BEFORE creating protocol instance 
+	 * 
+	 * @param pinstance
+	 * @param address
+	 * @return
+	 */
+	@Deprecated
+	public static <T extends Protocol> Runtime<T> launchDaemon(final T pinstance, Address address) {
+		Runtime<T> rt = new SimpleRuntime<T>(address);
+		return launch(rt, pinstance,true);
+	}
+	
 	/**
 	 * Entry point for SimpleRuntime.  Starts a protocol in a new thread. 
 	 * (Calls through to launch(), with the daemon flag true)
 	 * 
+	 * @param rt SimpleRuntime instance -- must be created prior to protocol instance creation
 	 * @param pinstance Local protocol instance
 	 * @param address Local address
 	 * @return New Runtime instance
 	 */
-	public static <T extends Protocol> Runtime<T> launchDaemon(final T pinstance,
-			final Address address) {
-		return launch(pinstance,address,true);
+	public static <T extends Protocol> Runtime<T> launchDaemon(Runtime<T> rt, final T pinstance
+			) {
+		return launch(rt, pinstance,true);
 	}
 
 	/**
@@ -111,9 +136,9 @@ AcceptConnectionHandler {
 	 * @param randomSeed random seed to be used for this runtime
 	 * @return New Runtime instance
 	 */
-	public static <T extends Protocol> Runtime<T> launchDaemon(final T pinstance,
+	public static <T extends Protocol> Runtime<T> launchDaemon(SimpleRuntime<T> rt, final T pinstance,
 			final Address address, int intervalMS, long randomSeed) {
-		return launch(pinstance,address,true, intervalMS, randomSeed);
+		return launch(rt, pinstance,true, intervalMS, randomSeed);
 	}
 	
 	
@@ -152,10 +177,12 @@ AcceptConnectionHandler {
 	private boolean running = true;
 
 	@Override
-	public void run(P pinstance, Address address, int intervalMS,
+	public void run(P pinstance, int intervalMS,
 			long randomSeed) throws InterruptedException {
 
-		super.run(pinstance, address, intervalMS, randomSeed);
+		final Address address = getAddress();
+		
+		super.run(pinstance, intervalMS, randomSeed);
 
 		// Initialize RuntimeState available to protocols
 		runtimeState.setAddress(address);

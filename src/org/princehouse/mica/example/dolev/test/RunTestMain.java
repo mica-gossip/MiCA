@@ -1,9 +1,10 @@
-package org.princehouse.mica.example.dolev;
+package org.princehouse.mica.example.dolev.test;
 
 import java.util.List;
 
 import org.princehouse.mica.base.net.model.Address;
 import org.princehouse.mica.base.simple.SelectException;
+import org.princehouse.mica.example.dolev.TestStateMachine;
 import org.princehouse.mica.lib.abstractions.Overlay;
 import org.princehouse.mica.util.Functional;
 import org.princehouse.mica.util.harness.TestHarness;
@@ -16,7 +17,7 @@ import org.princehouse.mica.util.harness.TestHarness.TestHarnessOptions;
  * @author lonnie
  *
  */
-public class Main {
+public class RunTestMain {
 	
 	
 	/** 
@@ -24,21 +25,16 @@ public class Main {
 	 * @param args
 	 */
 	public static void main(String[] args) {
-		final TestHarness<Pulse> harness = new TestHarness<Pulse>();
+		final TestHarness<TestStateMachine> harness = new TestHarness<TestStateMachine>();
 		
 		TestHarnessOptions options = TestHarness.parseOptions(args);
 		options.graphType = "complete";
 		
-		final int d = 200; // ms
 		final int f = options.n / 4;
-		final int t1 = d * 5;
-		final int t2 = d * 5;
-		final int t3 = d * 5;
-		final int t4 = d * 5;
 				
-		ProtocolInstanceFactory<Pulse> factory = new ProtocolInstanceFactory<Pulse>() {
+		ProtocolInstanceFactory<TestStateMachine> factory = new ProtocolInstanceFactory<TestStateMachine>() {
 			@Override
-			public Pulse createProtocolInstance(int nodeId, Address address,
+			public TestStateMachine createProtocolInstance(int nodeId, Address address,
 					Overlay overlay) {
 			
 						List<Address> neighborList;
@@ -48,7 +44,7 @@ public class Main {
 							throw new RuntimeException(e);
 						}
 						
-						Pulse bc = new Pulse(neighborList, d, t1, t2, t3, t4, f);
+						TestStateMachine bc = new TestStateMachine(neighborList, f);
 						return bc;
 			}
 			

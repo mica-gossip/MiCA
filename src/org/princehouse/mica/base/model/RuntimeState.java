@@ -51,7 +51,7 @@ public class RuntimeState implements Serializable {
 		// int hc = hashCode();
 		// System.out.printf("setAddress. thread: %d     state-hash: %d    address: %s\n",tid,hc,address );
 		
-		if(this.address != null) 
+		if(this.address != null && !(this.address.equals(address)))
 			throw new RuntimeException("Address is read-only once it has been set"); 
 		this.address = address;
 	}

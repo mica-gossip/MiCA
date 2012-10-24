@@ -175,8 +175,13 @@ class RedundantEventEliminator(CurrentValueTracker):
 
 
 def ep_view_event_formatter(event):
-    if event['event_type'] != 'view':
-        return event
+    try:
+        if event['event_type'] != 'view':
+            return event
+    except Exception, e:
+        print >> sys.stderr, "event == %s" % repr(event)
+        raise e
+
     view = event['data']
     if view:
         for k, v in view.items():
@@ -239,6 +244,9 @@ def read_mica_logs(logdir, order_func = EVENTS_TIMESTAMP_CMP,
             if not filter_func(event):
                 continue
             for event_processor in event_processors:
+#                if 'error' in event:
+#                    print "EVENT", repr(event)
+#                    print "PROCESSOR", repr(event_processor)
                 event = event_processor(event)
                 if not event: # event has been filtered
                     break

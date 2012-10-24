@@ -27,8 +27,8 @@ public class TestFindMinSymmetricProtocol {
 		FindMinSymmetric node2 = new FindMinSymmetric(3, Functional.set(a1));
 
 		
-		Runtime<FindMinSymmetric> rt1 = SimpleRuntime.launchDaemon(node1, a1);
-		Runtime<FindMinSymmetric> rt2 = SimpleRuntime.launchDaemon(node2, a2);
+		Runtime<FindMinSymmetric> rt1 = SimpleRuntime.launchDaemon(new SimpleRuntime<FindMinSymmetric> (a1), node1);
+		Runtime<FindMinSymmetric> rt2 = SimpleRuntime.launchDaemon(new SimpleRuntime<FindMinSymmetric> (a2), node2);
 
 		
 		try {

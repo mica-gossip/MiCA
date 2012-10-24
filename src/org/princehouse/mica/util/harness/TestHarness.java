@@ -136,11 +136,13 @@ public class TestHarness<Q extends Protocol> {
 
 			Overlay neighbors = g.getOverlay(addr);
 			
-
-			//Q pinstance = createNodeFunc.f(i, address, neighbors);
+			// FIXME need to associate runtime right here
+			SimpleRuntime<Q> rt = new SimpleRuntime<Q>(addr);
+			Runtime.setRuntime(rt);
 			Q pinstance = factory.createProtocolInstance(i++, addr, neighbors);
-			Runtime<Q> rt = SimpleRuntime.launchDaemon(pinstance, addr, getOptions().roundLength, getOptions().seed);
-
+			SimpleRuntime.launchDaemon(rt, pinstance, addr, getOptions().roundLength, getOptions().seed);
+			Runtime.setRuntime(null);
+			
 			runtimes.add(rt);
 			
 		}

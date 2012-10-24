@@ -38,7 +38,8 @@ public class TestFindMinSymmetricProtocolN {
 			view.add(addresses[(i+3)%n]);
 			view.add(addresses[(i+n/2)%n]);
 			FindMinSymmetric node = new FindMinSymmetric(i+1, view);
-			rts.add(SimpleRuntime.launchDaemon(node,addresses[i]));
+			SimpleRuntime<FindMinSymmetric> rt = new SimpleRuntime<FindMinSymmetric>(addresses[i]);
+			rts.add(SimpleRuntime.launchDaemon(rt, node));
 		}
 		
 		try {

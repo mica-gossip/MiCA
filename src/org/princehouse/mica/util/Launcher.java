@@ -126,7 +126,7 @@ public class Launcher {
 		jc.parse(subargs);
 		// Attempt to run the initialize method
 		runInitialize(protocolClass, protocolInstance);		
-		SimpleRuntime.launch(protocolInstance, address, false, intervalMS, randomSeed);
+		SimpleRuntime.launch(new SimpleRuntime<Protocol>(address), protocolInstance, false, intervalMS, randomSeed);
 	}
 	
 	private void runInitialize(Class<?> protocolClass, Protocol classInstance) {

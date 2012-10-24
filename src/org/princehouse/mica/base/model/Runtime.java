@@ -175,9 +175,15 @@ public abstract class Runtime<P extends Protocol> {
 			out.println(msg);
 		} catch (StackOverflowError e) {
 			// object probably has a reference cycle reference cycle
-			out.println(gson.toJson("error:reference cycle"));
+			logJson(origin, "error:logging:reference_cycle", theEvent.getClass().getName());
+//			out.println(gson.toJson("error:reference_cycle"));
 			// debugging:
 			ClassUtils.findReferenceCycles(logobj);
+			return;
+			
+		} catch (UnsupportedOperationException f) {
+			logJson(origin, String.format("error:logging:%s", f), theEvent.getClass().getName());
+			tolerate(f);
 		}
 
 		try {
@@ -199,15 +205,14 @@ public abstract class Runtime<P extends Protocol> {
 	 * 
 	 * @param protocol
 	 *            Local top-level protocol instance
-	 * @param address
-	 *            Local address
+	
 	 * @param intervalMS
 	 *            Round length, in milliseconds
 	 * @param randomSeed
 	 *            Local random seed
 	 * @throws InterruptedException
 	 */
-	public void run(P pinstance, Address address, int intervalMS,
+	public void run(P pinstance, int intervalMS,
 			long randomSeed) throws InterruptedException {
 		// clear old log
 		File logfile = this.getLogFile();
@@ -246,6 +251,8 @@ public abstract class Runtime<P extends Protocol> {
 	 */
 	public abstract Address getAddress();
 
+	public abstract void setAddress(Address address);
+	
 	public <T> T punt(Exception e) {
 		throw new RuntimeException(e);
 	}
@@ -285,9 +292,9 @@ public abstract class Runtime<P extends Protocol> {
 	public static void setRuntime(Runtime<?> rt) {
 		// System.err.printf("[set %s for thread %d]\n", rt,
 		// Thread.currentThread().getId());
-		if (runtimeSingleton.get() != null && rt != null) {
+		if (runtimeSingleton.get() != null && rt != null && !runtimeSingleton.equals(rt)) {
 			throw new RuntimeException(
-					"attempt to set two runtimes in one thread");
+					String.format("Attempt to set two runtimes in one thread; existing runtime is %s, new runtime is %s", runtimeSingleton.get(), rt));
 		}
 		runtimeSingleton.set(rt);
 	}

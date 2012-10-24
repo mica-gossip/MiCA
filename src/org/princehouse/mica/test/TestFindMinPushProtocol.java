@@ -28,8 +28,8 @@ public class TestFindMinPushProtocol {
 		FindMinPush node2 = new FindMinPush(3, Functional.set(a1));
 
 		
-		Runtime<FindMinPush> rt1 = SimpleRuntime.launchDaemon(node1, a1);
-		Runtime<FindMinPush> rt2 = SimpleRuntime.launchDaemon(node2, a2);
+		Runtime<FindMinPush> rt1 = SimpleRuntime.launchDaemon(new SimpleRuntime<FindMinPush>(a1), node1);
+		Runtime<FindMinPush> rt2 = SimpleRuntime.launchDaemon(new SimpleRuntime<FindMinPush>(a2), node2);
 
 		
 		try {

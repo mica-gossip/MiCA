@@ -27,8 +27,8 @@ public class TestFindMinPullProtocol {
 		FindMinPull node2 = new FindMinPull(3, new StaticOverlay(a1));
 
 		
-		Runtime<FindMinPull> rt1 = SimpleRuntime.launchDaemon(node1, a1);
-		Runtime<FindMinPull> rt2 = SimpleRuntime.launchDaemon(node2, a2);
+		Runtime<FindMinPull> rt1 = SimpleRuntime.launchDaemon(new SimpleRuntime<FindMinPull>(a1), node1);
+		Runtime<FindMinPull> rt2 = SimpleRuntime.launchDaemon(new SimpleRuntime<FindMinPull>(a2), node2);
 
 		
 		try {
