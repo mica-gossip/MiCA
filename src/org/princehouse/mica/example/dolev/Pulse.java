@@ -16,86 +16,10 @@ import fj.F;
 
 public class Pulse extends BaseProtocol {
 
-	public static class Message implements Comparable<Message> {
-		public static enum MessageSource {
-			ORIGIN, DIRECT, INDIRECT;
-		};
-
-		public Message(Address peer, long timestamp, PulseState state, MessageSource s) {
-			this.peer = peer;
-			this.timestamp = timestamp;
-			this.source = s;
-			this.state = state;
-		}
-
-		public Address peer;
-		public long timestamp;
-		public MessageSource source;
-		public PulseState state;
-		
-		public Message tell() {
-			// copy this message and add one level of indirection
-			MessageSource s = null;
-			switch (source) {
-			case ORIGIN:
-				s = MessageSource.DIRECT;
-				break;
-			case DIRECT:
-				s = MessageSource.INDIRECT;
-				break;
-			case INDIRECT:
-				s = MessageSource.INDIRECT;
-				break;
-			};
-			
-			return new Message(peer, timestamp, state, s);
-		}
-
-		@Override
-		public int compareTo(Message other) {
-			// sort from greatest to least time stamps
-			int v = -(Long.valueOf(timestamp).compareTo(
-					Long.valueOf(other.timestamp)));
-			if(v != 0) 
-				return v;
-			// break ties by comparing directness.  More direct < less direct
-			return source.compareTo(other.source);
-		}
-	}
-
-	public static abstract class Transition {
-		private Set<PulseState> sourceStates;
-		private PulseState destState;
-		public Transition(String name, PulseState[] appliesToStates, PulseState destState) {
-			this.name = name;
-			this.sourceStates = Functional.set(Functional.list(appliesToStates));// source states for the transition
-			this.destState = destState;
-		}
-		public String name;
-		
-		public boolean ready(Pulse node, List<Message> messages) {
-			PulseState currentState = node.getCurrentState(node.getAddress(), messages);
-			return sourceStates.contains(currentState);
-			
-		}
-		
-		public void apply(Pulse node, List<Message> messages) {
-			// If apply is overrridden, be sure to call this super method LAST
-			node.setState(destState);
-		}
-	}
-
-	public PulseState getCurrentState(Address address, List<Message> messages) {
-		for(Message m : messages) {
-			if(m.peer.equals(address)) {
-				return m.state;
-			}
-		}
-		return null;
-	}
 	
-	public static List<Transition> transitions = Functional
-			.list(new Transition[] {
+	
+	public static List<PulseTransition> transitions = Functional
+			.list(new PulseTransition[] {
 			// TODO
 			/*
 			 * new Transition("foo") {
@@ -118,7 +42,7 @@ public class Pulse extends BaseProtocol {
 	private int f = 0;
 	private int n = 0;
 
-	private List<Message> messages = Functional.list();
+	private List<PulseMessage> messages = Functional.list();
 
 	private Set<Address> reached = Functional.set();
 
@@ -141,8 +65,17 @@ public class Pulse extends BaseProtocol {
 		setState(PulseState.ready);
 	}
 
-	private void setState(PulseState state) {
-		messages.add(0, new Message(getAddress(), getNow(), state, Message.MessageSource.ORIGIN));
+	public PulseState getCurrentState(Address address, List<PulseMessage> messages) {
+		for(PulseMessage m : messages) {
+			if(m.peer.equals(address)) {
+				return m.state;
+			}
+		}
+		return null;
+	}
+	
+	void setState(PulseState state) {
+		messages.add(0, new PulseMessage(getAddress(), getNow(), state, PulseMessage.MessageSource.ORIGIN));
 	}
 	private long getNow() {
 		return (new Date()).getTime();
@@ -173,7 +106,7 @@ public class Pulse extends BaseProtocol {
 		//long now = new Date().getTime();
 
 		@SuppressWarnings("unchecked")
-		List<Message> msgcopy = Functional.concatenate(that.messages);
+		List<PulseMessage> msgcopy = Functional.concatenate(that.messages);
 		// update both nodes
 		that.assimilateInformation(getAddress(), messages);
 		assimilateInformation(that.getAddress(), msgcopy);
@@ -186,13 +119,13 @@ public class Pulse extends BaseProtocol {
 		}
 		
 		// precondition: message list is sorted
-		ListIterator<Message> li =messages.listIterator();
+		ListIterator<PulseMessage> li =messages.listIterator();
 	
-		Message prev = li.next();
+		PulseMessage prev = li.next();
 		// messages are considered equal (and redundant) if all fields except for source are equal.
 		// direct sources given precedence over indirect [this is enforced by the sort order]
 		while(li.hasNext()) {
-			Message m = li.next();
+			PulseMessage m = li.next();
 			if(m.timestamp == prev.timestamp && m.peer.equals(prev.peer) && m.state.equals(prev.state)) {
 				li.remove();
 			} else {
@@ -201,7 +134,7 @@ public class Pulse extends BaseProtocol {
 		}
 	}
 	
-	private void assimilateInformation(Address source, List<Message> news) {
+	private void assimilateInformation(Address source, List<PulseMessage> news) {
 		if (reached.contains(source)) // ignore if we've already talked with
 										// node this round
 			return;
@@ -209,7 +142,7 @@ public class Pulse extends BaseProtocol {
 		// TODO combine messages
 		// ...
 
-		for (Message m : news) {
+		for (PulseMessage m : news) {
 			// make indirect
 			messages.add(0, m.tell());
 		}
@@ -254,10 +187,10 @@ public class Pulse extends BaseProtocol {
 		final Pulse thisFinal = this;
 		int completedTransitions = 0;
 		while (true) {
-			List<Transition> readyTransitions = Functional.list(Functional
-					.filter(transitions, new F<Transition, Boolean>() {
+			List<PulseTransition> readyTransitions = Functional.list(Functional
+					.filter(transitions, new F<PulseTransition, Boolean>() {
 						@Override
-						public Boolean f(Transition t) {
+						public Boolean f(PulseTransition t) {
 							return t.ready(thisFinal, messages);
 						}
 					}));
@@ -270,7 +203,7 @@ public class Pulse extends BaseProtocol {
 				break;
 			}
 
-			Transition t = readyTransitions.get(0);
+			PulseTransition t = readyTransitions.get(0);
 			completedTransitions++;
 			t.apply(this, messages);
 		}

@@ -246,11 +246,11 @@ public class TestHarness<Q extends Protocol> {
 		harness.runMain(argv, factory);
 	}
 	
-	public TestHarnessOptions defaultOptions() {
+	public static TestHarnessOptions defaultOptions() {
 		return new TestHarnessOptions();
 	}
 
-	public TestHarnessOptions parseOptions(String[] argv) {
+	public static TestHarnessOptions parseOptions(String[] argv) {
 		TestHarnessOptions options = defaultOptions();
 		new JCommander(options, argv); // parse command line options
 		return options;
