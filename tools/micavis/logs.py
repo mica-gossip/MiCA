@@ -10,12 +10,21 @@ class LogCollection(object):
     def __init__(self, path):
         self.path = path
 
+    def __str__(self):
+        return "<%s %s>" % (self.__class__.__name__, self.path)
+
     def logs(self):
         raise Exception('not implemented. should return a list of ReadableFilelike objects')
 
 class ReadableFilelike(object):
     def __init__(self, path):
         self.path = path
+
+    def __str__(self):
+        return "%s %s" % (self.__class__.__name__, self.path)
+
+    def __repr_(self):
+        return "<%s>" % str(self)
 
     def open(self):
         raise Exception('not implemented. should return an open file that can be closed')
@@ -235,12 +244,19 @@ def read_mica_logs(logdir, order_func = EVENTS_TIMESTAMP_CMP,
 
     for logobj in logdir.logs():
         f = logobj.open()
+        print "Parsing log %s" % logobj
         while True:
             # xreadlines not implemented by TarFile
             line = f.readline()
             if line == '':
                 break  # EOF
-            event = json.loads(line)
+            try:
+                event = json.loads(line)
+                # unterminated line will break -- this happens if system exits while writing log, probably due to a fatal error
+                # we'll just ignore this last malformed line
+            except:
+                break  # EOF
+
             if not filter_func(event):
                 continue
             for event_processor in event_processors:

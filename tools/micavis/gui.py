@@ -14,7 +14,6 @@ from math import *
 
 from event_tree_model import *
 
-
 class GraphWindow(object):
     # graph = igraph instance
     # node_name_map = map from address_str => vertex id
@@ -24,6 +23,10 @@ class GraphWindow(object):
         self.gui = gui
         vbox = gtk.VBox(False, 0)
         self.igraph_drawing_area = IGraphDrawingArea(gui, graph, node_name_map)
+
+        menubar = self.create_display_menu()
+        vbox.pack_start(menubar, False)
+
         vbox.pack_start(self.igraph_drawing_area, True, True, 0)
 
         self.gui.adj = gtk.Adjustment(value = 0, 
@@ -48,6 +51,37 @@ class GraphWindow(object):
     def set_graph(self, graph):
         self.window.set_graph(graph)
 
+    def create_display_menu(self):
+        vis = self.igraph_drawing_area
+
+        bar = gtk.MenuBar()
+
+        layers = gtk.MenuItem("Layers")
+        layers.show()
+        bar.append(layers)
+
+        menu = gtk.Menu()
+        layers.set_submenu(menu)
+
+        #    How to create a normal menu item:
+        def f(*args):
+            print "ACTIVATE", args
+        #item = gtk.MenuItem("menu item test")
+        # can pass additional arguments after the callback 
+        #item.connect("activate",f)
+        #menu.append(item)
+        #item.show()
+
+        for layer in vis.display_layers:
+            checkitem = gtk.CheckMenuItem(layer.name)
+            checkitem.set_active(layer.active)
+            checkitem.connect("activate", layer.toggle)
+            menu.append(checkitem)
+            checkitem.show()
+
+        menu.show()
+        return bar
+
 
 class MicaVisGui:
 
@@ -66,12 +100,10 @@ class MicaVisGui:
 
         # current_node_state[addr] -> the latest state assigned to node "addr" w.r.t. the cursor self.get_current_i()
 
-
         self.current_node_state = logs.CurrentValueTracker(
             events, 
             filter_func = lambda e: e['event_type'].startswith('state-') and 'state' in e['data'],
             value_func = lambda e: (e['address'],e['data']) )
-#            value_func = lambda e: (e['address'],e['data']['state']) )
         self.add_cursor_listener(self.current_node_state.set_i)
 
         # current_node_state[addr] -> the latest state assigned to node "addr" w.r.t. the cursor self.get_current_i()
@@ -79,7 +111,6 @@ class MicaVisGui:
             events,
             filter_func = lambda e: e['event_type'].startswith('state-') and 'view' in e['data'],
             value_func = lambda e: (e['address'],e['data']['view']))
-
         self.add_cursor_listener(self.current_node_view.set_i)
 
     def add_cursor_listener(self, f):
@@ -137,7 +168,8 @@ class MicaVisGui:
 
     # Aperture is the range of events currently being drawn
     def get_aperture_events(self):
-        start_event = max(0, self.current - 20)
+        #start_event = max(0, self.current - 20)
+        start_event = self.current
         return self.events[start_event:self.current+1]
         
     def reset_slider_selection(self):
@@ -173,18 +205,24 @@ class MicaVisGui:
         self.graph_window = GraphWindow(self, graph, namemap)
         self.graph_window.window.show_all()
 
+    def create_layers_window(self):
+        self.layers_window = create_layers_window()
+
     def create_event_window(self):
         # Create a new window
         self.event_window = gtk.Window(gtk.WINDOW_TOPLEVEL)
         self.event_window.set_title("Event Browser")
         self.event_window.set_size_request(500, 600)
         self.event_window.set_size_request(200, 200)
+
+        
         self.event_window.connect("delete_event", self.delete_event)
 
         self.event_scrollwindow = gtk.ScrolledWindow()
         self.event_scrollwindow.set_border_width(10)
         self.event_scrollwindow.set_policy(gtk.POLICY_AUTOMATIC, gtk.POLICY_ALWAYS)
         self.event_vbox = gtk.VBox()
+
         self.event_vbox.pack_start(self.event_scrollwindow, True)
         self.treemodel = self.initialize_treemodel()
 
@@ -321,22 +359,99 @@ class MicaVisGui:
         return ts
 
     def initialize_treemodel_dynamic(self):
-#        import treemodel
-#        return treemodel.MyTreeModel()
         return EventTreeModel(self.events)
+
 
     initialize_treemodel = initialize_treemodel_dynamic
 
+
+
+class DisplayLayer:
+    def __init__(self, vis, name, active):
+        # vis = an IGraphDrawingArea instance
+        self.name = name
+        self.active = active
+        self.vis = vis
+
+    def toggle(self, checkmenuitem):
+        self.active = not self.active
+        self.vis.redraw_canvas()
+
+    def draw(self, context, plot, layout):
+        pass
+
+class NodesLayer(DisplayLayer):
+    def __init__(self, vis, active):
+        self.blank_graph = igraph.Graph(directed=True)
+        DisplayLayer.__init__(self, vis, "Nodes", active)
+    def draw(self, context, plot, layout):
+        plot.add(self.blank_graph, layout = layout)
+
+class CurrentEventApertureLayer(DisplayLayer):
+    def __init__(self, vis, active):
+        DisplayLayer.__init__(self, vis, "Current Event Aperture", active)
+
+    def draw(self, context, plot, layout):
+        vis = self.vis
+        gui = vis.gui
+       
+        aperture_events = gui.get_aperture_events()
+        for i,e in enumerate(aperture_events):
+            if i < len(aperture_events) - 1:
+                color = vis.recent_node_color
+            else:
+                color = vis.current_node_color
+            vis.draw_event(e, context, node_color = color)
+ 
+
+        
+class CommunicationGraphLayer(DisplayLayer):
+    def __init__(self, vis, active):
+        DisplayLayer.__init__(self, vis, "Communication Graph", active)
+    def draw(self, context,  plot, layout):
+        plot.add(self.vis.graph, layout = layout)
+
+class CurrentViewLayer(DisplayLayer):
+    def __init__(self, vis, active):
+        DisplayLayer.__init__(self, vis, "Current Views", active)
+
+    def draw(self, context, plot, layout):
+        viewgraph = self.build_current_viewgraph()
+        plot.add(viewgraph, layout = self.vis.node_coordinates)
+
+    def build_current_viewgraph(self):
+        # construct a graph of the current view, 
+        # as derived from self.gui.current_node_view
+        vis = self.vis
+        gui = vis.gui
+
+        g = igraph.Graph(directed=True)
+        g.add_vertices(len(gui.unique_addresses))
+        
+        edges = []
+        for addr in gui.unique_addresses:
+            view = gui.current_node_view[addr]
+            src_nid = vis.node_name_map[addr]            
+            if view:
+                for neighbor_addr in view.keys():
+                    dst_nid = vis.node_name_map[neighbor_addr]
+                    edges.append( (src_nid, dst_nid) )
+        g.add_edges(edges)
+        return g
 
 class IGraphDrawingArea(gtk.DrawingArea):
     def __init__(self, gui, graph, node_name_map, plot_keywords=None):
         if graph is None:
             raise Exception
 
-        # --- plot parameters
-        self.config_draw_communication_graph = False
-        self.config_draw_current_view_graph = True
-        # ---
+        # self is passed as the vis argument
+        self.display_layers = [
+            NodesLayer(self,True),
+            CommunicationGraphLayer(self, False),
+            CurrentViewLayer(self, True),
+            CurrentEventApertureLayer(self, True)
+            ]
+
 
         self.gui = gui
         self.border = (15,15) # x,y blank pixel space on the display
@@ -383,38 +498,18 @@ class IGraphDrawingArea(gtk.DrawingArea):
         # Draw the graph
         assert(self.graph != None)
 
-        if self.config_draw_communication_graph:
-            plot.add(self.graph, layout = self.node_coordinates)
-
-        if self.config_draw_current_view_graph:
-            viewgraph = self.build_current_viewgraph()
-            plot.add(viewgraph, layout = self.node_coordinates)
-
+        for layer in self.display_layers:
+            if layer.active:
+                layer.draw(context, plot, layout = self.node_coordinates)
 
         plot.redraw()
 
         context.set_source_surface(cairo_surface)
         context.paint()
-        
-#        def scalefunc((x, y)):
-#            return xborder + x * (rect.width - xborder*2), yborder + y * (rect.height - yborder*2),
-
-        # Draw the selected event
-        aperture_events = self.gui.get_aperture_events()
-        for i,e in enumerate(aperture_events):
-            if i < len(aperture_events) - 1:
-                color = self.recent_node_color
-            else:
-                color = self.current_node_color
-
-            self.draw_event(e, context, node_color = color)
-
- 
         return False
 
     def build_current_viewgraph(self):
         # construct a graph of the current view, as derived from self.gui.current_node_view
-        # TODO YOU ARE HERE
         g = igraph.Graph(directed=True)
         g.add_vertices(len(self.gui.unique_addresses))
         
