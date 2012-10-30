@@ -18,6 +18,7 @@ import org.princehouse.mica.base.net.model.AcceptConnectionHandler;
 import org.princehouse.mica.base.net.model.Address;
 import org.princehouse.mica.base.net.model.Connection;
 import org.princehouse.mica.util.Distribution;
+import org.princehouse.mica.util.Exceptions;
 import org.princehouse.mica.util.Logging;
 import org.princehouse.mica.util.WeakHashSet;
 
@@ -187,7 +188,8 @@ AcceptConnectionHandler {
 		// Initialize RuntimeState available to protocols
 		runtimeState.setAddress(address);
 		runtimeState.setRandom(new Random(randomSeed));
-
+		runtimeState.setIntervalMS(intervalMS);
+		
 		setProtocolInstance(pinstance);
 
 		try {
@@ -244,7 +246,8 @@ AcceptConnectionHandler {
 						//logJson("view",getProtocolInstance().getView());
 
 					} catch(Throwable t) {
-						logJson("pre-update-throwable", new Object[]{"preUpdate() threw throwable", t});
+						t.printStackTrace(System.err);
+						logJson("pre-update-throwable", new Object[]{"preUpdate() threw throwable", Exceptions.stackTraceToString(t)});
 					}
 					
 					if(getAddress().equals(partner)) {
@@ -284,7 +287,8 @@ AcceptConnectionHandler {
 						//logJson("view",getProtocolInstance().getView());
 
 					} catch(Throwable t) {
-						logJson("post-update-throwable", new Object[]{"postUpdate() threw throwable", t});
+						t.printStackTrace(System.err);
+						logJson("post-update-throwable", new Object[]{"postUpdate() threw throwable", Exceptions.stackTraceToString(t)});
 					}
 
 					getRuntimeState().incrementRound();

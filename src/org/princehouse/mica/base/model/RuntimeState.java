@@ -29,11 +29,23 @@ public class RuntimeState implements Serializable {
 	 */
 	private int round = 0;
 	
+	private int intervalMS = 0;
+	
+	public int getIntervalMS() {
+		return intervalMS;
+	}
+
+
+	public void setIntervalMS(int intervalMS) {
+		this.intervalMS = intervalMS;
+	}
+
 	private Address address = null;
 	
 	public Address getAddress() {
 		return address;
 	}
+	
 	
 	public int getRound() {
 		return round;

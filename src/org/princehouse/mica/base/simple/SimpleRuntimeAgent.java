@@ -154,6 +154,8 @@ class SimpleRuntimeAgent<P extends Protocol> extends RuntimeAgent<P> {
 			ObjectOutputStream oos = new ObjectOutputStream(
 					connection.getOutputStream());
 			oos.writeObject(msg);
+		} catch (SocketException se) {
+			rt.logJson("mica-internal-exception-in-gossip", se.getMessage());
 		} catch (IOException e) {
 			rt.punt(e);
 		}

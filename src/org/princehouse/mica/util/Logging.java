@@ -81,6 +81,17 @@ public class Logging {
 		getGsonBuilder().registerTypeHierarchyAdapter(Address.class,
 				addressSerializer);
 
+		
+		JsonSerializer<Throwable> throwableSerializer = new JsonSerializer<Throwable>() {
+			@Override
+			public JsonElement serialize(Throwable throwable, Type typeOfSrc,
+					JsonSerializationContext context) {
+				String stacktrace = Exceptions.stackTraceToString(throwable);
+				return new JsonPrimitive(stacktrace);
+			}
+		};
+		getGsonBuilder().registerTypeHierarchyAdapter(Throwable.class, throwableSerializer);
+		
 		getGsonBuilder().registerTypeAdapterFactory(new TypeAdapterFactory() {
 
 			private HashMap<Class<?>, TypeAdapter<?>> typeAdapterCache = new HashMap<Class<?>, TypeAdapter<?>>();

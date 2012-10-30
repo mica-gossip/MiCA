@@ -6,8 +6,8 @@ import org.princehouse.mica.base.net.model.Address;
 import org.princehouse.mica.util.Functional;
 
 /**
- * a simple state machine protocol for testing (much simpler than the full pulse
  * protocol)
+ * a simple state machine protocol for testing (much simpler than the full pulse
  * 
  * @author lonnie
  * 
@@ -22,9 +22,8 @@ public class TestStateMachine extends PulseStateMachine {
 					new PulseTransitionRule("red->green") {
 						@Override
 						public boolean ready(PulseStateMachine node) {
-							return node.getState().equals(RED);
+							return RED.equals(node.getState());
 						}
-
 						@Override
 						public void apply(PulseStateMachine node) {
 							node.setState(GREEN);
@@ -32,7 +31,7 @@ public class TestStateMachine extends PulseStateMachine {
 					}, new PulseTransitionRule("green->red") {
 						@Override
 						public boolean ready(PulseStateMachine node) {
-							return node.getState().equals(GREEN);
+							return GREEN.equals(node.getState());
 						}
 						@Override
 						public void apply(PulseStateMachine node) {
@@ -48,4 +47,8 @@ public class TestStateMachine extends PulseStateMachine {
 		super(neighbors, f, RED);
 	}
 
+	@Override
+	public List<PulseTransitionRule> getTransitions() {
+		return transitions;
+	}
 }

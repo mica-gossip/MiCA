@@ -46,5 +46,10 @@ public class Pulse extends PulseStateMachine {
 		assert (T4 > 3 * T1 + 5 * d); // from protocol desc. p.2
 	}
 
+	@Override
+	public List<PulseTransitionRule> getTransitions() {
+		return transitions;
+	}
+
 
 }

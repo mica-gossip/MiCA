@@ -64,8 +64,8 @@ class GraphWindow(object):
         layers.set_submenu(menu)
 
         #    How to create a normal menu item:
-        def f(*args):
-            print "ACTIVATE", args
+        #def f(*args):
+        #    print "ACTIVATE", args
         #item = gtk.MenuItem("menu item test")
         # can pass additional arguments after the callback 
         #item.connect("activate",f)
@@ -152,7 +152,7 @@ class MicaVisGui:
             i, (n,s) = q.pop()
             if s is None:
                 s = {}
-            print "%s%s: %s" % ('  '*i,n,s.get('stateType','(None)'))
+            #print "%s%s: %s" % ('  '*i,n,s.get('stateType','(None)'))
             q += [(i+1,ls) for ls in logs.subprotocols(s)]
         
     def update_selection(self):
@@ -168,7 +168,7 @@ class MicaVisGui:
 
     # Aperture is the range of events currently being drawn
     def get_aperture_events(self):
-        #start_event = max(0, self.current - 20)
+        start_event = max(0, self.current - 100)
         start_event = self.current
         return self.events[start_event:self.current+1]
         
@@ -377,21 +377,39 @@ class DisplayLayer:
         self.active = not self.active
         self.vis.redraw_canvas()
 
-    def draw(self, context, plot, layout):
+    def draw(self, context, cairo_surface, create_plot_func, layout):
         pass
 
 class NodesLayer(DisplayLayer):
+    
+    display_options = dict(
+        vertex_color = "#cccccc",
+        vertex_size = 10,
+        vertex_label_dist = 3
+        )
+
     def __init__(self, vis, active):
-        self.blank_graph = igraph.Graph(directed=True)
-        DisplayLayer.__init__(self, vis, "Nodes", active)
-    def draw(self, context, plot, layout):
-        plot.add(self.blank_graph, layout = layout)
+        DisplayLayer.__init__(self, vis, "Node Labels", active)
+        self.blank_graph = self.create_blank_graph()
+
+    def create_blank_graph(self):
+        g = igraph.Graph(directed=True)
+        g.add_vertices(len(self.vis.gui.unique_addresses))
+        return g
+
+    def draw(self, context, cairo_surface, create_plot_func, layout):
+        plot = create_plot_func()
+        temp = self.vis.node_name_map.items()
+        temp.sort(key=lambda (a,b): b)
+        names = [n[-4:] for n,nid in temp]
+        plot.add(self.blank_graph, opacity=0.5, layout = layout, vertex_label=names,**self.display_options)
+        plot.redraw()
 
 class CurrentEventApertureLayer(DisplayLayer):
     def __init__(self, vis, active):
         DisplayLayer.__init__(self, vis, "Current Event Aperture", active)
 
-    def draw(self, context, plot, layout):
+    def draw(self, context, cairo_surface, create_plot_func, layout):
         vis = self.vis
         gui = vis.gui
        
@@ -401,29 +419,59 @@ class CurrentEventApertureLayer(DisplayLayer):
                 color = vis.recent_node_color
             else:
                 color = vis.current_node_color
-            vis.draw_event(e, context, node_color = color)
- 
+            vis.draw_event(e, context, cairo_surface, create_plot_func)
+
+class CurrentEventLayer(DisplayLayer):
+    def __init__(self, vis, active):
+        DisplayLayer.__init__(self, vis, "Current Event", active)
+
+    def draw(self, context, cairo_surface, create_plot_func, layout):
+        vis = self.vis
+        gui = vis.gui      
+        current = gui.get_current_event()
+        color = vis.current_node_color
+        vis.draw_event(current, context, cairo_surface, 
+                       create_plot_func)
 
         
 class CommunicationGraphLayer(DisplayLayer):
+    display_options = dict(
+        vertex_color = "#ccccfc",
+        vertex_size = 10,
+        edge_color = "#ccccfc"
+        )
+
     def __init__(self, vis, active):
         DisplayLayer.__init__(self, vis, "Communication Graph", active)
-    def draw(self, context,  plot, layout):
-        plot.add(self.vis.graph, layout = layout)
+
+    def draw(self, context, cairo_surface, create_plot_func, layout):
+        plot = create_plot_func()
+        plot.add(self.vis.graph, opacity=0.5, layout = layout, **self.display_options)
+        plot.redraw()
 
 class CurrentViewLayer(DisplayLayer):
+    display_options = dict(
+        vertex_color = "#ccccfc",
+        vertex_size = 10,
+        edge_color = "#acfcac",
+        edge_width = 2
+        )
+
     def __init__(self, vis, active):
         DisplayLayer.__init__(self, vis, "Current Views", active)
 
-    def draw(self, context, plot, layout):
+    def draw(self, context, cairo_surface, create_plot_func, layout):
         viewgraph = self.build_current_viewgraph()
-        plot.add(viewgraph, layout = self.vis.node_coordinates)
+        plot = create_plot_func()
+        plot.add(viewgraph, layout = self.vis.node_coordinates, **self.display_options)
+        plot.redraw()
 
     def build_current_viewgraph(self):
         # construct a graph of the current view, 
         # as derived from self.gui.current_node_view
         vis = self.vis
         gui = vis.gui
+
 
         g = igraph.Graph(directed=True)
         g.add_vertices(len(gui.unique_addresses))
@@ -440,18 +488,15 @@ class CurrentViewLayer(DisplayLayer):
         return g
 
 class IGraphDrawingArea(gtk.DrawingArea):
+
+    current_node_color = "#ffffff"
+    recent_node_color = "#dddddd"
+    failure_node_color = "#ff0000"
+    select_color = "#ffffc0"
+
     def __init__(self, gui, graph, node_name_map, plot_keywords=None):
         if graph is None:
             raise Exception
-
-        # self is passed as the vis argument
-        self.display_layers = [
-            NodesLayer(self,True),
-            CommunicationGraphLayer(self, False),
-            CurrentViewLayer(self, True),
-            CurrentEventApertureLayer(self, True)
-            ]
-
 
         self.gui = gui
         self.border = (15,15) # x,y blank pixel space on the display
@@ -460,6 +505,15 @@ class IGraphDrawingArea(gtk.DrawingArea):
         self.connect("expose_event", self.expose)
         self.plot_keywords = plot_keywords
         self.set_graph(graph, node_name_map)
+
+        # self is passed as the vis argument
+        self.display_layers = [
+            NodesLayer(self,True),
+            CommunicationGraphLayer(self, True),
+            CurrentViewLayer(self, True),
+            CurrentEventApertureLayer(self, False),
+            CurrentEventLayer(self, True)
+            ]
 
     def expose(self, widget, event):
         context = widget.window.cairo_create() 
@@ -479,6 +533,7 @@ class IGraphDrawingArea(gtk.DrawingArea):
  
         xborder, yborder = self.border
 
+        
         # Set dimensional info and other drawing parameters
         self.drawing_bbox = (xborder,
                              yborder,
@@ -489,20 +544,24 @@ class IGraphDrawingArea(gtk.DrawingArea):
                                        keep_aspect_ratio = False)
         self.node_radius = rect.width / 60.
 
-        plot = igraph.drawing.Plot(cairo_surface, 
-                                   (xborder, yborder, 
-                                    rect.width - xborder*2, 
-                                    rect.height-yborder*2))
 
+        def create_plot():
+            return igraph.drawing.Plot(cairo_surface, 
+                                       (xborder, yborder, 
+                                        rect.width - xborder*2, 
+                                        rect.height-yborder*2))
 
         # Draw the graph
         assert(self.graph != None)
 
+        self.layout = self.node_coordinates
+
         for layer in self.display_layers:
             if layer.active:
-                layer.draw(context, plot, layout = self.node_coordinates)
+                layer.draw(context, cairo_surface, create_plot, 
+                           layout = self.layout)
 
-        plot.redraw()
+        #plot.redraw()
 
         context.set_source_surface(cairo_surface)
         context.paint()
@@ -524,24 +583,17 @@ class IGraphDrawingArea(gtk.DrawingArea):
         g.add_edges(edges)
         return g
 
-    # ----------------- static drawing parameters
-    current_node_color = (0.9, 0.9, 0.6) 
-    recent_node_color = (0.7, 0.7, 0.4) 
-    failure_node_color = (1., 0.3, 0.3) 
-    node_outline_width = 4
-    view_max_outline_width = 12
-    select_edge_color = (1.0, 1.0, 0.5)
-    view_edge_color = (0.4, 0.8, 1.0)
 
     # cr = cairo context
-    def draw_event(self, event, cr, node_color = current_node_color):
+    def draw_event(self, event, cr, cairo_surface, create_plot_func, node_color = current_node_color):
         if event is None:
             return
         
         # Draw event node
         if 'address' in event:
-            self.draw_node(cr, event['address'], 
-                           fill_color=node_color)
+            self.draw_node(cr, cairo_surface, create_plot_func, 
+                           event['address'], 
+                           vertex_color=node_color)
 
         etype = event['event_type'].replace('-','_')
         fname = 'draw_event_%s' % etype
@@ -552,93 +604,100 @@ class IGraphDrawingArea(gtk.DrawingArea):
             onetime_warning("warning: don't know how to draw event type %s" % etype)
             return
 
-        draw_func(event, cr)
+        draw_func(event, cr, cairo_surface, create_plot_func)
 
     
-    def draw_event_runtime_init(self, event, cr):
+    def draw_event_runtime_init(self, event, cr, cairo_surface, create_plot_func):
         # random_seed : long
         # round_ms : int
         # FIXME implement
         pass
 
-    def draw_event_state(self, event, cr):
+    def draw_event_state(self, event, cr, cairo_surface, create_plot_func):
         # contents depend on protocol
         # FIXME implement
         pass
 
-    def draw_event_state_initial(self, event, cr):
-        self.draw_event_state(event,cr)
+    def draw_event_state_initial(self, event, cr, cairo_surface, create_plot_func):
+        self.draw_event_state(event,cr, cairo_surface, create_plot_func)
 
-    def draw_event_state_gossip_initiator(self, event, cr):
-        self.draw_event_state(event,cr)
+    def draw_event_state_gossip_initiator(self, event, cr, cairo_surface, create_plot_func):
+        self.draw_event_state(event,cr, cairo_surface, create_plot_func)
 
-    def draw_event_state_gossip_receiver(self, event, cr):
-        self.draw_event_state(event,cr)
+    def draw_event_state_gossip_receiver(self, event, cr, cairo_surface, create_plot_func):
+        self.draw_event_state(event,cr, cairo_surface, create_plot_func)
 
-    def draw_event_state_pre_update(self, event, cr):
-        self.draw_event_state(event,cr)
+    def draw_event_state_pre_update(self, event, cr, cairo_surface, create_plot_func):
+        self.draw_event_state(event,cr, cairo_surface, create_plot_func)
 
-    def draw_event_state_post_update(self, event, cr):
-        self.draw_event_state(event,cr)
+    def draw_event_state_post_update(self, event, cr, cairo_surface, create_plot_func):
+        self.draw_event_state(event,cr, cairo_surface, create_plot_func)
 
 
-    def draw_event_rate(self, event, cr):
+    def draw_event_rate(self, event, cr, cairo_surface, create_plot_func):
         # data : float
         # FIXME implement
         pass
 
-    def draw_event_merge_choose_subprotocol(self, event, cr):
+    def draw_event_merge_choose_subprotocol(self, event, cr, cairo_surface, create_plot_func):
         # data : BOTH / NEITHER / P1 / P2 / NA
         pass
 
-    def draw_event_accept_lock_fail(self, event, cr):
-        self.draw_event_failure(event,cr)
+    def draw_event_accept_lock_fail(self, event, cr, cairo_surface, create_plot_func):
+        self.draw_event_failure(event,cr, cairo_surface, create_plot_func)
 
         
-    def draw_event_accept_lock_succeed(self, event, cr):
+    def draw_event_accept_lock_succeed(self, event, cr, cairo_surface, create_plot_func):
         # data : {}
         # FIXME implement
         pass
 
-    def draw_event_failure(self, event, cr):
+    def draw_event_failure(self, event, cr, cairo_surface, create_plot_func):
         # data : None
-        self.draw_node(cr, event['address'], fill_color=self.failure_node_color)
+        self.draw_node(cr, cairo_surface, create_plot_func, 
+                       event['address'], 
+                       vertex_color=self.failure_node_color)
 
-    def draw_event_failure_self_gossip_attempt(self, event, cr):
-        self.draw_event_failure(event,cr)
+    def draw_event_failure_self_gossip_attempt(self, event, cr, cairo_surface, create_plot_func):
+        self.draw_event_failure(event,cr, cairo_surface, create_plot_func)
 
-    def draw_event_gossip_init_connection_failure(self, event, cr):
-        self.draw_event_failure(event,cr)
+    def draw_event_gossip_init_connection_failure(self, event, cr, cairo_surface, create_plot_func):
+        self.draw_event_failure(event,cr, cairo_surface, create_plot_func)
 
-    def draw_event_view(self, event, cr):
-        if self.config_draw_current_view_graph:
-            return # don't bother drawing if we're already drawing the current view graph
-
-        view = event['data']
-        if isinstance(view, dict):
-            # view is a distribution, not null.  draw the distribution
-            for neighbor_address, probability_mass in view.items():
-                line_width = max(1.0, self.view_max_outline_width * probability_mass)
-                cr.set_line_width(line_width)
-                self.draw_arrow_between_nodes(cr, address, neighbor_address, color=self.view_edge_color)
-        else:
+# view no longer a separate event
+#    def draw_event_view(self, event, cr, cairo_surface, create_plot_func):
+#        if self.config_draw_current_view_graph:
+#            return # don't bother drawing if we're already drawing the current view graph
+#        view = event['data']
+#        if isinstance(view, dict):
+#            # view is a distribution, not null.  draw the distribution
+#            for neighbor_address, probability_mass in view.items():
+#                line_width = max(1.0, self.view_max_outline_width * probability_mass)
+#                cr.set_line_width(line_width)
+#                self.draw_arrow_between_nodes(cr, cairo_surface, create_plot_func, address, neighbor_address, color=self.view_edge_color)
+#        else:
             # draw null select
-            self.draw_event_failure(event,cr)
+#            self.draw_event_failure(event,cr, cairo_surface, create_plot_func)
             
-
-    def draw_event_select(self, event, cr):
+    def draw_event_select(self, event, cr, cairo_surface, create_plot_func):
         # data : selected address
         address = event['address']
         select_event = event['data']  # a JSON-converted Logging.SelectEvent object
         selected = select_event['selected']
         if selected:
-            self.draw_arrow_between_nodes(cr, address, selected, color=self.select_edge_color)
+#            self.draw_arrow_between_nodes(cr, cairo_surface, create_plot_func, address, selected, color=self.select_edge_color)
+            self.draw_edge(cr, cairo_surface, create_plot_func, 
+                           address, selected, 
+                           vertex_color=self.select_color,
+                           vertex_size=0,
+                           edge_color=self.select_color,
+                           edge_width=3)
         else:
             # draw null select
-            self.draw_event_failure(event,cr)
+            self.draw_event_failure(event,cr, cairo_surface, create_plot_func)
 
     # currently just draws a line between node centers
-    def draw_arrow_between_nodes(self, cr, src_addr, dst_addr, color):
+    def draw_arrow_between_nodes_old(self, cr, cairo_surface, create_plot_func, src_addr, dst_addr, color):
         src_nid = self.node_name_map[src_addr]
         dst_nid = self.node_name_map[dst_addr]
         src = self.node_center_coordinates(src_nid)
@@ -648,17 +707,49 @@ class IGraphDrawingArea(gtk.DrawingArea):
         cr.set_source_rgb(*color)
         cr.stroke()
 
-    def draw_node(self, cr, address, fill_color=(1.,1.,1.), 
-                  outline_color=(0.,0.,0.)):
-            nid = self.node_name_map[address]
-            x,y = self.node_center_coordinates(nid) 
-            cr.set_line_width(self.node_outline_width)
-            cr.set_source_rgb(*outline_color)
-            cr.arc(x, y, self.node_radius, 0, 2 * pi)
-            cr.stroke_preserve()
-            cr.set_source_rgb(*fill_color)
-            cr.fill()
-            
+    def draw_edge(self, cr, cairo_surface, create_plot_func, src_addr, dst_addr, **plot_options):
+        src_nid = self.node_name_map[src_addr]
+        dst_nid = self.node_name_map[dst_addr]
+        g = igraph.Graph(directed=True)
+        layout = self.node_coordinates.__copy__()
+        g.add_vertices(2)
+        layout[0] = self.node_coordinates[src_nid]
+        layout[1] = self.node_coordinates[dst_nid]
+        g.add_edges([(0,1)])
+        plot = create_plot_func()
+        plot.add(g,layout=layout, **plot_options)
+        plot.redraw()
+
+        
+
+
+    # use cairo primitives to draw a node
+#    def deprecated_draw_node(self, cr, cairo_surface, 
+#                             create_plot_func, address, 
+#                             fill_color=(1.,1.,1.), 
+#                             outline_color=(0.,0.,0.)):
+#            nid = self.node_name_map[address]
+#            x,y = self.node_center_coordinates(nid) 
+#            cr.set_line_width(self.node_outline_width)
+#            cr.set_source_rgb(*outline_color)
+#            cr.arc(x, y, self.node_radius, 0, 2 * pi)
+#            cr.stroke_preserve()
+#            cr.set_source_rgb(*fill_color)
+#            cr.fill()
+
+    def draw_node(self, cr, cairo_surface, 
+                  create_plot_func, 
+                  address, **graph_plot_options):
+                  
+        g = igraph.Graph(directed=True)
+        nid = self.node_name_map[address]
+        
+        layout = self.node_coordinates.__copy__()
+        layout[0] = self.node_coordinates[nid]
+        g.add_vertex(1)
+        plot = create_plot_func()
+        plot.add(g,layout=layout, **graph_plot_options)
+        plot.redraw()
 
     def node_center_coordinates(self, nid):
         x,y = self.node_coordinates[nid]

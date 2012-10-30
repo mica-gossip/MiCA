@@ -358,6 +358,7 @@ public class Functional {
 	 */
 	public static <T> Iterable<T> filter(Iterable<T> itr, F<T, Boolean> filt) {
 
+		assert(itr != null);
 		List<T> temp = Functional.list();
 		for (T x : itr) {
 			if (filt.f(x))
