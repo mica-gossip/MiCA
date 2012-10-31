@@ -1,0 +1,89 @@
+System execution
+----------------
+  Active node 
+  ----------- 
+
+	  log mica-state-inital 
+
+	  bind address / begin listening
+	     handle error ADDRESS_BIND_EXCEPTION
+
+	  compute initial rate
+		  
+      while True:
+	    log mica-rate
+		sleep 
+		  
+		lock {
+		  select
+		  log mica-select
+		     handle error SELECT_EXCEPTION
+
+		  preupdate(partner)  // even if selected partner is null
+		       handle error PREUPDATE_EXCEPTION  [stack trace internal exception]
+		  log mica-state-preupdate
+		  
+	      if selfgossip: 
+               handle error SELF_GOSSIP
+		  elif null select:
+			   handle error NULL_SELECT
+
+	      open connection
+		       handle error OPEN_CONNECTION_FAIL
+			   
+		  execute gossip over connection
+		       handle error ACTIVE_GOSSIP_EXCEPTION
+			   --- may also internally have GOSSIP_STREAM_ERROR
+			   
+          log mica-state-gossip-initiator
+		  
+	      postupdate()
+			  handle error POSTUPDATE_EXCEPTION  [stack trace internal exception]
+	      log mica-state-postupdate
+		  
+		  increment runtime state round no.
+		  
+		  compute new rate
+		} 
+		  if lock fails: handle error LOCK_TIMEOUT_INITIATOR
+	
+	Passive node
+	------------
+	after executing gossip update:
+	   mica-state-gossip-receiver
+	
+	
+Error handling:
+   The runtime's getErrorPolicy function determines the policy for various error
+   conditions enumberated by RuntimeErrors.  getErrorPolicy returns a RuntimeErrorResponse enum
+   from among these, with the actions described below:
+   
+   log mica-error-handler "condition -> policy"
+   
+   FATAL_ERROR_HALT:
+		 running = false
+		 unbind address if bound
+		 unlock 
+		 throw FatalErrorHalt to kill main loop
+ 
+   ABORT_ROUND:
+         // abort this gossip cycle but continue operating
+		 active: break out of main loop, close connection, release lock
+		 passive: close connection, release lock
+		 
+   IGNORE:
+         totally ignore
+		 
+Healthy Runtime Log Messages
+----------------------------
+
+mica-state-*
+
+mica-runtime-init
+mica-select
+mica-rate
+
+mica-error-handler
+mica-error-lock-fail
+mica-error-internal
+
