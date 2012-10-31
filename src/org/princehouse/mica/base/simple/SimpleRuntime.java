@@ -1,5 +1,14 @@
 package org.princehouse.mica.base.simple;
 
+import static org.princehouse.mica.base.RuntimeErrorCondition.ACTIVE_GOSSIP_EXCEPTION;
+import static org.princehouse.mica.base.RuntimeErrorCondition.BIND_ADDRESS_EXCEPTION;
+import static org.princehouse.mica.base.RuntimeErrorCondition.INITIATOR_LOCK_TIMEOUT;
+import static org.princehouse.mica.base.RuntimeErrorCondition.NULL_SELECT;
+import static org.princehouse.mica.base.RuntimeErrorCondition.OPEN_CONNECTION_FAIL;
+import static org.princehouse.mica.base.RuntimeErrorCondition.POSTUDPATE_EXCEPTION;
+import static org.princehouse.mica.base.RuntimeErrorCondition.PREUDPATE_EXCEPTION;
+import static org.princehouse.mica.base.RuntimeErrorCondition.SELECT_EXCEPTION;
+import static org.princehouse.mica.base.RuntimeErrorCondition.SELF_GOSSIP;
 
 import java.io.IOException;
 import java.net.ConnectException;
@@ -9,6 +18,9 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.ReentrantLock;
 
 import org.princehouse.mica.base.MalformedViewException;
+import org.princehouse.mica.base.RuntimeErrorCondition;
+import org.princehouse.mica.base.exceptions.AbortRound;
+import org.princehouse.mica.base.exceptions.FatalErrorHalt;
 import org.princehouse.mica.base.model.Compiler;
 import org.princehouse.mica.base.model.Protocol;
 import org.princehouse.mica.base.model.Runtime;
@@ -17,11 +29,10 @@ import org.princehouse.mica.base.model.RuntimeState;
 import org.princehouse.mica.base.net.model.AcceptConnectionHandler;
 import org.princehouse.mica.base.net.model.Address;
 import org.princehouse.mica.base.net.model.Connection;
+import org.princehouse.mica.base.net.model.NotBoundException;
 import org.princehouse.mica.util.Distribution;
-import org.princehouse.mica.util.Exceptions;
 import org.princehouse.mica.util.Logging;
 import org.princehouse.mica.util.WeakHashSet;
-
 
 /**
  * Basic Runtime implementation.
@@ -30,7 +41,10 @@ import org.princehouse.mica.util.WeakHashSet;
  * 
  */
 public class SimpleRuntime<P extends Protocol> extends Runtime<P> implements
-AcceptConnectionHandler {
+		AcceptConnectionHandler {
+
+	
+	public static final boolean DEBUG_NETWORKING = false;
 
 	private ReentrantLock lock = new ReentrantLock();
 
@@ -45,50 +59,61 @@ AcceptConnectionHandler {
 		super();
 		setAddress(address);
 	}
-	
-	//public SimpleRuntime() { 
-	//	this(null);
-	//}
+
+	// public SimpleRuntime() {
+	// this(null);
+	// }
 
 	public void setAddress(Address address) {
-		if(this.address != null && !this.address.equals(address)) {
-			throw new RuntimeException("previous address non-null; cannot change the address of an existing runtime");
+		if (this.address != null && !this.address.equals(address)) {
+			throw new RuntimeException(
+					"previous address non-null; cannot change the address of an existing runtime");
 		}
 		this.address = address;
 		runtimeState.setAddress(address);
 	}
+
 	/**
-	 * Entry point for SimpleRuntime.  Starts a protocol in a new thread. 
-	 * Uses SimpleRuntime.DEFAULT_INTERVAL as the gossip interval and 
+	 * Entry point for SimpleRuntime. Starts a protocol in a new thread. Uses
+	 * SimpleRuntime.DEFAULT_INTERVAL as the gossip interval and
 	 * SimpleRuntime.DEFAULT_RANDOM_SEED as the random seed.
 	 * 
-	 * @param pinstance Local protocol instance
-	 * @param address Local address
-	 * @param daemon Launch thread as a daemon
+	 * @param pinstance
+	 *            Local protocol instance
+	 * @param address
+	 *            Local address
+	 * @param daemon
+	 *            Launch thread as a daemon
 	 * @return New Runtime instance
 	 */
-	public static <T extends Protocol> Runtime<T> launch(Runtime<T> rt, final T pinstance,
-	 final boolean daemon) {
-		return launch(rt, pinstance, daemon, DEFAULT_INTERVAL, DEFAULT_RANDOM_SEED);
+	public static <T extends Protocol> Runtime<T> launch(Runtime<T> rt,
+			final T pinstance, final boolean daemon) {
+		return launch(rt, pinstance, daemon, DEFAULT_INTERVAL,
+				DEFAULT_RANDOM_SEED);
 	}
-	
+
 	/**
-	 * Entry point for SimpleRuntime.  Starts a protocol in a new thread. 
+	 * Entry point for SimpleRuntime. Starts a protocol in a new thread.
 	 * 
-	 * @param pinstance Local protocol instance
-	 * @param address Local address
-	 * @param daemon Launch thread as a daemon
-	 * @param intervalMS Milliseconds to sleep between each gossip initiation
-	 * @param randomSeed Random seed to use for this runtime
+	 * @param pinstance
+	 *            Local protocol instance
+	 * @param address
+	 *            Local address
+	 * @param daemon
+	 *            Launch thread as a daemon
+	 * @param intervalMS
+	 *            Milliseconds to sleep between each gossip initiation
+	 * @param randomSeed
+	 *            Random seed to use for this runtime
 	 * @return New Runtime instance
 	 */
-	public static <T extends Protocol> Runtime<T> launch(final Runtime<T> rt, final T pinstance,
-			 final boolean daemon, final int intervalMS, final long randomSeed) {
+	public static <T extends Protocol> Runtime<T> launch(final Runtime<T> rt,
+			final T pinstance, final boolean daemon, final int intervalMS,
+			final long randomSeed) {
 		Thread t = new Thread() {
 			public void run() {
 				try {
-					rt.run(pinstance, intervalMS,
-							randomSeed);
+					rt.run(pinstance, intervalMS, randomSeed);
 				} catch (InterruptedException e) {
 					e.printStackTrace();
 				}
@@ -98,216 +123,277 @@ AcceptConnectionHandler {
 		t.start();
 		return rt;
 	}
-	
+
 	/**
-	 * COMPAT MODE --- DO NOT USE
-	 * should explicitly create a runtime and call Runtime.setRuntime BEFORE creating protocol instance 
+	 * COMPAT MODE --- DO NOT USE should explicitly create a runtime and call
+	 * Runtime.setRuntime BEFORE creating protocol instance
 	 * 
 	 * @param pinstance
 	 * @param address
 	 * @return
 	 */
 	@Deprecated
-	public static <T extends Protocol> Runtime<T> launchDaemon(final T pinstance, Address address) {
+	public static <T extends Protocol> Runtime<T> launchDaemon(
+			final T pinstance, Address address) {
 		Runtime<T> rt = new SimpleRuntime<T>(address);
-		return launch(rt, pinstance,true);
-	}
-	
-	/**
-	 * Entry point for SimpleRuntime.  Starts a protocol in a new thread. 
-	 * (Calls through to launch(), with the daemon flag true)
-	 * 
-	 * @param rt SimpleRuntime instance -- must be created prior to protocol instance creation
-	 * @param pinstance Local protocol instance
-	 * @param address Local address
-	 * @return New Runtime instance
-	 */
-	public static <T extends Protocol> Runtime<T> launchDaemon(Runtime<T> rt, final T pinstance
-			) {
-		return launch(rt, pinstance,true);
+		return launch(rt, pinstance, true);
 	}
 
 	/**
-	 * Entry point for SimpleRuntime.  Starts a protocol in a new thread. 
-	 * (Calls through to launch(), with the daemon flag true)
+	 * Entry point for SimpleRuntime. Starts a protocol in a new thread. (Calls
+	 * through to launch(), with the daemon flag true)
 	 * 
-	 * @param pinstance Local protocol instance
-	 * @param address Local address
-	 * @param intervalMS milliseconds to sleep between each gossip initiation
-	 * @param randomSeed random seed to be used for this runtime
+	 * @param rt
+	 *            SimpleRuntime instance -- must be created prior to protocol
+	 *            instance creation
+	 * @param pinstance
+	 *            Local protocol instance
+	 * @param address
+	 *            Local address
 	 * @return New Runtime instance
 	 */
-	public static <T extends Protocol> Runtime<T> launchDaemon(SimpleRuntime<T> rt, final T pinstance,
-			final Address address, int intervalMS, long randomSeed) {
-		return launch(rt, pinstance,true, intervalMS, randomSeed);
+	public static <T extends Protocol> Runtime<T> launchDaemon(Runtime<T> rt,
+			final T pinstance) {
+		return launch(rt, pinstance, true);
 	}
-	
-	
+
+	/**
+	 * Entry point for SimpleRuntime. Starts a protocol in a new thread. (Calls
+	 * through to launch(), with the daemon flag true)
+	 * 
+	 * @param pinstance
+	 *            Local protocol instance
+	 * @param address
+	 *            Local address
+	 * @param intervalMS
+	 *            milliseconds to sleep between each gossip initiation
+	 * @param randomSeed
+	 *            random seed to be used for this runtime
+	 * @return New Runtime instance
+	 */
+	public static <T extends Protocol> Runtime<T> launchDaemon(
+			SimpleRuntime<T> rt, final T pinstance, final Address address,
+			int intervalMS, long randomSeed) {
+		return launch(rt, pinstance, true, intervalMS, randomSeed);
+	}
+
 	private P pinstance;
 
 	@Override
 	public void acceptConnection(Address recipient, Connection connection)
 			throws IOException {
 		try {
+		
+		
+
 			if (lock.tryLock(LOCK_WAIT_MS, TimeUnit.MILLISECONDS)) {
-
+				if (!running) {
+					logJson("mica-error-internal",
+							"acceptConnection called on a stopped runtime");
+					connection.close();
+					return;
+				}
 				setRuntime(this);
-
-				logJson("accept-lock-succeed", recipient);
 				((SimpleRuntimeAgent<P>) compile(pinstance)).acceptConnection(
 						this, getProtocolInstance(), connection);
 				clearRuntime(this);
 				lock.unlock();
 			} else {
+				if (!running) {
+					logJson("mica-error-internal",
+							"acceptConnection called on a stopped runtime");
+					connection.close();
+					return;
+				}
 				// failed to acquire lock; timeout
-
-				//if(Runtime.LOGGING_CSV)   Can't do instance-based logging since setRuntime hasn't happened
-				//	((BaseProtocol)pinstance).log("accept-lock-fail");
-
-				logJson("accept-lock-fail", recipient);
-
-				System.err
-				.printf("%s accept: failed to acquire lock (timeout)\n", this);
+				logJson("mica-error-lock-fail", "acceptConnection");
+				System.err.printf(
+						"%s accept: failed to acquire lock (timeout)\n", this);
 				connection.close();
 			}
 		} catch (InterruptedException e) {
-			e.printStackTrace();
+			try {
+				handleError(RuntimeErrorCondition.INTERRUPTED);
+			} catch (FatalErrorHalt e1) {
+			} catch (AbortRound e1) {
+			}
 		}
 	}
 
 	private boolean running = true;
 
 	@Override
-	public void run(P pinstance, int intervalMS,
-			long randomSeed) throws InterruptedException {
+	public void run(P pinstance, int intervalMS, long randomSeed)
+			throws InterruptedException {
 
 		final Address address = getAddress();
-		
+
 		super.run(pinstance, intervalMS, randomSeed);
 
 		// Initialize RuntimeState available to protocols
 		runtimeState.setAddress(address);
 		runtimeState.setRandom(new Random(randomSeed));
 		runtimeState.setIntervalMS(intervalMS);
-		
+
 		setProtocolInstance(pinstance);
+
+		Random rng = new Random(randomSeed);
+
+		logState("initial");
 
 		try {
 			address.bind(this);
 		} catch (IOException e1) {
-			punt(e1);
+			logJson("mica-error-internal", e1);
+			try {
+				handleError(BIND_ADDRESS_EXCEPTION);
+			} catch (FatalErrorHalt e) {
+				return;
+			} catch (AbortRound e) {
+				return; // same as fatal in this case
+			}
 		}
 
 		long lastElapsedMS = 0L;
 
-		Random rng = new Random(randomSeed);
+		double rate = getRate(getProtocolInstance());
 
-		logJson("state-initial",getProtocolInstance().getLogState());
-		//logJson("view",getProtocolInstance().getView());
-		
-		while (running) {
-			double rate = getRate(getProtocolInstance());
+		try {
+			while (running) {
 
-			logJson("rate",rate);
+				Connection connection = null;
+				long startTime = getTimeMS();
+				Address partner = null;
 
-			int intervalLength = (int) (((double) intervalMS) / rate);
-			if(intervalLength <= 0) {
-				System.err.printf("%s error: Rate * intervalMS <= 0.  Resetting to default.\n", this);
-				intervalLength  = intervalMS;
-			}
-			Thread.sleep(Math.max(0L, intervalLength - lastElapsedMS));
-			if (!running)
-				break;
+				try {
+					logJson("mica-rate", rate);
 
-			long startTime = getTimeMS();
-
-			Connection connection = null;
-			Address partner = null;
-
-			try {
-				if (lock.tryLock(LOCK_WAIT_MS, TimeUnit.MILLISECONDS)) {
-
-					RuntimeAgent<P> agent = compile(getProtocolInstance());
-
-					Logging.SelectEvent se = agent.select(this,
-							getProtocolInstance(), rng.nextDouble());
-
-					partner = se.selected;
-					
-					Runtime.debug.printf("%s select %s\n", this, partner);
-					
-					logJson("select", se);
-					//logJson("select", String.format("%s",partner));
-					
-					try {
-						// preUpdate is called even if partner is invalid (null or self address)
-						getProtocolInstance().preUpdate(partner);
-						logJson("state-pre-update", getProtocolInstance().getLogState());
-						//logJson("view",getProtocolInstance().getView());
-
-					} catch(Throwable t) {
-						t.printStackTrace(System.err);
-						logJson("pre-update-throwable", new Object[]{"preUpdate() threw throwable", Exceptions.stackTraceToString(t)});
+					int intervalLength = (int) (((double) intervalMS) / rate);
+					if (intervalLength <= 0) {
+						System.err
+								.printf("%s error: Rate * intervalMS <= 0.  Resetting to default.\n",
+										this);
+						intervalLength = intervalMS;
 					}
-					
-					if(getAddress().equals(partner)) {
-						logJson("failure-self-gossip-attempt");
-						continue;
-					} else if (partner == null) {
-						agent.handleNullSelect(this, getProtocolInstance());
-						lock.unlock();
-						continue;
-					}
-
-
-					try {
-						connection = partner.openConnection();
-					} catch(ConnectException ce) {
-						agent.handleConnectException(this, pinstance, partner,ce);
-                        lock.unlock();
-						continue;
-					}
-
-					if (!running) {
-						lock.unlock();
+					Thread.sleep(Math.max(0L, intervalLength - lastElapsedMS));
+					if (!running)
 						break;
-				    } 	
 
-					try {
-						agent.gossip(this, getProtocolInstance(),
-								connection);
-					} catch(Throwable t) { 
-						// May be a serialization problem!
-						logJson("mica-internal-exception", new Object[]{"agent.gossip unexpectedly threw a throwable.  Possible serialization reference cycle",t});		
+					if (lock.tryLock(LOCK_WAIT_MS, TimeUnit.MILLISECONDS)) {
+
+						if (!running) {
+							// recv thread may have shutdown while it held
+							// the lock.
+							// now that we have it, test for this
+							lock.unlock();
+							break;
+						}
+						RuntimeAgent<P> agent = compile(getProtocolInstance());
+
+						Logging.SelectEvent se = null;
+						try {
+							se = agent.select(this,
+									getProtocolInstance(), rng.nextDouble());
+						} catch (SelectException e) {
+							handleError(SELECT_EXCEPTION,e);
+						}
+
+						partner = se.selected;
+
+
+						logJson("mica-select", se);
+
+						try {
+							// preUpdate is called even if partner is
+							// invalid
+							// (null or self address)
+							getProtocolInstance().preUpdate(partner);
+						} catch (Throwable t) {
+							handleError(PREUDPATE_EXCEPTION, t);
+						}
+						logState("preupdate");
+
+						if (getAddress().equals(partner)) {
+							handleError(SELF_GOSSIP);
+						} else if (partner == null) {
+							handleError(NULL_SELECT);
+						}
+
+						try {
+							connection = partner.openConnection();
+						} catch (ConnectException ce) {
+							handleError(OPEN_CONNECTION_FAIL, ce);
+						} catch (IOException io) {
+							handleError(OPEN_CONNECTION_FAIL, io);
+						}
+
+						try {
+							agent.gossip(this, getProtocolInstance(),
+									connection);
+						} catch (AbortRound ar) {
+							throw ar;
+						} catch (FatalErrorHalt feh) {
+							throw feh;
+						} catch (Throwable t) {
+							// May be a serialization problem!
+							handleError(ACTIVE_GOSSIP_EXCEPTION, t);
+						}
+
+						logState("gossip-initiator");
+
+						try {
+							getProtocolInstance().postUpdate();
+						} catch (Throwable t) {
+							handleError(POSTUDPATE_EXCEPTION, t);
+						}
+						logState("postupdate");
+
+						getRuntimeState().incrementRound();
+						rate = getRate(getProtocolInstance());
+						lock.unlock();
+					} else {
+						// failed to acquire lock within time limit; gossip
+						handleError(INITIATOR_LOCK_TIMEOUT);
 					}
-
-					try {
-						getProtocolInstance().postUpdate();
-						logJson("state-post-update", getProtocolInstance().getLogState());
-						//logJson("view",getProtocolInstance().getView());
-
-					} catch(Throwable t) {
-						t.printStackTrace(System.err);
-						logJson("post-update-throwable", new Object[]{"postUpdate() threw throwable", Exceptions.stackTraceToString(t)});
+				} catch (AbortRound ar) {
+					// close connection, if applicable
+					if (connection != null) {
+						try {
+							connection.close();
+						} catch (IOException e) {}
 					}
-
-					getRuntimeState().incrementRound();
-					
-					lock.unlock();
-				} else {
-					// failed to acquire lock within time limit; gossip again
-					// next round
-					logJson("lockfail-active");
+					try {
+						lock.unlock(); // try to release lock
+					} catch (IllegalMonitorStateException ie) {}
 				}
-			} catch (IOException e) {
-				lock.unlock();
-				this.tolerate(e);
-			} catch (SelectException e) {
-				lock.unlock();
-				this.tolerate(e);
+				lastElapsedMS = getTimeMS() - startTime;
+				double sec = ((double)lastElapsedMS)/1000.0;
+				Runtime.debug.printf("%s -> %s, elapsed time %g s\n", this, partner, sec);
 			}
-			lastElapsedMS = getTimeMS() - startTime;
+		} catch (FatalErrorHalt e) {
+			// fatalErrorHalt should have already shut down everything
+		} // end while(running) loop
+	}
+
+	
+	@Override
+	protected void tolerateError() throws AbortRound {
+		throw new AbortRound();
+	}
+
+	@Override
+	protected void fatalErrorHalt(RuntimeErrorCondition condition)
+			throws FatalErrorHalt {
+		stop(); // passively signal that it's time to shut down
+		try {
+			address.unbind();// try to unbind the listener
+		} catch (NotBoundException e1) {
 		}
+		try {
+			lock.unlock();
+		} catch (IllegalMonitorStateException e) {
+		}
+		throw new FatalErrorHalt();
 	}
 
 	@Override
@@ -374,24 +460,24 @@ AcceptConnectionHandler {
 	}
 
 	@Override
-	public Distribution<Address> getView(
-			Protocol protocol) throws SelectException {
-		
+	public Distribution<Address> getView(Protocol protocol)
+			throws SelectException {
+
 		Distribution<Address> view = compile(protocol).getView(this, protocol);
 
-		if(view != null && view.isEmpty())
+		if (view != null && view.isEmpty())
 			return null;
 
-		if(view != null && !view.isOne()) {
+		if (view != null && !view.isOne()) {
 			throw new MalformedViewException(protocol, view);
 		}
-				
+
 		return view;
 	}
 
 	@Override
 	public double getRate(Protocol protocol) {
-		return compile(protocol).getRate(this,protocol);
+		return compile(protocol).getRate(this, protocol);
 	}
 
 	@Override

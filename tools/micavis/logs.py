@@ -310,7 +310,7 @@ def build_comm_matrix(unique_address_list, events):
     n = len(unique_address_list)
     matrix = [ [0.] * n for i in xrange(n) ]
     index = dict((a,i) for i,a in enumerate(unique_address_list))
-    selevts = filter(EVENTS_FILTER_EVENTTYPE("select"), events)
+    selevts = filter(EVENTS_FILTER_EVENTTYPE("mica-select"), events)
     assert(len(selevts) > 0)
     for e in selevts:
         tot += 1

@@ -9,6 +9,10 @@ import java.util.Date;
 import java.util.Random;
 import java.util.concurrent.locks.ReentrantLock;
 
+import org.princehouse.mica.base.RuntimeErrorCondition;
+import org.princehouse.mica.base.RuntimeErrorResponse;
+import org.princehouse.mica.base.exceptions.AbortRound;
+import org.princehouse.mica.base.exceptions.FatalErrorHalt;
 import org.princehouse.mica.base.net.model.Address;
 import org.princehouse.mica.base.simple.SelectException;
 import org.princehouse.mica.util.ClassUtils;
@@ -17,6 +21,7 @@ import org.princehouse.mica.util.Functional;
 import org.princehouse.mica.util.Logging;
 
 import com.google.gson.Gson;
+import static org.princehouse.mica.base.RuntimeErrorResponse.*;
 
 /**
  * The Runtime instance represents the local node in the gossip network. It runs
@@ -168,30 +173,26 @@ public abstract class Runtime<P extends Protocol> {
 				origin.toString(), eventType, theEvent);
 
 		Gson gson = Logging.getGson();
-		
+
 		try {
 			String msg = gson.toJson(logobj);
 			out.println(msg);
 		} catch (StackOverflowError e) {
-			// object probably has a reference cycle reference cycle
-			//logJson(origin, "error:logging:reference_cycle", theEvent.getClass().getName());
-//			out.println(gson.toJson("error:reference_cycle"));
-			// debugging:
-			
-		//	e.printStackTrace();
-
 			Object payload = logobj.data;
-			System.err.println(String.format("fatal error: possible reference cycle with %s", payload.getClass().getCanonicalName()));
+			System.err.println(String.format(
+					"fatal error: possible reference cycle with %s", payload
+							.getClass().getCanonicalName()));
 			ClassUtils.debug = true;
 			boolean found = ClassUtils.findReferenceCycles(payload);
-			if(!found) {
-				System.err.println("   weirdness: findReferenceCycles returned False (Runtime.java)");
+			if (!found) {
+				System.err
+						.println("   weirdness: findReferenceCycles returned False (Runtime.java)");
 			}
 			// Treat this as a fatal error
 			System.exit(-1);
-			
+
 		} catch (UnsupportedOperationException f) {
-			logJson(origin, String.format("error:logging:%s", f), theEvent.getClass().getName());
+			logJson(origin, "mica-error-internal", f);
 			tolerate(f);
 		}
 
@@ -229,7 +230,7 @@ public abstract class Runtime<P extends Protocol> {
 			logfile.delete();
 		}
 
-		logJson("runtime-init", Functional.<String, Object> mapFromPairs(
+		logJson("mica-runtime-init", Functional.<String, Object> mapFromPairs(
 				"round_ms", intervalMS, "random_seed", randomSeed));
 
 		setRuntime(this);
@@ -356,4 +357,64 @@ public abstract class Runtime<P extends Protocol> {
 	public long getTime() {
 		return new Date().getTime();
 	}
+
+	public void handleError(RuntimeErrorCondition condition, Object payload)
+			throws FatalErrorHalt, AbortRound {
+		logJson("mica-error-internal", payload);
+		handleError(condition);
+	}
+
+	public void handleError(RuntimeErrorCondition condition, String msg,
+			Object payload) throws FatalErrorHalt, AbortRound {
+		logJson("mica-error-internal", new Object[] { msg, payload });
+		handleError(condition);
+	}
+	
+	public void handleError(RuntimeErrorCondition condition)
+			throws FatalErrorHalt, AbortRound {
+		RuntimeErrorResponse policy = getErrorPolicy(condition);
+		logJson("mica-error-handler",
+				String.format("%s -> %s", condition, policy));
+		switch (policy) {
+		case FATAL_ERROR_HALT:
+			fatalErrorHalt(condition);
+			break;
+		case IGNORE:
+			return; // do nothing at all!
+		case ABORT_ROUND:
+			tolerateError();
+			break;
+		default:
+			throw new RuntimeException(
+					"unhandled error response shouldn't happen");
+		}
+	}
+
+	
+	protected abstract void tolerateError() throws AbortRound;
+	
+	protected abstract void fatalErrorHalt(RuntimeErrorCondition condition) throws FatalErrorHalt;
+	
+	
+	public RuntimeErrorResponse getErrorPolicy(RuntimeErrorCondition condition) {
+		switch (condition) {
+		case NULL_SELECT:
+			return ABORT_ROUND;
+		case OPEN_CONNECTION_FAIL:
+			return ABORT_ROUND;
+		case INITIATOR_LOCK_TIMEOUT:
+			return ABORT_ROUND;
+		case GOSSIP_IO_ERROR:
+			return ABORT_ROUND;
+		default:
+			return RuntimeErrorResponse.FATAL_ERROR_HALT;
+		}
+	}
+	
+
+	public void logState(String label) {
+		logJson("mica-state-" + label, getProtocolInstance().getLogState());
+	}
+
+
 }

@@ -102,14 +102,14 @@ class MicaVisGui:
 
         self.current_node_state = logs.CurrentValueTracker(
             events, 
-            filter_func = lambda e: e['event_type'].startswith('state-') and 'state' in e['data'],
+            filter_func = lambda e: e['event_type'].startswith('mica-state-') and 'state' in e['data'],
             value_func = lambda e: (e['address'],e['data']) )
         self.add_cursor_listener(self.current_node_state.set_i)
 
         # current_node_state[addr] -> the latest state assigned to node "addr" w.r.t. the cursor self.get_current_i()
         self.current_node_view = logs.CurrentValueTracker(
             events,
-            filter_func = lambda e: e['event_type'].startswith('state-') and 'view' in e['data'],
+            filter_func = lambda e: e['event_type'].startswith('mica-state-') and 'view' in e['data'],
             value_func = lambda e: (e['address'],e['data']['view']))
         self.add_cursor_listener(self.current_node_view.set_i)
 
@@ -596,8 +596,14 @@ class IGraphDrawingArea(gtk.DrawingArea):
                            vertex_color=node_color)
 
         etype = event['event_type'].replace('-','_')
+
+        if etype.startswith('mica_state'):
+            etype = 'mica_state'
+
         fname = 'draw_event_%s' % etype
         # search for function draw_event_ETYPE(event, cairo_context)
+
+        
         try:
             draw_func = getattr(self,fname)
         except AttributeError:
@@ -605,64 +611,38 @@ class IGraphDrawingArea(gtk.DrawingArea):
             return
 
         draw_func(event, cr, cairo_surface, create_plot_func)
-
     
-    def draw_event_runtime_init(self, event, cr, cairo_surface, create_plot_func):
+    def draw_event_mica_runtime_init(self, event, cr, cairo_surface, create_plot_func):
         # random_seed : long
         # round_ms : int
         # FIXME implement
         pass
 
-    def draw_event_state(self, event, cr, cairo_surface, create_plot_func):
+    def draw_event_mica_state(self, event, cr, cairo_surface, create_plot_func):
         # contents depend on protocol
         # FIXME implement
         pass
 
-    def draw_event_state_initial(self, event, cr, cairo_surface, create_plot_func):
-        self.draw_event_state(event,cr, cairo_surface, create_plot_func)
-
-    def draw_event_state_gossip_initiator(self, event, cr, cairo_surface, create_plot_func):
-        self.draw_event_state(event,cr, cairo_surface, create_plot_func)
-
-    def draw_event_state_gossip_receiver(self, event, cr, cairo_surface, create_plot_func):
-        self.draw_event_state(event,cr, cairo_surface, create_plot_func)
-
-    def draw_event_state_pre_update(self, event, cr, cairo_surface, create_plot_func):
-        self.draw_event_state(event,cr, cairo_surface, create_plot_func)
-
-    def draw_event_state_post_update(self, event, cr, cairo_surface, create_plot_func):
-        self.draw_event_state(event,cr, cairo_surface, create_plot_func)
-
-
-    def draw_event_rate(self, event, cr, cairo_surface, create_plot_func):
+    def draw_event_mica_rate(self, event, cr, cairo_surface, create_plot_func):
         # data : float
         # FIXME implement
         pass
 
-    def draw_event_merge_choose_subprotocol(self, event, cr, cairo_surface, create_plot_func):
-        # data : BOTH / NEITHER / P1 / P2 / NA
-        pass
+    def draw_event_mica_error_lock_fail(self, event, cr, cairo_surface, create_plot_func):
+        self.draw_event_mica_error(event,cr, cairo_surface, create_plot_func)
 
-    def draw_event_accept_lock_fail(self, event, cr, cairo_surface, create_plot_func):
-        self.draw_event_failure(event,cr, cairo_surface, create_plot_func)
+    def draw_event_mica_error_handler(self, event, cr, cairo_surface, create_plot_func):
+        self.draw_event_error(event,cr, cairo_surface, create_plot_func)
 
-        
-    def draw_event_accept_lock_succeed(self, event, cr, cairo_surface, create_plot_func):
-        # data : {}
-        # FIXME implement
-        pass
+    def draw_event_mica_error_internal(self, event, cr, cairo_surface, create_plot_func):
+        self.draw_event_error(event,cr, cairo_surface, create_plot_func)
 
-    def draw_event_failure(self, event, cr, cairo_surface, create_plot_func):
+    def draw_event_mica_error(self, event, cr, cairo_surface, create_plot_func):
         # data : None
         self.draw_node(cr, cairo_surface, create_plot_func, 
                        event['address'], 
                        vertex_color=self.failure_node_color)
 
-    def draw_event_failure_self_gossip_attempt(self, event, cr, cairo_surface, create_plot_func):
-        self.draw_event_failure(event,cr, cairo_surface, create_plot_func)
-
-    def draw_event_gossip_init_connection_failure(self, event, cr, cairo_surface, create_plot_func):
-        self.draw_event_failure(event,cr, cairo_surface, create_plot_func)
 
 # view no longer a separate event
 #    def draw_event_view(self, event, cr, cairo_surface, create_plot_func):
@@ -679,7 +659,7 @@ class IGraphDrawingArea(gtk.DrawingArea):
             # draw null select
 #            self.draw_event_failure(event,cr, cairo_surface, create_plot_func)
             
-    def draw_event_select(self, event, cr, cairo_surface, create_plot_func):
+    def draw_event_mica_select(self, event, cr, cairo_surface, create_plot_func):
         # data : selected address
         address = event['address']
         select_event = event['data']  # a JSON-converted Logging.SelectEvent object
@@ -697,15 +677,15 @@ class IGraphDrawingArea(gtk.DrawingArea):
             self.draw_event_failure(event,cr, cairo_surface, create_plot_func)
 
     # currently just draws a line between node centers
-    def draw_arrow_between_nodes_old(self, cr, cairo_surface, create_plot_func, src_addr, dst_addr, color):
-        src_nid = self.node_name_map[src_addr]
-        dst_nid = self.node_name_map[dst_addr]
-        src = self.node_center_coordinates(src_nid)
-        dst = self.node_center_coordinates(dst_nid)
-        cr.move_to(*src)
-        cr.line_to(*dst)
-        cr.set_source_rgb(*color)
-        cr.stroke()
+#    def draw_arrow_between_nodes_old(self, cr, cairo_surface, create_plot_func, src_addr, dst_addr, color):
+#        src_nid = self.node_name_map[src_addr]
+#        dst_nid = self.node_name_map[dst_addr]
+#        src = self.node_center_coordinates(src_nid)
+#        dst = self.node_center_coordinates(dst_nid)
+#        cr.move_to(*src)
+#        cr.line_to(*dst)
+#        cr.set_source_rgb(*color)
+#        cr.stroke()
 
     def draw_edge(self, cr, cairo_surface, create_plot_func, src_addr, dst_addr, **plot_options):
         src_nid = self.node_name_map[src_addr]
@@ -763,7 +743,6 @@ class IGraphDrawingArea(gtk.DrawingArea):
                 'layout': self.node_coordinates
                 }
         return self.plot_keywords
-
 
     def redraw_canvas(self):
         if self.window:

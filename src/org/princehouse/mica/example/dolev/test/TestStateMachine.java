@@ -1,8 +1,10 @@
-package org.princehouse.mica.example.dolev;
+package org.princehouse.mica.example.dolev.test;
 
 import java.util.List;
 
 import org.princehouse.mica.base.net.model.Address;
+import org.princehouse.mica.example.dolev.PulseStateMachine;
+import org.princehouse.mica.example.dolev.PulseTransitionRule;
 import org.princehouse.mica.util.Functional;
 
 /**
@@ -50,5 +52,11 @@ public class TestStateMachine extends PulseStateMachine {
 	@Override
 	public List<PulseTransitionRule> getTransitions() {
 		return transitions;
+	}
+	
+	@Override
+	public void postUpdate() {
+		this.logJson("pulse-test-logsize",getLog().size());
+		super.postUpdate();
 	}
 }

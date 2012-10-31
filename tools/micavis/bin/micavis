@@ -9,15 +9,17 @@
 
 import sys, os
 
-micavis_dir = os.path.split('__file__')[1]
+bindir = os.path.split(__file__)[0]
+micadir = os.path.abspath(bindir + "/../../..")
+logdir = micadir + "/mica_log"
+pydir = micadir + "/tools"
 
-sys.path.insert(0,os.path.abspath(micavis_dir + "/../.."))
+sys.path.insert(0,os.path.abspath(pydir))
 
 args = sys.argv[:]
 
 if len(args) == 1:
-    default_loc = os.path.abspath(
-       micavis_dir + "/../../../mica_log")
+    default_loc = logdir
     args += [default_loc]
 
 from micavis.gui import main

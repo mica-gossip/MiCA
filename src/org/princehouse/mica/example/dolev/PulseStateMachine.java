@@ -81,7 +81,7 @@ public abstract class PulseStateMachine extends PulseRoundManager {
 		return log;
 	}
 
-	void setState(Object state) {
+	public void setState(Object state) {
 		Address addr = getAddress();
 		assert (addr != null);
 

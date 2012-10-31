@@ -4,7 +4,6 @@ import java.util.List;
 
 import org.princehouse.mica.base.net.model.Address;
 import org.princehouse.mica.base.simple.SelectException;
-import org.princehouse.mica.example.dolev.TestStateMachine;
 import org.princehouse.mica.lib.abstractions.Overlay;
 import org.princehouse.mica.util.Functional;
 import org.princehouse.mica.util.Randomness;

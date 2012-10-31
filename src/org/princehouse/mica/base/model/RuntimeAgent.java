@@ -1,7 +1,7 @@
 package org.princehouse.mica.base.model;
 
-import java.net.ConnectException;
-
+import org.princehouse.mica.base.exceptions.AbortRound;
+import org.princehouse.mica.base.exceptions.FatalErrorHalt;
 import org.princehouse.mica.base.net.model.Address;
 import org.princehouse.mica.base.net.model.Connection;
 import org.princehouse.mica.base.simple.SelectException;
@@ -63,7 +63,7 @@ public abstract class RuntimeAgent<P extends Protocol> {
 	 * @param connection Open connection to the selected gossip peer
 	 */
 	public abstract void gossip(Runtime<P> runtime, P pinstance,
-			Connection connection);
+			Connection connection) throws AbortRound, FatalErrorHalt;
 
 	
 	/**
@@ -76,8 +76,5 @@ public abstract class RuntimeAgent<P extends Protocol> {
 	 */
 	public abstract double getRate(Runtime<?> runtime, P pinstance);
 
-	public abstract void handleNullSelect(Runtime<?> runtime, P pinstance);
-
-	public abstract void handleConnectException(Runtime<?> runtime, P pinstance, Address partner, ConnectException ce);
 	
 }

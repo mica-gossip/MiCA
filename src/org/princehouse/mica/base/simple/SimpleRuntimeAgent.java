@@ -7,7 +7,6 @@ import java.io.Serializable;
 import java.lang.reflect.AnnotatedElement;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
-import java.net.ConnectException;
 import java.net.SocketException;
 import java.util.Collections;
 import java.util.HashMap;
@@ -15,6 +14,8 @@ import java.util.List;
 
 import org.princehouse.mica.base.annotations.GossipRate;
 import org.princehouse.mica.base.annotations.GossipUpdate;
+import org.princehouse.mica.base.exceptions.AbortRound;
+import org.princehouse.mica.base.exceptions.FatalErrorHalt;
 import org.princehouse.mica.base.model.CompilerException;
 import org.princehouse.mica.base.model.Protocol;
 import org.princehouse.mica.base.model.Runtime;
@@ -33,6 +34,7 @@ import org.princehouse.mica.util.TooManyException;
 
 import fj.F;
 import fj.P2;
+import static org.princehouse.mica.base.RuntimeErrorCondition.*;
 
 /**
  * RuntimeAgent for the simple runtime.
@@ -143,7 +145,8 @@ class SimpleRuntimeAgent<P extends Protocol> extends RuntimeAgent<P> {
 	}
 
 	@Override
-	public void gossip(Runtime<P> rt, P pinstance, Connection connection) {
+	public void gossip(Runtime<P> rt, P pinstance, Connection connection)
+			throws AbortRound, FatalErrorHalt {
 		// 1. serialize local state, send over connection
 		// 2. receive updated state
 		// prerequisite of this agent: protocols implement serializable
@@ -155,44 +158,58 @@ class SimpleRuntimeAgent<P extends Protocol> extends RuntimeAgent<P> {
 					connection.getOutputStream());
 			oos.writeObject(msg);
 		} catch (SocketException se) {
-			rt.logJson("mica-internal-exception-in-gossip", se.getMessage());
+			Object mg;
+			if (SimpleRuntime.DEBUG_NETWORKING)
+				mg = se;
+			else
+				mg = se.getMessage();
+			rt.handleError(GOSSIP_IO_ERROR, mg);
 		} catch (IOException e) {
-			rt.punt(e);
+			Object mg;
+			if (SimpleRuntime.DEBUG_NETWORKING)
+				mg = e;
+			else
+				mg = e.getMessage();
+			rt.handleError(GOSSIP_IO_ERROR, mg);
 		}
 
-		ObjectInputStream ois;
+		ObjectInputStream ois = null;
 		try {
-			try {
-				ois = new ObjectInputStream(connection.getInputStream());
-			} catch (SocketException e) {
-				rt.logJson(rt.getRuntimeState(pinstance).getAddress(),
-						"gossip-init-connection-failure", null);
-				return;
-			}
-			try {
-				@SuppressWarnings("unchecked")
-				ResponseMessage<P> rpm = (ResponseMessage<P>) ois.readObject();
-
-				rt.setProtocolInstance(rpm.protocolInstance);
-
-				// Update runtime state
-				rt.getRuntimeState().update(rpm.runtimeState);
-				rt.logJson("state-gossip-initiator",
-						rpm.protocolInstance.getLogState());
-				//rt.logJson("view",rpm.protocolInstance.getView());
-
-			} catch (ClassNotFoundException e) {
-				rt.punt(e);
-			}
-
+			ois = new ObjectInputStream(connection.getInputStream());
+		} catch (SocketException e) {
+			Object mg;
+			if (SimpleRuntime.DEBUG_NETWORKING)
+				mg = e;
+			else
+				mg = e.getMessage();
+			rt.handleError(GOSSIP_IO_ERROR, mg);
 		} catch (IOException e) {
-			rt.tolerate(e);
+			Object mg;
+			if (SimpleRuntime.DEBUG_NETWORKING)
+				mg = e;
+			else
+				mg = e.getMessage();
+			rt.handleError(GOSSIP_IO_ERROR, mg);
+		}
+
+		try {
+			@SuppressWarnings("unchecked")
+			ResponseMessage<P> rpm = (ResponseMessage<P>) ois.readObject();
+
+			rt.setProtocolInstance(rpm.protocolInstance);
+
+			// Update runtime state
+			rt.getRuntimeState().update(rpm.runtimeState);
+		} catch (ClassNotFoundException e) {
+			rt.handleError(MISC_INTERNAL_ERROR, e);
+		} catch (IOException io) {
+			rt.handleError(GOSSIP_IO_ERROR, io);
 		}
 
 		try {
 			connection.close();
 		} catch (IOException e) {
-			rt.tolerate(e);
+			rt.handleError(GOSSIP_IO_ERROR, e);
 		}
 	}
 
@@ -431,9 +448,7 @@ class SimpleRuntimeAgent<P extends Protocol> extends RuntimeAgent<P> {
 				runtime.handleUpdateException(e);
 			}
 
-			runtime.logJson("state-gossip-receiver",
-					receiverState.getLogState());
-			//runtime.logJson("view",receiverState.getView());
+			runtime.logState("gossip-receiver");
 
 			srt.clearForeignState();
 
@@ -445,9 +460,12 @@ class SimpleRuntimeAgent<P extends Protocol> extends RuntimeAgent<P> {
 			oos.close();
 
 		} catch (ClassNotFoundException e) {
-			e.printStackTrace();
+			try {
+				runtime.handleError(MISC_INTERNAL_ERROR, e);
+			} catch (FatalErrorHalt e1) {
+			} catch (AbortRound e1) {
+			}
 		}
-		// rt.setProtocolInstance(pinstance);
 	}
 
 	/**
@@ -513,17 +531,6 @@ class SimpleRuntimeAgent<P extends Protocol> extends RuntimeAgent<P> {
 			}
 		}
 
-	}
-
-	@Override
-	public void handleNullSelect(Runtime<?> runtime, P pinstance) {
-	}
-
-	@Override
-	public void handleConnectException(Runtime<?> runtime, P pinstance,
-			Address partner, ConnectException ce) {
-		runtime.logJson(runtime.getRuntimeState(pinstance).getAddress(),
-				"connect-exception", partner);
 	}
 
 }

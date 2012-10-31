@@ -12,7 +12,6 @@ import org.princehouse.mica.base.model.RuntimeState;
 import org.princehouse.mica.base.net.model.Address;
 import org.princehouse.mica.base.simple.SelectException;
 import org.princehouse.mica.util.Distribution;
-import org.princehouse.mica.util.Logging;
 import org.princehouse.mica.util.MarkingObjectInputStream;
 
 /**
