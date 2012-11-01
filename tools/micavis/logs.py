@@ -208,12 +208,12 @@ def remove_redundant_view_update(event):
     return event
 
 ep_redundant_state_update_eliminator = RedundantEventEliminator(
-    filter_func = lambda e: e['event_type'].startswith('state-'),
+    filter_func = lambda e: e['event_type'].startswith('mica-state-'),
     value_func = lambda e: (e['address'], e['data']['state']),
     adapter_func = remove_redundant_state_update)
 
 ep_redundant_view_update_eliminator = RedundantEventEliminator(
-    filter_func = lambda e: e['event_type'].startswith('state-'),
+    filter_func = lambda e: e['event_type'].startswith('mica-state-'),
     value_func = lambda e: (e['address'], e['data']['view']),
     adapter_func = remove_redundant_view_update)
     

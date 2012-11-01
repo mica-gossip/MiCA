@@ -14,7 +14,7 @@ import org.princehouse.mica.util.Functional;
 
 import fj.F;
 
-public class Pulse extends PulseStateMachine {
+public class Pulse extends LogStructuredStateMachine {
 
 	public static List<PulseTransitionRule> transitions = Functional
 			.list(new PulseTransitionRule[] {

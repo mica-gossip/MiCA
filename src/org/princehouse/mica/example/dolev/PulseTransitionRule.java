@@ -22,7 +22,7 @@ public abstract class PulseTransitionRule {
 		return name;
 	}
 	
-	public abstract boolean ready(PulseStateMachine node);
+	public abstract boolean ready(LogStructuredStateMachine node);
 	
-	public abstract void apply(PulseStateMachine node);
+	public abstract void apply(LogStructuredStateMachine node);
 }

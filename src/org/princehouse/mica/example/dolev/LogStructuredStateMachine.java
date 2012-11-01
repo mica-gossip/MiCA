@@ -1,9 +1,11 @@
 package org.princehouse.mica.example.dolev;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
+import java.util.LinkedList;
 import java.util.List;
-import java.util.ListIterator;
+import java.util.Map;
 import java.util.Set;
 
 import org.princehouse.mica.base.annotations.GossipUpdate;
@@ -12,8 +14,11 @@ import org.princehouse.mica.util.Functional;
 
 import fj.F;
 
-public abstract class PulseStateMachine extends PulseRoundManager {
+public abstract class LogStructuredStateMachine extends PulseRoundManager {
 
+	public int settingsTransitionLimit() { return Integer.MAX_VALUE; }
+	public boolean settingsTransitionForbidRepeat() { return true; }
+	
 	public abstract List<PulseTransitionRule> getTransitions();
 
 	/**
@@ -36,7 +41,8 @@ public abstract class PulseStateMachine extends PulseRoundManager {
 
 	private Object defaultState = null;
 
-	public PulseStateMachine(List<Address> neighbors, int f, Object initialState) {
+	public LogStructuredStateMachine(List<Address> neighbors, int f,
+			Object initialState) {
 		super(neighbors, f);
 		this.defaultState = initialState;
 		setState(initialState);
@@ -94,7 +100,7 @@ public abstract class PulseStateMachine extends PulseRoundManager {
 	}
 
 	@GossipUpdate
-	public void update(PulseStateMachine that) {
+	public void update(LogStructuredStateMachine that) {
 		super.update(that);
 		@SuppressWarnings("unchecked")
 		List<PulseMessage> msgcopy = Functional.concatenate(that.log);
@@ -103,38 +109,87 @@ public abstract class PulseStateMachine extends PulseRoundManager {
 		assimilateInformation(that.getAddress(), msgcopy);
 	}
 
-	private void deleteDuplicateMessages() {
+	/**
+	 * History is a map from address -> list of state change messages The list
+	 * of states is sorted from new to old, so the first message represents
+	 * current state.
+	 * 
+	 * Redundant messages are deleted: If there are two consecutive messages
+	 * (m1,s1,new_timestamp,), (m2,s2,old_timestamp) are encountered, the new
+	 * one is thrown out. The 'old' message is assigned the most direct source
+	 * of the two. (FIXME: this is *probably* the correct behavior...)
+	 * 
+	 * @return
+	 */
+	private Map<Address, LinkedList<PulseMessage>> buildHistory() {
+		// precondition: message list is sorted by timestamps descending (the
+		// natural sort for pulsemessage)
+
+		Map<Address, LinkedList<PulseMessage>> history = Functional.map();
+
+		for (PulseMessage m : getLog()) {
+			if (!history.containsKey(m.peer)) {
+				LinkedList<PulseMessage> temp = new LinkedList<PulseMessage>();
+				temp.addLast(m);
+				history.put(m.peer, temp);
+				continue;
+			}
+
+			LinkedList<PulseMessage> peerhist = history.get(m.peer);
+
+			PulseMessage last = peerhist.getLast();
+			if (!last.state.equals(m.state)) {
+				// state change
+				peerhist.addLast(m);
+			} else {
+				// same state. retain the older message
+				if (m.source.compareTo(last.source) > 0) {
+					// replace indirect with direct sources (verified working)
+					//logJson("lssm-debug-swap", String.format(
+					//		"replace origin %s with %s", m.source, last.source));
+					m.source = last.source;
+				}
+				peerhist.pollLast();
+				peerhist.addLast(m);
+			}
+		}
+		return history;
+
+	}
+
+	/**
+	 * precondition: log is sorted by ascending timestamp
+	 */
+	private void deleteRedundantMessages() {
 		if (log.size() <= 1) {
 			return;
 		}
 
-		// precondition: message list is sorted
-		ListIterator<PulseMessage> li = log.listIterator();
+		int debug_ss = log.size();
 
-		PulseMessage prev = li.next();
-		// messages are considered equal (and redundant) if all fields except
-		// for source are equal.
-		// direct sources given precedence over indirect [this is enforced by
-		// the sort order]
-		while (li.hasNext()) {
-			PulseMessage m = li.next();
+		Map<Address, LinkedList<PulseMessage>> history = buildHistory();
 
-			/*
-			 * if(m == null) throw new RuntimeException(); if(m.peer == null)
-			 * throw new RuntimeException(); if(m.state == null) throw new
-			 * RuntimeException(); if(prev == null) throw new
-			 * RuntimeException(); if(prev.peer == null) throw new
-			 * RuntimeException(); if(prev.state == null) throw new
-			 * RuntimeException();
-			 */
+		historyToLog(history);
 
-			if (m.timestamp == prev.timestamp && m.peer.equals(prev.peer)
-					&& m.state.equals(prev.state)) {
-				li.remove();
-			} else {
-				prev = m;
-			}
+		int debug_ns = log.size();
+
+		logJson("lssm-debug-delete-redundant", String.format(
+				"log redundancy size %s -> %s; history for %s nodes", debug_ss,
+				debug_ns, history.size()));
+	}
+
+	/**
+	 * rewrite the log using the given history
+	 * @param history
+	 */
+	private void historyToLog(Map<Address, LinkedList<PulseMessage>> history) {
+
+		log = new ArrayList<PulseMessage>();
+
+		for (List<PulseMessage> peerhist : history.values()) {
+			log = Functional.extend(log, peerhist);
 		}
+		Collections.sort(log);
 	}
 
 	private void assimilateInformation(Address source, List<PulseMessage> news) {
@@ -150,7 +205,7 @@ public abstract class PulseStateMachine extends PulseRoundManager {
 		Collections.sort(log);
 
 		// delete duplicate messages
-		deleteDuplicateMessages();
+		deleteRedundantMessages();
 
 		// special rules:
 		// receving "recover N" for some node N deletes all previous N messages
@@ -171,12 +226,15 @@ public abstract class PulseStateMachine extends PulseRoundManager {
 
 	@Override
 	public void postUpdate() {
+
 		if (ready()) {
-			logJson("pulse-READY");
+			logJson("lssm-ready");
 			reset();
 			doRound();
 		} else {
-			logJson("pulse-not ready", this.getRemainingCount());
+			logJson("lssm-not-ready",
+					String.format("waiting to hear from %s peers",
+							this.getRemainingCount()));
 		}
 
 		// prevent our own state from expiring by re-adding it to the log if
@@ -195,17 +253,21 @@ public abstract class PulseStateMachine extends PulseRoundManager {
 
 	// having received info from n-f peers, we attempt a state transition
 	private void doRound() {
-		purgeExpiredMessages();
-		final PulseStateMachine thisFinal = this;
+		// purgeExpiredMessages();
+		final LogStructuredStateMachine thisFinal = this;
 		int completedTransitions = 0;
 
 		// To prevent infinite loops, do not allow the same transition to be
 		// applied twice in one round
 		final Set<PulseTransitionRule> applied = Functional.set();
 
+		List<PulseTransitionRule> transitions = getTransitions();
+		
+		int limit = settingsTransitionLimit();
+		
 		while (true) {
 			List<PulseTransitionRule> readyTransitions = Functional
-					.list(Functional.filter(getTransitions(),
+					.list(Functional.filter(transitions,
 							new F<PulseTransitionRule, Boolean>() {
 								@Override
 								public Boolean f(PulseTransitionRule t) {
@@ -214,23 +276,32 @@ public abstract class PulseStateMachine extends PulseRoundManager {
 								}
 							}));
 
+			thisFinal.logJson("lssm-debug-transitions", String.format("transitions:%d ready:%d", transitions.size(), readyTransitions.size()));
+			
 			if (readyTransitions.size() > 1) {
-				logJson("error-transition-conflict", String.format(
+				logJson("lssm-error-transition-conflict", String.format(
 						"%d conflicting transitions; selecting first",
 						readyTransitions.size()));
 			} else if (readyTransitions.size() == 0) {
 				break;
 			}
 
+			// readyTransitions == 1
 			PulseTransitionRule t = readyTransitions.get(0);
 			completedTransitions++;
-			logJson("apply-transition", t.getName());
+			logJson("lssm-transition", t.getName());
 			t.apply(this);
-			applied.add(t);
+			
+			if(settingsTransitionForbidRepeat()) {
+				applied.add(t);
+			}
+			if(limit > 0 && completedTransitions >= limit) {
+				break;
+			}
 		}
 
 		if (completedTransitions == 0) {
-			logJson("error-no-available-transitions");
+			logJson("lssm-error-no-transitions");
 		}
 	}
 
