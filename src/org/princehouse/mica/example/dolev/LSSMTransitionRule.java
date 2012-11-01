@@ -11,10 +11,10 @@ import org.princehouse.mica.util.Functional;
  * @author lonnie
  *
  */
-public abstract class PulseTransitionRule {
+public abstract class LSSMTransitionRule {
 	private String name;
 	
-	public PulseTransitionRule(String name) {
+	public LSSMTransitionRule(String name) {
 		this.name = name;
 	}
 	

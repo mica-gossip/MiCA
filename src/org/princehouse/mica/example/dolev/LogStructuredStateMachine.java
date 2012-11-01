@@ -17,10 +17,10 @@ import fj.F;
 
 public abstract class LogStructuredStateMachine extends RoundManager {
 
-	public int settingsTransitionLimit() { return Integer.MAX_VALUE; }
+	public int settingsTransitionLimit() { return 1; }
 	public boolean settingsTransitionForbidRepeat() { return true; }
 	
-	public abstract List<PulseTransitionRule> getTransitions();
+	public abstract List<LSSMTransitionRule> getTransitions();
 
 	/**
 	 * log messages old than this will be purged default value = 5 rounds
@@ -38,7 +38,7 @@ public abstract class LogStructuredStateMachine extends RoundManager {
 	private static final long serialVersionUID = 1L;
 
 	// kept sorted newest to oldest
-	private List<PulseMessage> log = Functional.list();
+	private List<LSSMMessage> log = Functional.list();
 
 	private Object defaultState = null;
 
@@ -65,9 +65,9 @@ public abstract class LogStructuredStateMachine extends RoundManager {
 	 * @param messages
 	 * @return
 	 */
-	public PulseMessage getCurrentState(Address address,
-			List<PulseMessage> messages) {
-		for (PulseMessage m : messages) {
+	public LSSMMessage getCurrentState(Address address,
+			List<LSSMMessage> messages) {
+		for (LSSMMessage m : messages) {
 			if (m.peer.equals(address)) {
 				return m;
 			}
@@ -80,11 +80,11 @@ public abstract class LogStructuredStateMachine extends RoundManager {
 	 * 
 	 * @return
 	 */
-	public PulseMessage getState() {
+	public LSSMMessage getState() {
 		return getCurrentState(getAddress(), getLog());
 	}
 
-	public List<PulseMessage> getLog() {
+	public List<LSSMMessage> getLog() {
 		return log;
 	}
 
@@ -92,8 +92,8 @@ public abstract class LogStructuredStateMachine extends RoundManager {
 		Address addr = getAddress();
 		assert (addr != null);
 
-		log.add(0, new PulseMessage(getAddress(), getNow(), state,
-				PulseMessage.MessageSource.ORIGIN));
+		log.add(0, new LSSMMessage(getAddress(), getNow(), state,
+				LSSMMessage.MessageSource.ORIGIN));
 	}
 
 	private long getNow() {
@@ -104,7 +104,7 @@ public abstract class LogStructuredStateMachine extends RoundManager {
 	public void update(LogStructuredStateMachine that) {
 		super.update(that);
 		@SuppressWarnings("unchecked")
-		List<PulseMessage> msgcopy = Functional.concatenate(that.log);
+		List<LSSMMessage> msgcopy = Functional.concatenate(that.log);
 		// update both nodes
 		that.assimilateInformation(getAddress(), log);
 		assimilateInformation(that.getAddress(), msgcopy);
@@ -122,23 +122,23 @@ public abstract class LogStructuredStateMachine extends RoundManager {
 	 * 
 	 * @return
 	 */
-	private Map<Address, LinkedList<PulseMessage>> buildHistory() {
+	private Map<Address, LinkedList<LSSMMessage>> buildHistory() {
 		// precondition: message list is sorted by timestamps descending (the
 		// natural sort for pulsemessage)
 
-		Map<Address, LinkedList<PulseMessage>> history = Functional.map();
+		Map<Address, LinkedList<LSSMMessage>> history = Functional.map();
 
-		for (PulseMessage m : getLog()) {
+		for (LSSMMessage m : getLog()) {
 			if (!history.containsKey(m.peer)) {
-				LinkedList<PulseMessage> temp = new LinkedList<PulseMessage>();
+				LinkedList<LSSMMessage> temp = new LinkedList<LSSMMessage>();
 				temp.addLast(m);
 				history.put(m.peer, temp);
 				continue;
 			}
 
-			LinkedList<PulseMessage> peerhist = history.get(m.peer);
+			LinkedList<LSSMMessage> peerhist = history.get(m.peer);
 
-			PulseMessage last = peerhist.getLast();
+			LSSMMessage last = peerhist.getLast();
 			if (!last.state.equals(m.state)) {
 				// state change
 				peerhist.addLast(m);
@@ -168,7 +168,7 @@ public abstract class LogStructuredStateMachine extends RoundManager {
 
 		int debug_ss = log.size();
 
-		Map<Address, LinkedList<PulseMessage>> history = buildHistory();
+		Map<Address, LinkedList<LSSMMessage>> history = buildHistory();
 
 		historyToLog(history);
 
@@ -183,22 +183,22 @@ public abstract class LogStructuredStateMachine extends RoundManager {
 	 * rewrite the log using the given history
 	 * @param history
 	 */
-	private void historyToLog(Map<Address, LinkedList<PulseMessage>> history) {
+	private void historyToLog(Map<Address, LinkedList<LSSMMessage>> history) {
 
-		log = new ArrayList<PulseMessage>();
+		log = new ArrayList<LSSMMessage>();
 
-		for (List<PulseMessage> peerhist : history.values()) {
+		for (List<LSSMMessage> peerhist : history.values()) {
 			log = Functional.extend(log, peerhist);
 		}
 		Collections.sort(log);
 	}
 
-	private void assimilateInformation(Address source, List<PulseMessage> news) {
+	private void assimilateInformation(Address source, List<LSSMMessage> news) {
 
 		// TODO combine messages
 		// ...
 
-		for (PulseMessage m : news) {
+		for (LSSMMessage m : news) {
 			// make indirect
 			log.add(0, m.tell());
 		}
@@ -240,7 +240,7 @@ public abstract class LogStructuredStateMachine extends RoundManager {
 
 		// prevent our own state from expiring by re-adding it to the log if
 		// it's getting old
-		PulseMessage stateMsg = getState();
+		LSSMMessage stateMsg = getState();
 		if (stateMsg == null) {
 			setState(defaultState);
 		} else {
@@ -253,25 +253,25 @@ public abstract class LogStructuredStateMachine extends RoundManager {
 	}
 
 	// having received info from n-f peers, we attempt a state transition
-	private void doRound() {
+	public void doRound() {
 		// purgeExpiredMessages();
 		final LogStructuredStateMachine thisFinal = this;
 		int completedTransitions = 0;
 
 		// To prevent infinite loops, do not allow the same transition to be
 		// applied twice in one round
-		final Set<PulseTransitionRule> applied = Functional.set();
+		final Set<LSSMTransitionRule> applied = Functional.set();
 
-		List<PulseTransitionRule> transitions = getTransitions();
+		List<LSSMTransitionRule> transitions = getTransitions();
 		
 		int limit = settingsTransitionLimit();
 		
 		while (true) {
-			List<PulseTransitionRule> readyTransitions = Functional
+			List<LSSMTransitionRule> readyTransitions = Functional
 					.list(Functional.filter(transitions,
-							new F<PulseTransitionRule, Boolean>() {
+							new F<LSSMTransitionRule, Boolean>() {
 								@Override
-								public Boolean f(PulseTransitionRule t) {
+								public Boolean f(LSSMTransitionRule t) {
 									return !applied.contains(t)
 											&& t.ready(thisFinal);
 								}
@@ -288,7 +288,7 @@ public abstract class LogStructuredStateMachine extends RoundManager {
 			}
 
 			// readyTransitions == 1
-			PulseTransitionRule t = readyTransitions.get(0);
+			LSSMTransitionRule t = readyTransitions.get(0);
 			completedTransitions++;
 			logJson("lssm-transition", t.getName());
 			t.apply(this);
@@ -312,9 +312,9 @@ public abstract class LogStructuredStateMachine extends RoundManager {
 
 		int s = log.size();
 		log = Functional.list(Functional.filter(getLog(),
-				new F<PulseMessage, Boolean>() {
+				new F<LSSMMessage, Boolean>() {
 					@Override
-					public Boolean f(PulseMessage m) {
+					public Boolean f(LSSMMessage m) {
 						return (now - m.timestamp) < expiration;
 					}
 				}));

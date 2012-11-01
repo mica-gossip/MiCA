@@ -3,8 +3,8 @@ package org.princehouse.mica.example.dolev.test;
 import java.util.List;
 
 import org.princehouse.mica.example.dolev.LogStructuredStateMachine;
-import org.princehouse.mica.example.dolev.PulseMessage;
-import org.princehouse.mica.example.dolev.PulseTransitionRule;
+import org.princehouse.mica.example.dolev.LSSMMessage;
+import org.princehouse.mica.example.dolev.LSSMTransitionRule;
 import org.princehouse.mica.lib.abstractions.Overlay;
 import org.princehouse.mica.util.Functional;
 
@@ -27,12 +27,12 @@ public class TestStateMachine extends LogStructuredStateMachine {
 
 	public String color = null;
 	
-	public static List<PulseTransitionRule> transitions = Functional
-			.list(new PulseTransitionRule[] {
-					new PulseTransitionRule("red->green") {
+	public static List<LSSMTransitionRule> transitions = Functional
+			.list(new LSSMTransitionRule[] {
+					new LSSMTransitionRule("red->green") {
 						@Override
 						public boolean ready(LogStructuredStateMachine node) {
-							PulseMessage m = node.getState();
+							LSSMMessage m = node.getState();
 							Object state = m.state;
 							boolean r = RED.equals(state);
 							node.logJson("lssm-test-red-green",String.format("current state:%s ready:%s",state,r));
@@ -42,10 +42,10 @@ public class TestStateMachine extends LogStructuredStateMachine {
 						public void apply(LogStructuredStateMachine node) {
 							node.setState(GREEN);
 						}
-					}, new PulseTransitionRule("green->red") {
+					}, new LSSMTransitionRule("green->red") {
 						@Override
 						public boolean ready(LogStructuredStateMachine node) {
-							PulseMessage m = node.getState();
+							LSSMMessage m = node.getState();
 							Object state = m.state;
 							boolean r = GREEN.equals(state);
 							node.logJson("lssm-test-green-red",String.format("current state:%s ready:%s",state,r));
@@ -66,7 +66,7 @@ public class TestStateMachine extends LogStructuredStateMachine {
 	}
 
 	@Override
-	public List<PulseTransitionRule> getTransitions() {
+	public List<LSSMTransitionRule> getTransitions() {
 		return transitions;
 	}
 	

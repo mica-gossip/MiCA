@@ -4,7 +4,7 @@ import java.io.Serializable;
 
 import org.princehouse.mica.base.net.model.Address;
 
-public class PulseMessage implements Comparable<PulseMessage>, Serializable {
+public class LSSMMessage implements Comparable<LSSMMessage>, Serializable {
 	
 	/**
 	 * 
@@ -17,11 +17,11 @@ public class PulseMessage implements Comparable<PulseMessage>, Serializable {
 	
 	public Address peer;
 	public long timestamp;
-	public PulseMessage.MessageSource source;
+	public LSSMMessage.MessageSource source;
 	public Object state;
 
 
-	public PulseMessage(Address peer, long timestamp, Object state, PulseMessage.MessageSource s) {
+	public LSSMMessage(Address peer, long timestamp, Object state, LSSMMessage.MessageSource s) {
 		assert(peer != null);
 		
 		this.peer = peer;
@@ -30,9 +30,9 @@ public class PulseMessage implements Comparable<PulseMessage>, Serializable {
 		this.state = state;
 	}
 
-	public PulseMessage tell() {
+	public LSSMMessage tell() {
 		// copy this message and add one level of indirection
-		PulseMessage.MessageSource s = null;
+		LSSMMessage.MessageSource s = null;
 		switch (source) {
 		case ORIGIN:
 			s = MessageSource.DIRECT;
@@ -45,11 +45,11 @@ public class PulseMessage implements Comparable<PulseMessage>, Serializable {
 			break;
 		};
 		
-		return new PulseMessage(peer, timestamp, state, s);
+		return new LSSMMessage(peer, timestamp, state, s);
 	}
 
 	@Override
-	public int compareTo(PulseMessage other) {
+	public int compareTo(LSSMMessage other) {
 		// sort from greatest to least time stamp
 		
 		int v = -(Long.valueOf(timestamp).compareTo(

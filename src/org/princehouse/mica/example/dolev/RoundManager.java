@@ -28,10 +28,20 @@ public class RoundManager extends BaseProtocol {
 	// number of nodes in network
 	private int n;
 	
+	private int round = 0;
+	
 	public RoundManager(Overlay overlay, int n, int f) {
 		this.f = f;
 		this.n = n;
 		this.overlay = overlay;
+	}
+
+	public int getRound() {
+		return round;
+	}
+
+	public void setRound(int round) {
+		this.round = round;
 	}
 
 	@GossipUpdate
@@ -50,6 +60,7 @@ public class RoundManager extends BaseProtocol {
 	
 	public void reset() {
 		reached.clear();
+		setRound(getRound()+1);
 	}
 	
 }

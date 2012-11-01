@@ -39,4 +39,15 @@ public class Array {
 		return dst;
 	}
 
+	public static String join(String bridge, Object[] src) {
+		if(src.length == 0) {
+			return "";
+		} 
+		String temp = (src[0] == null ? "null" : src[0].toString());
+		
+		for(int i = 1; i < src.length; i++) {
+			temp += bridge + (src[i] == null ? "null" : src[i].toString());
+		}
+		return temp;
+	}
 }
