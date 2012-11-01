@@ -77,33 +77,46 @@ value_equality_func is a function: T x T -> boolean
 
 default_value is the value assigned to a key if no suitable events have occurred
     """
-    def __init__(self, events, filter_func, value_func, i=0, value_equality_func = operator.eq, default_value = None):
+    def __init__(self, events, filter_func=None, value_func=None, i=0, value_equality_func = operator.eq, default_value = None, debug_flag = False):
         self.events = events
-        self.filter_func = filter_func
-        self.value_func = value_func
+
+        # if filter_func and value_func not specified, assume they are 
+        # already defined by subclass
+        if filter_func:
+            self.filter_func = filter_func
+        if value_func:
+            self.value_func = value_func
+
+        self.debug_flag = debug_flag
         self.default_value = default_value
         self.value_equality_func = value_equality_func
         self.values = {} # maps key -> (event_i, value),  where event_i <= i and no greater event_j <= i returns true for filter_func
              # returns (-1,default_value) if no suitable event sets the value
         self.set_i(i)
 
-        # if the cursor is advanced <= forward_scan_limit events, then we update the existing value 
+        # if the cursor is advanced <= forward_scan_limit events, then we progressively update the existing value 
         # cache by scanning the newly added interval.  Else, we delete the value cache and let it be passively
-        # rebuild
+        # rebuilt
         self.forward_scan_limit = 20
 
+    def debug(self, msg):
+        if self.debug_flag:
+            print msg
 
     def set_i(self, i):
-        # scanpoint = the place to resume the backwards scanning, i.e, invariant is that [scanpoint,self.i] has already been scanned
+        # scanpoint = the place to resume the backwards scanning, i.e, invariant is that (scanpoint,self.i] has already been scanned.  
+        # (inclusive of i?  yes     inclusive of scanpoint?  no)
+        # IF scanpoint == i, then this will be rescanned upon get
         if not hasattr(self, 'i'):
+            # initialize
             # advanced beyond the forward scan limit; clear the cache and let it get rebuilt passively
             self.values.clear()
             self.i = i
-            self.scanpoint = i            
+            self.scanpoint = i      
         elif i == self.i:
             return
         elif (i > self.i) and (i - self.i) <= self.forward_scan_limit:
-            # active forward scan
+            # progressive forward scan
             for j in xrange(self.i+1, i+1):
                 e = self.events[j]
                 if not self.filter_func(e):
@@ -115,7 +128,7 @@ default_value is the value assigned to a key if no suitable events have occurred
         elif i < self.i:
             # remove all values that were set in the future
             for k,(j,v) in self.values.items():
-                if j > i:
+                if j >= i:
                     del self.values[k]
             self.i = i
             self.scanpoint = i
@@ -125,6 +138,7 @@ default_value is the value assigned to a key if no suitable events have occurred
             self.i = i
             self.scanpoint = i
             
+        self.debug("(debug) scanpoint %s.  nvalues = %s" % (i,len(self.values)))
     
     def __getitem__(self, key):
         j, val = self.get(key)
@@ -143,7 +157,8 @@ default_value is the value assigned to a key if no suitable events have occurred
                 continue
             k,v = self.value_func(e)
             rval = (j,v)
-            self.values[k] = rval
+            if k not in self.values or self.values[k][0] < j:
+                self.values[k] = rval
             if key == k:
                 self.scanpoint = j
                 return rval
@@ -154,7 +169,58 @@ default_value is the value assigned to a key if no suitable events have occurred
         self.values[key] = rval
         self.scanpoint = j
         return rval
+
+    def finish(self):  # sets to end
+        self.set_i(len(self.events)-1)
     
+    # yields tuples (i, key, value) from the [start,end) range,
+    # does not affect cursor!
+    # if yield_events is true, yields events instead of index:
+    #      (event, key, value)
+    def enumerate(self, start=0, end=None, yield_events=False):
+        if end is None:
+            end = len(self.events)
+        end = min(end, len(self.events))
+        start = max(0, start)
+
+        for i in xrange(start, end):
+            e = self.events[i]
+            if not self.filter_func(e):
+                continue
+            else:
+                k,v = self.value_func(e)
+                if yield_events:
+                    yield (e, k, v)
+                else:
+                    yield (i, k, v)
+
+class RuntimeInfoParser(CurrentValueTracker):
+
+    # publicly exposed properties:
+    round_ms = property(lambda self: int(self.get_data()['round_ms']))
+    # first_timestamp
+    # last_timestamp
+
+    def __init__(self, events):
+        CurrentValueTracker.__init__(self, events)
+        self.finish()
+        # FIXME assumes sorted by timestamp
+        self.first_timestamp = int(events[0]['timestamp'])
+        self.last_timestamp = int(events[-1]['timestamp'])
+
+    def filter_func(self, e):
+        return e['event_type'] == 'mica-runtime-init'
+    
+    def value_func(self, e):
+        # key is the same for all runtimes ---
+        # currently assuming that all runtime inits are the same
+        # TODO: verify this assumption
+        return (0,{'round_ms':e['data']['round_ms']})
+
+    def get_data(self):
+        return self[0]
+
+
 
 class RedundantEventEliminator(CurrentValueTracker):
     def __init__(self, filter_func, value_func, value_equality_func = operator.eq, adapter_func = lambda e: None):

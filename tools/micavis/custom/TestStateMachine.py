@@ -1,5 +1,11 @@
 
-def draw_state(vis, address, state):
+# called when loaded for the first time.  micavis is the "gui" main 
+# application instance; this can be used to create UI elements, etc.
+def load(micavis):
+    pass
+
+# draw the state of an individual node
+def draw_node_state(vis, address, state):
     color = state.get('color',None)
     if color == 'RED':
         vertex_color = '#ff0000'

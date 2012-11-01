@@ -18,27 +18,27 @@ from event_tree_model import *
 class GraphWindow(object):
     # graph = igraph instance
     # node_name_map = map from address_str => vertex id
-    def __init__(self, gui, graph, node_name_map):
+    def __init__(self, micavis, graph, node_name_map):
         
         window = gtk.Window()
-        self.gui = gui
+        self.micavis = micavis
         vbox = gtk.VBox(False, 0)
-        self.igraph_drawing_area = IGraphDrawingArea(gui, graph, node_name_map)
+        self.igraph_drawing_area = IGraphDrawingArea(micavis, graph, node_name_map)
 
-        menubar = self.create_display_menu()
+        menubar = self.create_display_menus()
         vbox.pack_start(menubar, False)
 
         vbox.pack_start(self.igraph_drawing_area, True, True, 0)
 
-        self.gui.adj = gtk.Adjustment(value = 0, 
+        self.micavis.adj = gtk.Adjustment(value = 0, 
                              lower = 0,
-                             upper = len(self.gui.events)-1, 
+                             upper = len(self.micavis.events)-1, 
                              step_incr = 1, 
                              page_incr = 1, 
                              page_size = 0)
 
-        self.gui.adj.connect("value_changed", self.gui.event_slider_changed)
-        self.slider = gtk.HScale(self.gui.adj)
+        self.micavis.adj.connect("value_changed", self.micavis.event_slider_changed)
+        self.slider = gtk.HScale(self.micavis.adj)
         self.slider.set_digits(0)
         vbox.pack_start(self.slider, False, False, 0)
  
@@ -52,7 +52,15 @@ class GraphWindow(object):
     def set_graph(self, graph):
         self.window.set_graph(graph)
 
-    def create_display_menu(self):
+    def create_display_menus(self):
+        
+        # utility function
+        def create_menu_item(menu,label,callback):
+            item = gtk.MenuItem(label)
+            item.connect("activate",callback)
+            menu.append(item)
+            item.show()
+
         vis = self.igraph_drawing_area
 
         bar = gtk.MenuBar()
@@ -60,31 +68,61 @@ class GraphWindow(object):
         layers = gtk.MenuItem("Layers")
         layers.show()
         bar.append(layers)
-
         menu = gtk.Menu()
         layers.set_submenu(menu)
-
-        #    How to create a normal menu item:
-        #def f(*args):
-        #    print "ACTIVATE", args
-        #item = gtk.MenuItem("menu item test")
-        # can pass additional arguments after the callback 
-        #item.connect("activate",f)
-        #menu.append(item)
-        #item.show()
-
         for layer in vis.display_layers:
             checkitem = gtk.CheckMenuItem(layer.name)
             checkitem.set_active(layer.active)
             checkitem.connect("activate", layer.toggle)
             menu.append(checkitem)
             checkitem.show()
-
         menu.show()
+
+        
+        analysis = gtk.MenuItem("Analysis")
+        menu = gtk.Menu()
+        menu.show()
+        analysis.set_submenu(menu)
+        analysis.show()
+        bar.append(analysis)
+        create_menu_item(menu,"State change graph", self.analysis_state_change_graph)
+        create_menu_item(menu,"(demo matplotlib graph)", self.demo_matplotlib_graph)
         return bar
 
+    # not used, just kept around for reference
+    def demo_matplotlib_graph(self, widget):
+        import matplotlib.pyplot as plt
+        import numpy as np
+        x,y = np.random.randn(2,100)
+        fig = plt.figure()
+        ax1 = fig.add_subplot(211)
+        ax1.xcorr(x, y, usevlines=True, maxlags=50, normed=True, lw=2)
+        ax1.grid(True)
+        ax1.axhline(0, color='black', lw=2)
+        ax2 = fig.add_subplot(212, sharex=ax1)
+        ax2.acorr(x, usevlines=True, normed=True, maxlags=50, lw=2)
+        ax2.grid(True)
+        ax2.axhline(0, color='black', lw=2)
+        plt.show()
 
-class MicaVisGui:
+    def analysis_state_change_graph(self, widget):
+        import matplotlib.pyplot as plt
+        import numpy as np
+        import analysis
+        
+        x,y = analysis.compute_changes_per_round(self.micavis)
+
+        fig = plt.figure()
+        ax = fig.add_subplot(111)
+        ax.plot(x,y)
+        ax.grid(True)
+        ax.axhline(0, color='black', lw=2)
+        ax.set_ylabel("State Changes")
+        ax.set_xlabel("MiCA Rounds (%s ms)" % self.micavis.runtime_info.round_ms)
+        plt.show()
+
+
+class MicaVisMicavis:
 
     def __init__(self, events):
         self.current = 0
@@ -97,9 +135,11 @@ class MicaVisGui:
         self.reset_tree_selection()
 
         if self.adj is None:
-            print "Warning: gui.adj is None, graph window creation failed somehow"
+            print "Warning: micavis.adj is None, graph window creation failed somehow"
 
         # current_node_state[addr] -> the latest state assigned to node "addr" w.r.t. the cursor self.get_current_i()
+
+        self.runtime_info = logs.RuntimeInfoParser(events)
 
         self.current_node_state = logs.CurrentValueTracker(
             events, 
@@ -115,6 +155,9 @@ class MicaVisGui:
             value_func = lambda e: (e['address'],e['data']['view']))
 
         self.add_cursor_listener(self.current_node_view.set_i)
+
+        # NOTE: This cursor listener should be last executed!
+        self.add_cursor_listener(lambda i: self.graph_window.refresh_graph())
 
     def add_cursor_listener(self, f):
         # TODO currently no way to remove cursor listeners
@@ -159,9 +202,9 @@ class MicaVisGui:
             q += [(i+1,ls) for ls in logs.subprotocols(s)]
         
     def update_selection(self):
+        # executed before cursor listeners
         self.reset_tree_selection()
         self.reset_slider_selection()
-        self.graph_window.refresh_graph()
 
     def get_current_i(self):
         return self.current
@@ -352,7 +395,7 @@ class MicaVisGui:
                 if recurse:
                     recpop(tstamp, p2, data)
                     
-        print "Reformat events for GUI in-memory database... (this can take a while)"
+        print "Reformat events for MICAVIS in-memory database... (this can take a while)"
         for event in self.events:
             try:
                 data = event['data']
@@ -420,7 +463,7 @@ class NodesLayer(DisplayLayer):
 
     def create_blank_graph(self):
         g = igraph.Graph(directed=True)
-        g.add_vertices(len(self.vis.gui.unique_addresses))
+        g.add_vertices(len(self.vis.micavis.unique_addresses))
         return g
 
     def draw(self):
@@ -438,9 +481,9 @@ class CurrentEventApertureLayer(DisplayLayer):
 
     def draw(self):
         vis = self.vis
-        gui = vis.gui
+        micavis = vis.micavis
        
-        aperture_events = gui.get_aperture_events()
+        aperture_events = micavis.get_aperture_events()
         for i,e in enumerate(aperture_events):
             if i < len(aperture_events) - 1:
                 color = vis.recent_node_color
@@ -454,8 +497,8 @@ class CurrentEventLayer(DisplayLayer):
 
     def draw(self):
         vis = self.vis
-        gui = vis.gui      
-        current = gui.get_current_event()
+        micavis = vis.micavis      
+        current = micavis.get_current_event()
         color = vis.current_node_color
         vis.draw_event(current)
         
@@ -495,16 +538,16 @@ class CurrentViewLayer(DisplayLayer):
 
     def build_current_viewgraph(self):
         # construct a graph of the current view, 
-        # as derived from self.gui.current_node_view
+        # as derived from self.micavis.current_node_view
         vis = self.vis
-        gui = vis.gui
+        micavis = vis.micavis
 
         g = igraph.Graph(directed=True)
-        g.add_vertices(len(gui.unique_addresses))
+        g.add_vertices(len(micavis.unique_addresses))
         
         edges = []
-        for addr in gui.unique_addresses:
-            view = gui.current_node_view[addr]
+        for addr in micavis.unique_addresses:
+            view = micavis.current_node_view[addr]
             src_nid = vis.node_name_map[addr]            
             if view:
                 for neighbor_addr in view.keys():
@@ -519,10 +562,10 @@ class CurrentStateLayer(DisplayLayer):
 
     def draw(self):
         vis = self.vis
-        gui = vis.gui
+        micavis = vis.micavis
         
-        for addr in gui.unique_addresses:
-            state_thunk = lambda: gui.current_node_state[addr]
+        for addr in micavis.unique_addresses:
+            state_thunk = lambda: micavis.current_node_state[addr]
             vis.draw_node_state(addr,state_thunk)
 
 
@@ -533,11 +576,11 @@ class IGraphDrawingArea(gtk.DrawingArea):
     failure_node_color = "#ff0000"
     select_color = "#ffffc0"
 
-    def __init__(self, gui, graph, node_name_map, plot_keywords=None):
+    def __init__(self, micavis, graph, node_name_map, plot_keywords=None):
         if graph is None:
             raise Exception
 
-        self.gui = gui
+        self.micavis = micavis
         self.border = (15,15) # x,y blank pixel space on the display
         gtk.DrawingArea.__init__(self)
         self.set_size_request(600, 600)
@@ -609,13 +652,13 @@ class IGraphDrawingArea(gtk.DrawingArea):
         return False
 
     def build_current_viewgraph(self):
-        # construct a graph of the current view, as derived from self.gui.current_node_view
+        # construct a graph of the current view, as derived from self.micavis.current_node_view
         g = igraph.Graph(directed=True)
-        g.add_vertices(len(self.gui.unique_addresses))
+        g.add_vertices(len(self.micavis.unique_addresses))
         
         edges = []
-        for addr in self.gui.unique_addresses:
-            view = self.gui.current_node_view[addr]
+        for addr in self.micavis.unique_addresses:
+            view = self.micavis.current_node_view[addr]
             src_nid = self.node_name_map[addr]            
             if view:
                 for neighbor_addr in view.keys():
@@ -638,11 +681,11 @@ class IGraphDrawingArea(gtk.DrawingArea):
         if not state:
             return
 
-        module = custom.load(state['stateType'])
+        module = custom.load(vis.micavis, state['stateType'])
         if not module:
             return
         
-        module.draw_state(vis, address, state['state'])
+        module.draw_node_state(vis, address, state['state'])
         
     # cr = cairo context
     def draw_event(vis, event):
@@ -817,7 +860,7 @@ def main(args=sys.argv):
     import logs
     events = logs.read_mica_logs(logloc)
     print "Read %s log events" % len(events)
-    gui = MicaVisGui(events)
+    micavis = MicaVisMicavis(events)
     gtk.main()
     
 

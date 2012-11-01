@@ -10,11 +10,12 @@ import java.util.Set;
 
 import org.princehouse.mica.base.annotations.GossipUpdate;
 import org.princehouse.mica.base.net.model.Address;
+import org.princehouse.mica.lib.abstractions.Overlay;
 import org.princehouse.mica.util.Functional;
 
 import fj.F;
 
-public abstract class LogStructuredStateMachine extends PulseRoundManager {
+public abstract class LogStructuredStateMachine extends RoundManager {
 
 	public int settingsTransitionLimit() { return Integer.MAX_VALUE; }
 	public boolean settingsTransitionForbidRepeat() { return true; }
@@ -41,9 +42,9 @@ public abstract class LogStructuredStateMachine extends PulseRoundManager {
 
 	private Object defaultState = null;
 
-	public LogStructuredStateMachine(List<Address> neighbors, int f,
+	public LogStructuredStateMachine(Overlay overlay, int n, int f,
 			Object initialState) {
-		super(neighbors, f);
+		super(overlay, n, f);
 		this.defaultState = initialState;
 		setState(initialState);
 		setDefaultMessageLifetimeMS();

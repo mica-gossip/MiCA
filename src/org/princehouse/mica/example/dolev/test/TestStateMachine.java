@@ -2,10 +2,10 @@ package org.princehouse.mica.example.dolev.test;
 
 import java.util.List;
 
-import org.princehouse.mica.base.net.model.Address;
 import org.princehouse.mica.example.dolev.LogStructuredStateMachine;
 import org.princehouse.mica.example.dolev.PulseMessage;
 import org.princehouse.mica.example.dolev.PulseTransitionRule;
+import org.princehouse.mica.lib.abstractions.Overlay;
 import org.princehouse.mica.util.Functional;
 
 /**
@@ -61,19 +61,13 @@ public class TestStateMachine extends LogStructuredStateMachine {
 
 	private static final long serialVersionUID = 1L;
 
-	public TestStateMachine(List<Address> neighbors, int f) {
-		super(neighbors, f, RED);
+	public TestStateMachine(Overlay overlay, int n, int f) {
+		super(overlay, n, f, RED);
 	}
 
 	@Override
 	public List<PulseTransitionRule> getTransitions() {
 		return transitions;
-	}
-	
-	@Override
-	public void postUpdate() {
-		this.logJson("pulse-test-logsize",getLog().size());
-		super.postUpdate();
 	}
 	
 	@Override 
