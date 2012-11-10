@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 
+import org.princehouse.mica.base.net.model.Address;
 import org.princehouse.mica.base.net.model.Connection;
 import org.princehouse.mica.util.NotImplementedException;
 
@@ -29,7 +30,6 @@ public class BaseConnection extends Connection {
 		throw new NotImplementedException();
 	}
 
-
 	@Override
 	public InputStream getInputStream() {
 		return inputStream;
@@ -39,5 +39,16 @@ public class BaseConnection extends Connection {
 	public OutputStream getOutputStream() {
 		return outputStream;
 	}
+
+	@Override
+	public Address getSrc() {
+		return null;
+	}
+
+	@Override
+	public Address getDst() {
+		return null;
+	}
+	
 	
 }

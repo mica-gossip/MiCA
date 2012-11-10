@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.net.Socket;
 
 import org.princehouse.mica.base.net.BaseConnection;
+import org.princehouse.mica.base.net.model.Address;
 
 
 /**
@@ -25,6 +26,11 @@ public class SocketConnection extends BaseConnection {
 	@Override
 	public void close() throws IOException {
 		sock.close();
+	}
+	
+	@Override
+	public Address getSrc() {
+		return new TCPAddress(sock.getInetAddress(), sock.getPort());
 	}
 
 }

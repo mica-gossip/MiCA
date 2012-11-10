@@ -60,10 +60,6 @@ public class SimpleRuntime<P extends Protocol> extends Runtime<P> implements
 		setAddress(address);
 	}
 
-	// public SimpleRuntime() {
-	// this(null);
-	// }
-
 	public void setAddress(Address address) {
 		if (this.address != null && !this.address.equals(address)) {
 			throw new RuntimeException(
@@ -183,9 +179,6 @@ public class SimpleRuntime<P extends Protocol> extends Runtime<P> implements
 	public void acceptConnection(Address recipient, Connection connection)
 			throws IOException {
 		try {
-		
-		
-
 			if (lock.tryLock(LOCK_WAIT_MS, TimeUnit.MILLISECONDS)) {
 				if (!running) {
 					logJson("mica-error-internal",
@@ -201,12 +194,12 @@ public class SimpleRuntime<P extends Protocol> extends Runtime<P> implements
 			} else {
 				if (!running) {
 					logJson("mica-error-internal",
-							"acceptConnection called on a stopped runtime");
+							"acceptConnection called on a stopped runtime + lock failed");
 					connection.close();
 					return;
 				}
 				// failed to acquire lock; timeout
-				logJson("mica-error-lock-fail", "acceptConnection");
+				logJson("mica-error-accept-connection");
 				System.err.printf(
 						"%s accept: failed to acquire lock (timeout)\n", this);
 				connection.close();

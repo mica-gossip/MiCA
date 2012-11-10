@@ -110,6 +110,12 @@ public abstract class LogStructuredStateMachine extends RoundManager {
 		assimilateInformation(that.getAddress(), msgcopy);
 	}
 
+	
+	public Map<Address, LinkedList<LSSMMessage>> getHistory() {
+		// TODO should be cached; transition rules call it many times between log modifications
+		return buildHistory();
+	}
+	
 	/**
 	 * History is a map from address -> list of state change messages The list
 	 * of states is sorted from new to old, so the first message represents

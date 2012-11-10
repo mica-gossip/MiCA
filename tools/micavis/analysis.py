@@ -12,15 +12,21 @@ def compute_changes_per_round(micavis):
 
     def bucket(timestamp):
         return int(floor((timestamp - start_t) / float(round_ms)))
-    
-    node_states = logs.CurrentValueTracker(
-        micavis.events, 
-        filter_func = lambda e: e['event_type'].startswith('mica-state-') and 'state' in e['data'],
-        value_func = lambda e: (0, int(e['timestamp'])))
 
-    for i,k,t in node_states.enumerate():
-        buckets[bucket(t)] += 1
-        
+    values = {}
+    node_states = logs.CurrentValueTracker(
+            micavis.events, 
+            filter_func =  logs.state_event_filter,
+            value_func = lambda e,mv=micavis: (e['address'], (e['timestamp'],mv.project(e['data']))) )
+    
+    for i,addr,(t,data) in node_states.enumerate(yield_events=True):
+        if addr not in values or values[addr] != data:
+            values[addr] = data
+            buckets[bucket(t)] += 1            
+    
+    n = float(len(micavis.unique_addresses))
+    buckets = [v/n for v in buckets] # normalize
+
     x = range(len(buckets))
     y = buckets
     print "x", x

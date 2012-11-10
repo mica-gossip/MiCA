@@ -20,6 +20,22 @@ public class RoundManager extends BaseProtocol {
 
 	private int f = 0;
 	
+	public int getF() {
+		return f;
+	}
+
+	public void setF(int f) {
+		this.f = f;
+	}
+
+	public int getN() {
+		return n;
+	}
+
+	public void setN(int n) {
+		this.n = n;
+	}
+
 	private Set<Address> reached = Functional.set();
 	
 	@View

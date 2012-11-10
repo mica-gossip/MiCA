@@ -49,6 +49,9 @@ System execution
 	
 	Passive node
 	------------
+        on accept-connection fail:
+           mica-error-accept-connection  (IGNORE)
+
 	after executing gossip update:
 	   mica-state-gossip-receiver
 	
@@ -84,6 +87,6 @@ mica-select
 mica-rate
 
 mica-error-handler
-mica-error-lock-fail
+mica-error-accept-connection
 mica-error-internal
 

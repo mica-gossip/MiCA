@@ -19,7 +19,7 @@ public class Randomness {
 	
 	public static Random random = new Random();
 	
-	public static void seedRandomness(int rseed) {
+	public static void seedRandomness(long rseed) {
 		random = new Random(rseed);
 	}
 	
@@ -33,6 +33,10 @@ public class Randomness {
 				return obj;
 		}
 		throw new RuntimeException("should not be reachable");
+	}
+	
+	public static <E extends Enum<?>> E choose(Class<E> enumClass) {
+		return choose(enumClass.getEnumConstants());
 	}
 	
 	public static <T> T choose(Iterable<T> c) {

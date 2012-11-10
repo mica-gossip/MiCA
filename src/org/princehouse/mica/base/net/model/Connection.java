@@ -42,4 +42,8 @@ public abstract class Connection {
 	public PrintStream getOutputAsPrintStream() throws IOException {
 		return new PrintStream(getOutputStream());
 	}
+	
+	public abstract Address getSrc();
+	public abstract Address getDst();
+	
 }
