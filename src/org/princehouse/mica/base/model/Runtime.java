@@ -1,5 +1,7 @@
 package org.princehouse.mica.base.model;
 
+import static org.princehouse.mica.base.RuntimeErrorResponse.ABORT_ROUND;
+
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
@@ -19,9 +21,9 @@ import org.princehouse.mica.util.ClassUtils;
 import org.princehouse.mica.util.Distribution;
 import org.princehouse.mica.util.Functional;
 import org.princehouse.mica.util.Logging;
+import org.princehouse.mica.util.Randomness;
 
 import com.google.gson.Gson;
-import static org.princehouse.mica.base.RuntimeErrorResponse.*;
 
 /**
  * The Runtime instance represents the local node in the gossip network. It runs
@@ -116,6 +118,7 @@ public abstract class Runtime<P extends Protocol> {
 		return (new Date().getTime());
 	}
 
+	
 	public long getRuntimeClock() {
 		return getRuntimeClockMS();
 	}
@@ -222,13 +225,15 @@ public abstract class Runtime<P extends Protocol> {
 	 *            Local random seed
 	 * @throws InterruptedException
 	 */
-	public void run(P pinstance, int intervalMS, long randomSeed)
-			throws InterruptedException {
+	public void run() throws InterruptedException {
 		// clear old log
 		File logfile = this.getLogFile();
 		if (logfile.exists()) {
 			logfile.delete();
 		}
+
+		int intervalMS = getInterval();
+		long randomSeed = Randomness.getSeed(getRandom());
 
 		logJson("mica-runtime-init", Functional.<String, Object> mapFromPairs(
 				"round_ms", intervalMS, "random_seed", randomSeed));
@@ -259,9 +264,13 @@ public abstract class Runtime<P extends Protocol> {
 	 * 
 	 * @return
 	 */
-	public abstract Address getAddress();
+	public Address getAddress() {
+		return getRuntimeState().getAddress();
+	}
 
-	public abstract void setAddress(Address address);
+	public void setAddress(Address address) {
+		getRuntimeState().setAddress(address);
+	}
 
 	public <T> T punt(Exception e) {
 		throw new RuntimeException(e);
@@ -289,12 +298,6 @@ public abstract class Runtime<P extends Protocol> {
 	public void handleSelectException(Exception e) {
 		debug.printf("[%s select execution exception: %s]\n", getAddress(), e);
 		e.printStackTrace(debug);
-	}
-
-	private Random random = new Random();
-
-	public Random getRandom() {
-		return random;
 	}
 
 	private static ThreadLocal<Runtime<?>> runtimeSingleton = new ThreadLocal<Runtime<?>>();
@@ -329,10 +332,20 @@ public abstract class Runtime<P extends Protocol> {
 		setRuntime(null);
 	}
 
+	
 	public abstract RuntimeState getRuntimeState(Protocol p);
 
+	private RuntimeState runtimeState = new RuntimeState();
+
 	// Called by agents. Protocols should not use directly
-	public abstract RuntimeState getRuntimeState();
+	public RuntimeState getRuntimeState() {
+		return runtimeState;
+	}
+	
+	public void setRuntimeState(RuntimeState rts) {
+		runtimeState = rts;
+	}
+	
 
 	public String toString() {
 		return String.format("<Runtime %d>", hashCode());
@@ -350,8 +363,24 @@ public abstract class Runtime<P extends Protocol> {
 	public abstract Distribution<Address> getView(Protocol p)
 			throws SelectException;
 
+	/**
+	 * Run the gossip update on two local objects.
+	 * 
+	 * Not used by the runtime gossip mechanism, but useful for making composite
+	 * protocols, i.e., when a master protocol wants to run the update function
+	 * of a subprotocol.
+	 * 
+	 * @param p1
+	 * @param p2
+	 */
 	public abstract void executeUpdate(Protocol p1, Protocol p2);
 
+	/**
+	 * Get the rate for a protocol
+	 * 
+	 * @param protocol
+	 * @return
+	 */
 	public abstract double getRate(Protocol protocol);
 
 	public long getTime() {
@@ -369,7 +398,7 @@ public abstract class Runtime<P extends Protocol> {
 		logJson("mica-error-internal", new Object[] { msg, payload });
 		handleError(condition);
 	}
-	
+
 	public void handleError(RuntimeErrorCondition condition)
 			throws FatalErrorHalt, AbortRound {
 		RuntimeErrorResponse policy = getErrorPolicy(condition);
@@ -390,12 +419,11 @@ public abstract class Runtime<P extends Protocol> {
 		}
 	}
 
-	
 	protected abstract void tolerateError() throws AbortRound;
-	
-	protected abstract void fatalErrorHalt(RuntimeErrorCondition condition) throws FatalErrorHalt;
-	
-	
+
+	protected abstract void fatalErrorHalt(RuntimeErrorCondition condition)
+			throws FatalErrorHalt;
+
 	public RuntimeErrorResponse getErrorPolicy(RuntimeErrorCondition condition) {
 		switch (condition) {
 		case NULL_SELECT:
@@ -410,11 +438,35 @@ public abstract class Runtime<P extends Protocol> {
 			return RuntimeErrorResponse.FATAL_ERROR_HALT;
 		}
 	}
-	
 
 	public void logState(String label) {
 		logJson("mica-state-" + label, getProtocolInstance().getLogState());
 	}
 
+	public void setRandomSeed(Long seed) {
+		getRuntimeState().setRandom(new Random(seed));
+	}
+
+	public void setRoundLength(int roundLength) {
+		getRuntimeState().setIntervalMS(roundLength);
+	}
+
+	public Random getRandom() {
+		return getRuntimeState().getRandom();
+	}
+
+	public void setRandom(Random r) {
+		getRuntimeState().setRandom(r);
+	}
+
+	public int getInterval() {
+		return getRuntimeState().getIntervalMS();
+	}
+
+	public void setInterval(int intervalMS) {
+		getRuntimeState().setIntervalMS(intervalMS);
+	}
+
+	public abstract void start();
 
 }

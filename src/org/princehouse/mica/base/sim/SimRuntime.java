@@ -11,6 +11,7 @@ import org.princehouse.mica.base.model.Runtime;
 import org.princehouse.mica.base.model.RuntimeAgent;
 import org.princehouse.mica.base.model.RuntimeState;
 import org.princehouse.mica.base.net.model.Address;
+import org.princehouse.mica.base.net.model.NotBoundException;
 import org.princehouse.mica.base.simple.SelectException;
 import org.princehouse.mica.util.Distribution;
 
@@ -19,6 +20,10 @@ public class SimRuntime<P extends Protocol> extends Runtime<P> {
 	private P instance = null;
 	private RuntimeState runtimeState = new RuntimeState();
 	private ReentrantLock lock = new ReentrantLock();
+
+	public SimRuntime(Address address) {
+		setAddress(address);
+	}
 	
 	@Override
 	public ReentrantLock getProtocolInstanceLock() {
@@ -47,12 +52,12 @@ public class SimRuntime<P extends Protocol> extends Runtime<P> {
 
 	@Override
 	public Address getAddress() {
-		return runtimeState.getAddress();
+		return getRuntimeState().getAddress();
 	}
 
 	@Override
 	public void setAddress(Address address) {
-		runtimeState.setAddress(address);
+		getRuntimeState().setAddress(address);
 		
 	}
 
@@ -79,31 +84,41 @@ public class SimRuntime<P extends Protocol> extends Runtime<P> {
 
 	@Override
 	public void executeUpdate(Protocol p1, Protocol p2) {
-		// TODO
-		
+		SimRuntimeAgent<Protocol> agent = (SimRuntimeAgent<Protocol>) compile(p1);
+		agent.executeUpdate(this, p1, p2);
 	}
 
 	@Override
 	public double getRate(Protocol protocol) {
-		// TODO Auto-generated method stub
-		return 0;
+		return compile(protocol).getRate(this, protocol);
 	}
 
 	@Override
 	protected void tolerateError() throws AbortRound {
-		// TODO Auto-generated method stub
-		
+		throw new AbortRound();
 	}
 
 	@Override
 	protected void fatalErrorHalt(RuntimeErrorCondition condition)
 			throws FatalErrorHalt {
-		// TODO Auto-generated method stub
-		
+		stop(); // passively signal that it's time to shut down
+		try {
+			getAddress().unbind();// try to unbind the listener
+		} catch (NotBoundException e1) {
+		}
+		try {
+			getProtocolInstanceLock().unlock();
+		} catch (IllegalMonitorStateException e) {
+		}
+		throw new FatalErrorHalt();
 	}
-
 	
 	protected Simulator getSimulator() {
 		return Simulator.v();
+	}
+
+	@Override
+	public void start() {
+		getSimulator().startRuntime(this);
 	}
 }

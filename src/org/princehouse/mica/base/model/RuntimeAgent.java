@@ -37,7 +37,7 @@ public abstract class RuntimeAgent<P extends Protocol> {
 	 * @return Address of the chosen gossip peer
 	 * @throws SelectException 
 	 */
-	public abstract SelectEvent select(Runtime<?> runtime, P pinstance, double randomValue) throws SelectException;
+	public abstract SelectEvent select(Runtime<?> runtime, P pinstance) throws SelectException;
 
 	// Called on subprotocols as well as the top protocol; Runtime type
 	// parameter doesn't necessarily match pinstance type

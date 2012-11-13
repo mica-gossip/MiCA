@@ -43,7 +43,6 @@ import org.princehouse.mica.util.WeakHashSet;
 public class SimpleRuntime<P extends Protocol> extends Runtime<P> implements
 		AcceptConnectionHandler {
 
-	
 	public static final boolean DEBUG_NETWORKING = false;
 
 	private ReentrantLock lock = new ReentrantLock();
@@ -53,20 +52,19 @@ public class SimpleRuntime<P extends Protocol> extends Runtime<P> implements
 
 	public static long DEFAULT_RANDOM_SEED = 0L;
 
-	public Address address;
-
 	public SimpleRuntime(Address address) {
 		super();
 		setAddress(address);
 	}
 
+	@Override
 	public void setAddress(Address address) {
-		if (this.address != null && !this.address.equals(address)) {
+		Address current = getAddress();
+		if (current != null && !current.equals(address)) {
 			throw new RuntimeException(
 					"previous address non-null; cannot change the address of an existing runtime");
 		}
-		this.address = address;
-		runtimeState.setAddress(address);
+		super.setAddress(address);
 	}
 
 	/**
@@ -106,18 +104,21 @@ public class SimpleRuntime<P extends Protocol> extends Runtime<P> implements
 	public static <T extends Protocol> Runtime<T> launch(final Runtime<T> rt,
 			final T pinstance, final boolean daemon, final int intervalMS,
 			final long randomSeed) {
+		rt.setProtocolInstance(pinstance);
+		rt.setInterval(intervalMS);
+		rt.setRandom(new Random(randomSeed));
+		((SimpleRuntime<T>)rt).launchThread(daemon);
+		return rt;
+	}
+	
+	public void launchThread(final boolean daemon) {
 		Thread t = new Thread() {
 			public void run() {
-				try {
-					rt.run(pinstance, intervalMS, randomSeed);
-				} catch (InterruptedException e) {
-					e.printStackTrace();
-				}
+					run();
 			}
 		};
 		t.setDaemon(daemon);
 		t.start();
-		return rt;
 	}
 
 	/**
@@ -216,22 +217,10 @@ public class SimpleRuntime<P extends Protocol> extends Runtime<P> implements
 	private boolean running = true;
 
 	@Override
-	public void run(P pinstance, int intervalMS, long randomSeed)
-			throws InterruptedException {
+	public void run() throws InterruptedException {
 
 		final Address address = getAddress();
-
-		super.run(pinstance, intervalMS, randomSeed);
-
-		// Initialize RuntimeState available to protocols
-		runtimeState.setAddress(address);
-		runtimeState.setRandom(new Random(randomSeed));
-		runtimeState.setIntervalMS(intervalMS);
-
-		setProtocolInstance(pinstance);
-
-		Random rng = new Random(randomSeed);
-
+		super.run();
 		logState("initial");
 
 		try {
@@ -251,6 +240,8 @@ public class SimpleRuntime<P extends Protocol> extends Runtime<P> implements
 
 		double rate = getRate(getProtocolInstance());
 
+		int intervalMS = getInterval();
+		
 		try {
 			while (running) {
 
@@ -285,14 +276,12 @@ public class SimpleRuntime<P extends Protocol> extends Runtime<P> implements
 
 						Logging.SelectEvent se = null;
 						try {
-							se = agent.select(this,
-									getProtocolInstance(), rng.nextDouble());
+							se = agent.select(this, getProtocolInstance());
 						} catch (SelectException e) {
-							handleError(SELECT_EXCEPTION,e);
+							handleError(SELECT_EXCEPTION, e);
 						}
 
 						partner = se.selected;
-
 
 						logJson("mica-select", se);
 
@@ -353,22 +342,24 @@ public class SimpleRuntime<P extends Protocol> extends Runtime<P> implements
 					if (connection != null) {
 						try {
 							connection.close();
-						} catch (IOException e) {}
+						} catch (IOException e) {
+						}
 					}
 					try {
 						lock.unlock(); // try to release lock
-					} catch (IllegalMonitorStateException ie) {}
+					} catch (IllegalMonitorStateException ie) {
+					}
 				}
 				lastElapsedMS = getTimeMS() - startTime;
-				double sec = ((double)lastElapsedMS)/1000.0;
-				Runtime.debug.printf("%s -> %s, elapsed time %g s\n", this, partner, sec);
+				double sec = ((double) lastElapsedMS) / 1000.0;
+				Runtime.debug.printf("%s -> %s, elapsed time %g s\n", this,
+						partner, sec);
 			}
 		} catch (FatalErrorHalt e) {
 			// fatalErrorHalt should have already shut down everything
 		} // end while(running) loop
 	}
 
-	
 	@Override
 	protected void tolerateError() throws AbortRound {
 		throw new AbortRound();
@@ -379,7 +370,7 @@ public class SimpleRuntime<P extends Protocol> extends Runtime<P> implements
 			throws FatalErrorHalt {
 		stop(); // passively signal that it's time to shut down
 		try {
-			address.unbind();// try to unbind the listener
+			getAddress().unbind();// try to unbind the listener
 		} catch (NotBoundException e1) {
 		}
 		try {
@@ -413,10 +404,6 @@ public class SimpleRuntime<P extends Protocol> extends Runtime<P> implements
 		this.pinstance = pinstance;
 	}
 
-	@Override
-	public Address getAddress() {
-		return address;
-	}
 
 	// ---- agent execution context utilities ------------
 	private WeakHashSet<Object> foreignObjects = null;
@@ -436,21 +423,15 @@ public class SimpleRuntime<P extends Protocol> extends Runtime<P> implements
 
 	// ---------------------------------------------------
 
-	private RuntimeState runtimeState = new RuntimeState();
-
 	@Override
 	public RuntimeState getRuntimeState(Protocol p) {
 		if (foreignObjects != null) {
 			if (foreignObjects.contains(p))
 				return foreignState;
 		}
-		return runtimeState;
+		return getRuntimeState();
 	}
 
-	@Override
-	public RuntimeState getRuntimeState() {
-		return runtimeState;
-	}
 
 	@Override
 	public Distribution<Address> getView(Protocol protocol)
@@ -491,6 +472,11 @@ public class SimpleRuntime<P extends Protocol> extends Runtime<P> implements
 	@Override
 	public ReentrantLock getProtocolInstanceLock() {
 		return lock;
+	}
+
+	@Override
+	public void start() {
+		launchThread(true); // launch in a new thread
 	}
 
 }
