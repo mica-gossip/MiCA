@@ -211,7 +211,7 @@ public class TestHarness<Q extends Protocol> {
 		// Start the simulator, if that's the chosen implementation
 		if (impl.equals("sim")) {
 			// run the simulator
-			Simulator.v().simulate();
+			Simulator.v().run();
 		} else if (impl.equals("simple")) {
 			// wait for interrupt
 			try {
@@ -298,6 +298,14 @@ public class TestHarness<Q extends Protocol> {
 	}
 
 	public void runMain(String[] argv, ProtocolInstanceFactory<Q> factory) {
+		TestHarnessOptions options = parseOptions(argv);
+		runMain(options, factory);
+	}
+
+	public void runMain(String[] argv) {
+		@SuppressWarnings("unchecked")
+		// will throw an invalid cast exception of this harness doesn't implement ProtocolInstanceFactory<Q>
+		ProtocolInstanceFactory<Q> factory = (ProtocolInstanceFactory<Q>) this;
 		TestHarnessOptions options = parseOptions(argv);
 		runMain(options, factory);
 	}

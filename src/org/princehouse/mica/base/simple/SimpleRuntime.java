@@ -112,9 +112,15 @@ public class SimpleRuntime<P extends Protocol> extends Runtime<P> implements
 	}
 	
 	public void launchThread(final boolean daemon) {
+		final SimpleRuntime<?> rt = this;
+		
 		Thread t = new Thread() {
 			public void run() {
-					run();
+					try {
+						rt.run();
+					} catch (InterruptedException e) {
+						rt.stop();
+					}
 			}
 		};
 		t.setDaemon(daemon);

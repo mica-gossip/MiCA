@@ -14,6 +14,7 @@ import org.princehouse.mica.base.net.model.Address;
 import org.princehouse.mica.base.net.model.NotBoundException;
 import org.princehouse.mica.base.simple.SelectException;
 import org.princehouse.mica.util.Distribution;
+import org.princehouse.mica.util.Logging.SelectEvent;
 
 public class SimRuntime<P extends Protocol> extends Runtime<P> {
 
@@ -82,6 +83,18 @@ public class SimRuntime<P extends Protocol> extends Runtime<P> {
 		return view;
 	}
 
+	public Address select() throws FatalErrorHalt, AbortRound  {
+		Protocol p = getProtocolInstance();
+		SelectEvent se = null;
+		try {
+			se = compile(p).select(this, p);
+		} catch (SelectException e) {
+			handleError(RuntimeErrorCondition.SELECT_EXCEPTION);
+		}
+		// TODO log message
+		return se.selected;
+	}
+	
 	@Override
 	public void executeUpdate(Protocol p1, Protocol p2) {
 		SimRuntimeAgent<Protocol> agent = (SimRuntimeAgent<Protocol>) compile(p1);
