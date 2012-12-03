@@ -18,9 +18,7 @@ import org.princehouse.mica.util.Logging.SelectEvent;
 
 public class SimRuntime<P extends Protocol> extends Runtime<P> {
 
-	private P instance = null;
-	private RuntimeState runtimeState = new RuntimeState();
-	private ReentrantLock lock = new ReentrantLock();
+	private P protocol = null;
 
 	public SimRuntime(Address address) {
 		setAddress(address);
@@ -28,7 +26,7 @@ public class SimRuntime<P extends Protocol> extends Runtime<P> {
 	
 	@Override
 	public ReentrantLock getProtocolInstanceLock() {
-		return lock;
+		throw new RuntimeException();
 	}
 
 	@Override
@@ -36,14 +34,10 @@ public class SimRuntime<P extends Protocol> extends Runtime<P> {
 		return new SimRuntimeAgent<T>(pinstance);
 	}
 
-	@Override
-	public P getProtocolInstance() {
-		return instance;
-	}
 
 	@Override
 	public void setProtocolInstance(P pinstance) {
-		instance = pinstance;
+		protocol = pinstance;
 	}
 
 	@Override
@@ -65,11 +59,6 @@ public class SimRuntime<P extends Protocol> extends Runtime<P> {
 	@Override
 	public RuntimeState getRuntimeState(Protocol p) {
 		return getSimulator().getRuntimeState(p);
-	}
-
-	@Override
-	public RuntimeState getRuntimeState() {
-		return runtimeState;
 	}
 
 	@Override
@@ -133,5 +122,10 @@ public class SimRuntime<P extends Protocol> extends Runtime<P> {
 	@Override
 	public void start() {
 		getSimulator().startRuntime(this);
+	}
+
+	@Override
+	public P getProtocolInstance() {
+		return protocol;
 	}
 }

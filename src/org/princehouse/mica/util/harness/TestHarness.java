@@ -5,16 +5,15 @@ import java.io.FilenameFilter;
 import java.net.UnknownHostException;
 import java.util.List;
 import java.util.Random;
-import java.util.Timer;
 import java.util.TimerTask;
 
 import org.princehouse.mica.base.model.Protocol;
 import org.princehouse.mica.base.model.Runtime;
 import org.princehouse.mica.base.net.model.Address;
 import org.princehouse.mica.base.net.tcpip.TCPAddress;
-import org.princehouse.mica.base.sim.SimRuntime;
 import org.princehouse.mica.base.sim.Simulator;
 import org.princehouse.mica.base.simple.SimpleRuntime;
+import org.princehouse.mica.base.simple.SimpleRuntimeInterface;
 import org.princehouse.mica.lib.abstractions.Overlay;
 import org.princehouse.mica.util.Functional;
 import org.princehouse.mica.util.SinglyLinkedRingGraph;
@@ -40,8 +39,13 @@ import fj.P2;
  */
 public class TestHarness<Q extends Protocol> {
 
+	private RuntimeInterface runtimeInterface = null;
+	
 	public static class TestHarnessOptions {
 
+		@Parameter(names = "-stagger", description = "amount of time (ms) to stagger starting runtimes")
+		public int stagger = 10000;
+		
 		@Parameter(names = { "-log" }, description = "CSV Log file location (deprecated)")
 		public String logfile = "mica.log";
 
@@ -67,7 +71,7 @@ public class TestHarness<Q extends Protocol> {
 		public Long seed = 0L;
 
 		@Parameter(names = "-round", description = "Round length (ms)")
-		public int roundLength = SimpleRuntime.DEFAULT_INTERVAL;
+		public int roundLength = 5000;
 
 		@Parameter(names = "-stopAfter", description = "Halt simulation after this many rounds (0 = run forever)")
 		public double stopAfter = 0;
@@ -78,6 +82,8 @@ public class TestHarness<Q extends Protocol> {
 		@Parameter(names = "-implementation", description = "Runtime implementation name. Valid options: simple, sim")
 		public String implementation = "simple";
 
+		@Parameter(names = "-timeout", description = "Lock waiting timeout (ms)")
+		public int timeout = 5000;
 	}
 
 	private List<P2<Long, TimerTask>> timers = Functional.list();
@@ -87,7 +93,7 @@ public class TestHarness<Q extends Protocol> {
 	}
 
 	private int getRoundMS() {
-		return SimpleRuntime.DEFAULT_INTERVAL;
+		return getOptions().roundLength;
 	}
 
 	public void addTimerRounds(double rounds, TimerTask task) {
@@ -107,6 +113,14 @@ public class TestHarness<Q extends Protocol> {
 		}
 	};
 
+	private Random random = null;
+	public Random getRandom() {
+		if(random == null) {
+			random = new Random(getOptions().seed);
+		}
+		return random;
+	}
+	
 	public TimerTask taskStop() {
 		final TestHarness<Q> harness = this;
 		return new TimerTask() {
@@ -118,84 +132,47 @@ public class TestHarness<Q extends Protocol> {
 		};
 	}
 
-	public List<Runtime<Q>> launchProtocol(ProtocolInstanceFactory<Q> factory,
+	public void launchProtocol(ProtocolInstanceFactory<Q> factory,
 			TestHarnessGraph g) {
+		
+		//List<Runtime<Q>> runtimes = Functional.list();
+		//running = true;
 
-		List<Runtime<Q>> runtimes = Functional.list();
+		launchTimers(); // TODO lift to runtime interface
 
-		running = true;
-
-		launchTimers();
-
-		List<Address> addresses = g.getAddresses();
-
+		
 		int i = 0;
-		for (Address addr : addresses) {
-			try {
-				// Stagger protocol launching by a few milliseconds
-				Thread.sleep(rng.nextInt(50));
-			} catch (InterruptedException e) {
-			}
-
+		for (Address addr : g.getAddresses()) {
 			Overlay neighbors = g.getOverlay(addr);
-
-			Runtime<Q> rt = newRuntime(addr);
-
-			Runtime.setRuntime(rt); // tell the runtime mechanism that this is
-									// the current runtime when the protocol is
-									// started
 			Q pinstance = factory.createProtocolInstance(i++, addr, neighbors);
-
 			TestHarnessOptions options = getOptions();
-
-			rt.setProtocolInstance(pinstance);
-			rt.setRandomSeed(options.seed);
-			rt.setRoundLength(options.roundLength);
-			rt.start();
-
-			// rt.start(pinstance, getOptions().roundLength(), getOptions.seed
-			// SimpleRuntime.launchDaemon(rt, pinstance, addr,
-			// getOptions().roundLength, getOptions().seed);
-			Runtime.setRuntime(null);
-			runtimes.add(rt);
-		}
-		return runtimes;
+			int stagger = rng.nextInt(options.stagger);
+			int lockTimeout = options.timeout;
+			long seed = getRandom().nextLong();
+			runtimeInterface.addRuntime(addr, pinstance, seed, options.roundLength, stagger, lockTimeout);			
+		} 
 	}
 
-	private Runtime<Q> newRuntime(Address address) {
-		TestHarnessOptions options = getOptions();
-
-		if (options.implementation.equals("simple")) {
-			return new SimpleRuntime<Q>(address);
-		} else if (options.implementation.equals("sim")) {
-			return new SimRuntime<Q>(address);
-		} else {
-			throw new RuntimeException(String.format(
-					"invalid -implementation option: %s",
-					options.implementation));
-		}
-	}
 
 	private void launchTimers() {
-		Timer timer = new Timer(true);
 		for (P2<Long, TimerTask> tt : timers) {
 			long delay = tt._1();
 			TimerTask task = tt._2();
-			timer.schedule(task, delay);
+			runtimeInterface.scheduleTask(delay, task);
 		}
 	}
 
 	private Random rng;
 
-	public List<Runtime<Q>> launchProtocolRandomGraph(int n, int degree,
+	public void launchProtocolRandomGraph(int n, int degree,
 			ProtocolInstanceFactory<Q> factory) {
-		return launchProtocol(factory, new RandomGraph(n, defaultAddressFunc,
+		launchProtocol(factory, new RandomGraph(n, defaultAddressFunc,
 				degree, rng));
 	}
 
-	public List<Runtime<Q>> launchProtocolCompleteGraph(int n,
+	public void launchProtocolCompleteGraph(int n,
 			ProtocolInstanceFactory<Q> factory) {
-		return launchProtocol(factory, new CompleteGraph(n, defaultAddressFunc));
+		launchProtocol(factory, new CompleteGraph(n, defaultAddressFunc));
 	}
 
 	private List<Runtime<Q>> runtimes;
@@ -204,50 +181,20 @@ public class TestHarness<Q extends Protocol> {
 		return runtimes;
 	}
 
-	private void go() {
-
-		String impl = getOptions().implementation;
-
-		// Start the simulator, if that's the chosen implementation
-		if (impl.equals("sim")) {
-			// run the simulator
-			Simulator.v().run();
-		} else if (impl.equals("simple")) {
-			// wait for interrupt
-			try {
-				try {
-					while (running) {
-						Thread.sleep(1000);
-					}
-				} catch (InterruptedException e) {
-
-				}
-			} catch (RuntimeException e) {
-				e.printStackTrace();
-			}
-			stopRuntimes();
-		}
-		
+	private void run() {
+		runtimeInterface.run();
 		System.out.println("Done");
 	}
 
 	public void runGraph(ProtocolInstanceFactory<Q> factory,
 			TestHarnessGraph graph) {
-		runtimes = launchProtocol(factory, graph);
-		go();
+		launchProtocol(factory, graph);
+		run();
 	}
 
-	private boolean running = false;
-
-	public void stopRuntimes() {
-		running = false;
-		for (Runtime<Q> rt : runtimes) {
-			rt.stop();
-		}
-	}
 
 	public void stop() {
-		stopRuntimes();
+		runtimeInterface.stop();
 	}
 
 	/**
@@ -287,11 +234,11 @@ public class TestHarness<Q extends Protocol> {
 		harness.runMain(argv, factory);
 	}
 
-	public static TestHarnessOptions defaultOptions() {
+	public TestHarnessOptions defaultOptions() {
 		return new TestHarnessOptions();
 	}
 
-	public static TestHarnessOptions parseOptions(String[] argv) {
+	public TestHarnessOptions parseOptions(String[] argv) {
 		TestHarnessOptions options = defaultOptions();
 		new JCommander(options, argv); // parse command line options
 		return options;
@@ -350,8 +297,15 @@ public class TestHarness<Q extends Protocol> {
 		return options;
 	}
 
-	public void setOptions(TestHarnessOptions options) {
-		this.options = options;
+	private void setOptions(TestHarnessOptions options) {
+		this.options = options;	
+		// validate options and do option processing...
+		String runtimeName = options.implementation;
+		if(runtimeName.equals("simple")) {
+			runtimeInterface = new SimpleRuntimeInterface();
+		} else if(runtimeName.equals("sim")) {
+			runtimeInterface = Simulator.v();
+		}
 	}
 
 	public void processOptions() {

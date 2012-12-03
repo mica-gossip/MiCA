@@ -97,7 +97,7 @@ class GraphWindow(object):
             else:
                 active = False
             checkitem.set_active(active)
-            checkitem.connect("activate", self.micavis.set_projection, p)
+            checkitem.connect("activate", self.micavis.set_projection_gui, p)
             self.projection_checkitems[p] = checkitem
             menu.append(checkitem)
             checkitem.show()
@@ -111,6 +111,8 @@ class GraphWindow(object):
         analysis.show()
         bar.append(analysis)
         self.append_analysis_menuitem("State change graph", self.analysis_state_change_graph)
+        self.append_analysis_menuitem("State change graph (leaves)", self.analysis_state_change_graph_leaves)
+
 #        self.append_analysis_menuitem("(demo matplotlib graph)", self.demo_matplotlib_graph)
         for label, callback in self.micavis.temp_analysis_menus:
             self.append_analysis_menuitem(label, callback)
@@ -142,19 +144,46 @@ class GraphWindow(object):
         import analysis
         
         x,y = analysis.compute_changes_per_round(self.micavis)
-        self.analysis_plot_2d(x,y, 
-         xlabel =  "MiCA Rounds (%s ms)" % self.micavis.runtime_info.round_ms,
-         ylabel = "State changes per node per round")
+        xlabel =  "MiCA Rounds (%s ms)" % self.micavis.runtime_info.round_ms
+        ylabel = "State changes per node per round"
+        self.analysis_plot_2d(x,y, xlabel, ylabel)
 
+    def analysis_state_change_graph_leaves(self, widget):
+        import matplotlib.pyplot as plt
+        import numpy as np
+        import analysis
+        
+
+        saved_projection = self.micavis.get_projection()
+
+        xyvals = []
+        for leaf_projection in self.micavis.leaf_projections:
+            self.micavis.set_projection(leaf_projection)
+            xyvals += [analysis.compute_changes_per_round(self.micavis)]
+
+        # restore previous projection
+        self.micavis.set_projection(saved_projection)
+        xlabel =  "MiCA Rounds (%s ms)" % self.micavis.runtime_info.round_ms
+        ylabel = "State changes per node per round"
+        legend_labels = self.micavis.leaf_projections
+        self.analysis_plot_2d_multiple(xyvals, xlabel, ylabel, legend_labels)
 
     def analysis_plot_2d(self, x, y, xlabel="x", ylabel = "y"):
+        self.analysis_plot_2d_multiple([(x,y)], xlabel, ylabel, )
+
+    # plot multiple curves
+    def analysis_plot_2d_multiple(self, xy_pairs, xlabel="x", ylabel = "y", legends=None):
         fig = plt.figure()
         ax = fig.add_subplot(111)
-        ax.plot(x,y)
+        artists = []
+        for x,y in xy_pairs:
+            artists += ax.plot(x,y)
         ax.grid(True)
         ax.axhline(0, color='black', lw=2)
         ax.set_ylabel(ylabel)
         ax.set_xlabel(xlabel)
+        if legends:
+            ax.legend(artists, legends)
         plt.show()
 
 
@@ -237,7 +266,7 @@ class MicaVisMicavis:
     
     _inproj = False # set_active triggers set_projection to be called recursively
                     # _inproj is used to make that recursion fizzle out
-    def set_projection(self, widget, p):
+    def set_projection_gui(self, widget, p):
         if self._inproj:
             return
         self._inproj = True
@@ -249,11 +278,18 @@ class MicaVisMicavis:
                 checkitem.set_active(False)
             else:
                 checkitem.set_active(True)
+        self.set_projection(p)
+        self.graph_window.refresh_graph()
+        self._inproj = False
+
+    # note: doesn't update the display or menu; see set_projection_gui
+    def set_projection(self, p):
         self.projection = p
         self.current_node_state.reset()
         self.current_node_view.reset()
-        self.graph_window.refresh_graph()
-        self._inproj = False
+    
+    def get_projection(self):
+        return self.projection
         
     # return subdata) for current projection
     def project(self, data):
@@ -279,11 +315,34 @@ class MicaVisMicavis:
             module = custom.load(self,protocolName)
             if not module:
                 continue
-            for name,func in module.projections(data):
+            for name, namefunc in module.projections(data):
                 self.projections.add(name)
         self.projections.remove('root')
         self.projections = sorted(list(self.projections))
         self.projections = ['root'] + self.projections
+
+        def compute_leaves(projections):
+            temp = projections[:]
+            temp.remove('root')
+            temp.sort(key=lambda x: -len(x))
+            lv = []
+            def is_prefix(s):
+                for s2 in lv:
+                    if s2.startswith(s):
+                        return True
+                return False
+
+            for t in temp:
+#                print 'temp t', t
+                if not is_prefix(t):
+                    lv += [t]
+ #                   print 'not prefix!'
+ #               else:
+ #                   print 'is prefix!'
+            print 'leaves:', lv
+            return lv
+                
+        self.leaf_projections = compute_leaves(self.projections)
 
     def add_cursor_listener(self, f):
         # TODO currently no way to remove cursor listeners

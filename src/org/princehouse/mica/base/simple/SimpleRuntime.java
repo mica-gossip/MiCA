@@ -30,6 +30,7 @@ import org.princehouse.mica.base.net.model.AcceptConnectionHandler;
 import org.princehouse.mica.base.net.model.Address;
 import org.princehouse.mica.base.net.model.Connection;
 import org.princehouse.mica.base.net.model.NotBoundException;
+import org.princehouse.mica.example.FindMinPull;
 import org.princehouse.mica.util.Distribution;
 import org.princehouse.mica.util.Logging;
 import org.princehouse.mica.util.WeakHashSet;
@@ -47,10 +48,10 @@ public class SimpleRuntime<P extends Protocol> extends Runtime<P> implements
 
 	private ReentrantLock lock = new ReentrantLock();
 
-	public static int DEFAULT_INTERVAL = 1500; // 1.5 seconds
-	private static long LOCK_WAIT_MS = DEFAULT_INTERVAL;
+	//public static int DEFAULT_INTERVAL = 1500; // 1.5 seconds
+	//private static long LOCK_WAIT_MS = DEFAULT_INTERVAL;
 
-	public static long DEFAULT_RANDOM_SEED = 0L;
+	//public static long DEFAULT_RANDOM_SEED = 0L;
 
 	public SimpleRuntime(Address address) {
 		super();
@@ -80,11 +81,11 @@ public class SimpleRuntime<P extends Protocol> extends Runtime<P> implements
 	 *            Launch thread as a daemon
 	 * @return New Runtime instance
 	 */
-	public static <T extends Protocol> Runtime<T> launch(Runtime<T> rt,
-			final T pinstance, final boolean daemon) {
-		return launch(rt, pinstance, daemon, DEFAULT_INTERVAL,
-				DEFAULT_RANDOM_SEED);
-	}
+	//public static <T extends Protocol> Runtime<T> launch(Runtime<T> rt,
+	//		final T pinstance, final boolean daemon) {
+	//	return launch(rt, pinstance, daemon, DEFAULT_INTERVAL,
+	//			DEFAULT_RANDOM_SEED);
+	//}
 
 	/**
 	 * Entry point for SimpleRuntime. Starts a protocol in a new thread.
@@ -103,9 +104,10 @@ public class SimpleRuntime<P extends Protocol> extends Runtime<P> implements
 	 */
 	public static <T extends Protocol> Runtime<T> launch(final Runtime<T> rt,
 			final T pinstance, final boolean daemon, final int intervalMS,
-			final long randomSeed) {
+			final long randomSeed, int lockWaitTimeoutMS) {
 		rt.setProtocolInstance(pinstance);
 		rt.setInterval(intervalMS);
+		rt.setLockWaitTimeout(lockWaitTimeoutMS);
 		rt.setRandom(new Random(randomSeed));
 		((SimpleRuntime<T>)rt).launchThread(daemon);
 		return rt;
@@ -135,12 +137,12 @@ public class SimpleRuntime<P extends Protocol> extends Runtime<P> implements
 	 * @param address
 	 * @return
 	 */
-	@Deprecated
-	public static <T extends Protocol> Runtime<T> launchDaemon(
-			final T pinstance, Address address) {
-		Runtime<T> rt = new SimpleRuntime<T>(address);
-		return launch(rt, pinstance, true);
-	}
+	//@Deprecated
+	//public static <T extends Protocol> Runtime<T> launchDaemon(
+	//		final T pinstance, Address address) {
+	//	Runtime<T> rt = new SimpleRuntime<T>(address);
+	//	return launch(rt, pinstance, true);
+	//}
 
 	/**
 	 * Entry point for SimpleRuntime. Starts a protocol in a new thread. (Calls
@@ -155,10 +157,10 @@ public class SimpleRuntime<P extends Protocol> extends Runtime<P> implements
 	 *            Local address
 	 * @return New Runtime instance
 	 */
-	public static <T extends Protocol> Runtime<T> launchDaemon(Runtime<T> rt,
-			final T pinstance) {
-		return launch(rt, pinstance, true);
-	}
+	//public static <T extends Protocol> Runtime<T> launchDaemon(Runtime<T> rt,
+	//		final T pinstance) {
+	//	return launch(rt, pinstance, true);
+	//}
 
 	/**
 	 * Entry point for SimpleRuntime. Starts a protocol in a new thread. (Calls
@@ -176,8 +178,8 @@ public class SimpleRuntime<P extends Protocol> extends Runtime<P> implements
 	 */
 	public static <T extends Protocol> Runtime<T> launchDaemon(
 			SimpleRuntime<T> rt, final T pinstance, final Address address,
-			int intervalMS, long randomSeed) {
-		return launch(rt, pinstance, true, intervalMS, randomSeed);
+			int intervalMS, long randomSeed, int lockWaitTimeoutMS) {
+		return launch(rt, pinstance, true, intervalMS, randomSeed, lockWaitTimeoutMS);
 	}
 
 	private P pinstance;
@@ -186,7 +188,7 @@ public class SimpleRuntime<P extends Protocol> extends Runtime<P> implements
 	public void acceptConnection(Address recipient, Connection connection)
 			throws IOException {
 		try {
-			if (lock.tryLock(LOCK_WAIT_MS, TimeUnit.MILLISECONDS)) {
+			if (lock.tryLock(getLockWaitTimeout(), TimeUnit.MILLISECONDS)) {
 				if (!running) {
 					logJson("mica-error-internal",
 							"acceptConnection called on a stopped runtime");
@@ -269,7 +271,7 @@ public class SimpleRuntime<P extends Protocol> extends Runtime<P> implements
 					if (!running)
 						break;
 
-					if (lock.tryLock(LOCK_WAIT_MS, TimeUnit.MILLISECONDS)) {
+					if (lock.tryLock(getLockWaitTimeout(), TimeUnit.MILLISECONDS)) {
 
 						if (!running) {
 							// recv thread may have shutdown while it held
@@ -483,6 +485,18 @@ public class SimpleRuntime<P extends Protocol> extends Runtime<P> implements
 	@Override
 	public void start() {
 		launchThread(true); // launch in a new thread
+	}
+
+	@Deprecated
+	public static <P extends Protocol> Runtime<P> launchDaemon(
+			P node, Address a) {
+		throw new RuntimeException("deprecated");
+	}
+	
+	@Deprecated
+	public static <P extends Protocol> Runtime<P> launchDaemon(
+			Runtime<P> rt, P node) {
+		throw new RuntimeException("deprecated");
 	}
 
 }

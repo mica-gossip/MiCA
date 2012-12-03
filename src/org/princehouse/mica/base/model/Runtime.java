@@ -450,6 +450,18 @@ public abstract class Runtime<P extends Protocol> {
 	public void setRoundLength(int roundLength) {
 		getRuntimeState().setIntervalMS(roundLength);
 	}
+	
+	/**
+	 * Lock wait timeout
+	 * @param lockWaitTimeout
+	 */
+	public void setLockWaitTimeout(int lockWaitTimeout) {
+		getRuntimeState().setLockWaitTimeoutMS(lockWaitTimeout);
+	}
+	
+	public int getLockWaitTimeout() {
+		return getRuntimeState().getLockWaitTimeoutMS();
+	}
 
 	public Random getRandom() {
 		return getRuntimeState().getRandom();

@@ -31,7 +31,8 @@ class LogCollection(object):
         self.path = path
 
     def __str__(self):
-        return "<%s %s>" % (self.__class__.__name__, self.path)
+        return self.path.split('/')[-1]
+#        return "%s" % (self.__class__.__name__, self.path)
 
     def __repr__(self):
         return str(self)
@@ -44,10 +45,11 @@ class ReadableFilelike(object):
         self.path = path
 
     def __str__(self):
-        return "%s %s" % (self.__class__.__name__, self.path)
+        return str(self.path).split('/')[-1]
+#        return "%s %s" % (self.__class__.__name__, self.path)
 
     def __repr_(self):
-        return "<%s>" % str(self)
+        return "%s" % str(self)
 
     def open(self):
         raise Exception('not implemented. should return an open file that can be closed')
@@ -67,6 +69,9 @@ class LogTarFile(ReadableFilelike):
     def open(self):
         tf, member = self.path
         return tf.extractfile(member)
+    def __str__(self):
+        # stupid stupid hack to print only the filename
+        return str(self.path[1]).split(' ')[1].split('/')[-1][:-1] + " (compressed)"
 
 class LogDirTarFile(LogCollection):
     def logs(self):

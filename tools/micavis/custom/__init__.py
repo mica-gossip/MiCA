@@ -91,6 +91,26 @@ class CustomProtocol(object):
     def projections(self, data):
         return []
 
+    def leaf_projections(self, data):
+        # return all projections whose key is not a prefix of another proj.
+        leaves = []
+        pjs = self.projections(data)
+        pjs.sort(key=lambda (k,f): -len(k))
+        
+        def is_prefix(k):
+            for lk, lf in leaves:
+                if lk.startswith(k):
+                    return True
+            return False
+
+        for k,f in pjs:
+            # fixme not efficient...
+            if(is_prefix(k)):
+                continue
+            else:
+                leaves += [(k,f)]
+        return leaves
+
     def project(self, projection_key, data):
         if projection_key == 'root':
             return data # hardcoded identity function

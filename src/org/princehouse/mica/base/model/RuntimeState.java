@@ -81,4 +81,16 @@ public class RuntimeState implements Serializable {
 		}
 		setRandom(update.getRandom());
 	}
+	
+	private int lockWaitTimeoutMS = 1500;
+
+	public int getLockWaitTimeoutMS() {
+		return lockWaitTimeoutMS;
+	}
+
+
+	public void setLockWaitTimeoutMS(int lockWaitTimeoutMS) {
+		this.lockWaitTimeoutMS = lockWaitTimeoutMS;
+	}
+	
 }

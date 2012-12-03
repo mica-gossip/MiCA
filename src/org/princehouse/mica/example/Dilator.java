@@ -28,6 +28,10 @@ public class Dilator extends BaseProtocol {
 	@View
 	public Protocol p = null;
 	
+	public static Dilator dilate(int level, Protocol p) {
+		return new Dilator(level,p);
+	}
+	
 	public Dilator(int level, Protocol p) {
 		dilationLevel = level;
 		this.p = p;

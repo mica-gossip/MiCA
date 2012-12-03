@@ -31,8 +31,8 @@ public class TestStack3DisruptLargerCorrelated extends TestHarness<MergeIndepend
 	 * @throws UnknownHostException 
 	 */
 	
-	public static long roundsToMs(int rounds) {
-		return rounds * SimpleRuntime.DEFAULT_INTERVAL;
+	public static long roundsToMs(int rounds, int intervalMS) {
+		return rounds * intervalMS;
 	}
 	
 	public static void main(String[] args) {
@@ -69,10 +69,9 @@ public class TestStack3DisruptLargerCorrelated extends TestHarness<MergeIndepend
 
 		final TestStack3DisruptLargerCorrelated harness = new TestStack3DisruptLargerCorrelated();
 		
-		SimpleRuntime.DEFAULT_INTERVAL = 3000;
 		int totalRounds = 600;
 		
-		harness.addTimer(roundsToMs(totalRounds), harness.taskStop());
+		harness.addTimer(roundsToMs(totalRounds, harness.getOptions().roundLength), harness.taskStop());
 
 		for(int i = totalRounds/2; i < totalRounds/2+1; i+=1) {
 			TimerTask disrupt = new TimerTask() {
@@ -90,7 +89,7 @@ public class TestStack3DisruptLargerCorrelated extends TestHarness<MergeIndepend
 					}
 				}
 			};
-			harness.addTimer(roundsToMs(i), disrupt);
+			harness.addTimer(roundsToMs(i, harness.getOptions().roundLength), disrupt);
 		}	
 		harness.runMain(args, createNodeFunc);
 	}

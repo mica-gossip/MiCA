@@ -4,6 +4,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.TimerTask;
 
 import org.princehouse.mica.base.exceptions.AbortRound;
 import org.princehouse.mica.base.exceptions.FatalErrorHalt;
@@ -11,6 +12,7 @@ import org.princehouse.mica.base.model.Protocol;
 import org.princehouse.mica.base.model.RuntimeState;
 import org.princehouse.mica.base.net.model.Address;
 import org.princehouse.mica.util.Functional;
+import org.princehouse.mica.util.harness.RuntimeInterface;
 
 /**
  * Single-threaded MiCA emulator.
@@ -18,7 +20,7 @@ import org.princehouse.mica.util.Functional;
  * @author lonnie
  * 
  */
-public class Simulator {
+public class Simulator implements RuntimeInterface {
 
 	protected class Event implements Comparable<Event> {
 		public long t;
@@ -229,6 +231,7 @@ public class Simulator {
 
 	private boolean running = false;
 
+	@Override
 	public void run() {
 		// run the simulation
 		running = true;
@@ -301,6 +304,23 @@ public class Simulator {
 	public <P extends Protocol> P getSender(SimConnection sc) {
 		// TODO Auto-generated method stub
 		return null;
+	}
+
+	@Override
+	public <P extends Protocol> void addRuntime(Address address, P protocol,
+			long randomSeed, int roundLength, int startTime, int lockTimeout) {
+		// TODO
+		throw new RuntimeException("not implemented yet");
+	}
+
+	@Override
+	public void scheduleTask(long delay, TimerTask task) {
+		throw new RuntimeException("not implemented in sim runtime");
+	}
+
+	@Override
+	public void stop() {
+		running = false;
 	}
 
 }

@@ -30,7 +30,7 @@ public class RunPulse {
 	public static void main(String[] args) {
 		final TestHarness<Pulse> harness = new TestHarness<Pulse>();
 		
-		final TestHarnessOptions options = TestHarness.parseOptions(args);
+		final TestHarnessOptions options = harness.parseOptions(args);
 		options.graphType = "complete";
 		final int f = options.n / 4;
 

@@ -31,13 +31,12 @@ public class TestStack3DisruptLargeIndependent extends TestHarness<MergeCorrelat
 	 * @throws UnknownHostException 
 	 */
 	
-	public static long roundsToMs(int rounds) {
-		return rounds * SimpleRuntime.DEFAULT_INTERVAL;
+	public static long roundsToMs(int rounds, int intervalMS) {
+		return rounds * intervalMS;
 	}
 	
 	public static void main(String[] args) {
 
-		SimpleRuntime.DEFAULT_INTERVAL = 5000;
 
 		F3<Integer, Address, Overlay, MergeCorrelated> createNodeFunc = new F3<Integer, Address, Overlay, MergeCorrelated>() {
 			@Override
@@ -68,7 +67,8 @@ public class TestStack3DisruptLargeIndependent extends TestHarness<MergeCorrelat
 
 
 		final TestStack3DisruptLargeIndependent harness = new TestStack3DisruptLargeIndependent();
-		harness.addTimer(roundsToMs(1000), harness.taskStop());
+		
+		harness.addTimer(roundsToMs(1000, harness.getOptions().roundLength), harness.taskStop());
 
 		for(int i = 500; i < 550; i+=5) {
 			TimerTask disrupt = new TimerTask() {
@@ -86,7 +86,7 @@ public class TestStack3DisruptLargeIndependent extends TestHarness<MergeCorrelat
 					}
 				}
 			};
-			harness.addTimer(roundsToMs(i), disrupt);
+			harness.addTimer(roundsToMs(i, harness.getOptions().roundLength), disrupt);
 		}	
 		
 		harness.runMain(args,createNodeFunc);

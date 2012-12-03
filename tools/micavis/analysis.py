@@ -29,6 +29,6 @@ def compute_changes_per_round(micavis):
 
     x = range(len(buckets))
     y = buckets
-    print "x", x
-    print "y", y
+#    print "x", x
+#    print "y", y
     return x,y

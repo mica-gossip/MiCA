@@ -32,14 +32,17 @@ public class Launcher {
 	private Address address = new TCPAddress("localhost:8000"); 
 	
 	@Parameter(names = "-round", description = "Gossip round length (milliseconds)")
-	private int intervalMS = SimpleRuntime.DEFAULT_INTERVAL;
+	private int intervalMS = 1500;
 	
 	@Parameter(names = "-seed", description = "Random seed (long int)")
-	private long randomSeed = SimpleRuntime.DEFAULT_RANDOM_SEED;
+	private long randomSeed = 0L;
 	
 	// not working... jcommander bug?  implement as exceptional case
 	@Parameter(names = "-usage", description = "Print usage", arity=0)
 	public boolean printUsage = false;
+	
+	@Parameter(names = "-timeout", description = "Lock waiting timeout (ms)")
+	public int timeout = 30000;
 	
 	/**
 	 * Usage: Launcher <protocol class name> [launcher arguments] [protocol arguments]
@@ -126,7 +129,7 @@ public class Launcher {
 		jc.parse(subargs);
 		// Attempt to run the initialize method
 		runInitialize(protocolClass, protocolInstance);		
-		SimpleRuntime.launch(new SimpleRuntime<Protocol>(address), protocolInstance, false, intervalMS, randomSeed);
+		SimpleRuntime.launch(new SimpleRuntime<Protocol>(address), protocolInstance, false, intervalMS, randomSeed, timeout);
 	}
 	
 	private void runInitialize(Class<?> protocolClass, Protocol classInstance) {

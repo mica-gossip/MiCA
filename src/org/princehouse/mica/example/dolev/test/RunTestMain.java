@@ -28,7 +28,7 @@ public class RunTestMain {
 	public static void main(String[] args) {
 		final TestHarness<TestStateMachine> harness = new TestHarness<TestStateMachine>();
 		
-		TestHarnessOptions options = TestHarness.parseOptions(args);
+		TestHarnessOptions options = harness.parseOptions(args);
 		options.graphType = "complete";
 		
 		final int f = options.n / 4;
