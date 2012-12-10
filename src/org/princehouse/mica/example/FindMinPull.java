@@ -3,6 +3,7 @@ package org.princehouse.mica.example;
 
 import org.princehouse.mica.base.ExternalSelectProtocol;
 import org.princehouse.mica.base.annotations.GossipUpdate;
+import org.princehouse.mica.base.model.Protocol;
 import org.princehouse.mica.lib.abstractions.Overlay;
 
 import com.beust.jcommander.Parameter;
@@ -27,7 +28,8 @@ public class FindMinPull extends ExternalSelectProtocol {
 	}
 
 	@GossipUpdate
-	public void update(FindMinPull other) {
+	@Override
+	public void update(Protocol other) {
 		FindMinPull o = (FindMinPull) other;
 		int temp = Math.min(x, o.x);		
 		x = temp;

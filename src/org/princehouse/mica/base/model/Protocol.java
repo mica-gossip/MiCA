@@ -34,11 +34,6 @@ public interface Protocol {
 	 */
 	public double getRate();
 
-	/**
-	 * Execute the update function of this protocol on another local protocol instance
-	 * @param other
-	 */
-	public void executeUpdate(Protocol other);
 	
 	/** 
 	 * Not currently used
@@ -65,6 +60,13 @@ public interface Protocol {
 	 */
 	public void postUpdate();
 	
+	
+	/**
+	 * The update function
+	 * 
+	 * @param that
+	 */
+	public void update(Protocol that);
 	
 	/**
 	 * Called 

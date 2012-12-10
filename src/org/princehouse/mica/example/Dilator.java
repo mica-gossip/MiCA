@@ -38,13 +38,15 @@ public class Dilator extends BaseProtocol {
 	}
 	
 	@GossipUpdate
-	public void update(Dilator that) {
+	@Override
+	public void update(Protocol other) {
+		Dilator that = (Dilator) other;
 		for(int i = 0; i < dilationLevel; i++) {
 			if(getRuntimeState().getRandom().nextBoolean()) {
 				return;
 			}
 		}
-		p.executeUpdate(that.p);
+		p.update(that.p);
 	}
 	
 	@GossipRate

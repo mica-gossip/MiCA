@@ -363,18 +363,7 @@ public abstract class Runtime<P extends Protocol> {
 	public abstract Distribution<Address> getView(Protocol p)
 			throws SelectException;
 
-	/**
-	 * Run the gossip update on two local objects.
-	 * 
-	 * Not used by the runtime gossip mechanism, but useful for making composite
-	 * protocols, i.e., when a master protocol wants to run the update function
-	 * of a subprotocol.
-	 * 
-	 * @param p1
-	 * @param p2
-	 */
-	public abstract void executeUpdate(Protocol p1, Protocol p2);
-
+	
 	/**
 	 * Get the rate for a protocol
 	 * 

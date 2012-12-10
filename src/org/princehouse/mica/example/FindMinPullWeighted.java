@@ -8,6 +8,7 @@ import java.util.List;
 import org.princehouse.mica.base.BaseProtocol;
 import org.princehouse.mica.base.annotations.GossipUpdate;
 import org.princehouse.mica.base.annotations.View;
+import org.princehouse.mica.base.model.Protocol;
 import org.princehouse.mica.base.net.model.Address;
 import org.princehouse.mica.util.Distribution;
 
@@ -55,7 +56,8 @@ public class FindMinPullWeighted extends BaseProtocol implements Serializable {
 	}
 	
 	@GossipUpdate
-	public void update(FindMinPullWeighted other) {
+	@Override
+	public void update(Protocol other) {
 		FindMinPullWeighted o = (FindMinPullWeighted) other;
 		int temp = Math.min(x, o.x);		
 		x = temp;

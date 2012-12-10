@@ -7,6 +7,7 @@ import java.util.Set;
 import org.princehouse.mica.base.BaseProtocol;
 import org.princehouse.mica.base.annotations.GossipUpdate;
 import org.princehouse.mica.base.annotations.ViewUniformRandom;
+import org.princehouse.mica.base.model.Protocol;
 import org.princehouse.mica.base.net.model.Address;
 
 
@@ -28,7 +29,8 @@ public class FindMinSymmetric extends BaseProtocol implements Serializable {
 	}
 	
 	@GossipUpdate
-	public void update(FindMinSymmetric other) {
+	@Override
+	public void update(Protocol other) {
 		FindMinSymmetric o = (FindMinSymmetric) other;
 		int temp = Math.min(x, o.x);		
 		//System.out.printf("execute symmetric update (%s,%s):  (%d,%d) -> (%d,%d)\n", this, other, x, o.x, temp,temp );

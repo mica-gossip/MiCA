@@ -7,6 +7,7 @@ import java.util.List;
 import org.princehouse.mica.base.BaseProtocol;
 import org.princehouse.mica.base.annotations.GossipUpdate;
 import org.princehouse.mica.base.annotations.View;
+import org.princehouse.mica.base.model.Protocol;
 import org.princehouse.mica.base.net.model.Address;
 import org.princehouse.mica.lib.abstractions.RootedTree;
 import org.princehouse.mica.util.Distribution;
@@ -54,8 +55,9 @@ public class TreeLabelNodes extends BaseProtocol {
 	}
 	
 	@GossipUpdate 
-	public void update(TreeLabelNodes child) {
-
+	@Override
+	public void update(Protocol that) {
+		TreeLabelNodes child = (TreeLabelNodes) that;
 		if(tree.isRoot()) {
 			label = 1;
 		}

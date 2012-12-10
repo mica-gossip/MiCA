@@ -4,6 +4,7 @@ import org.princehouse.mica.base.BaseProtocol;
 import org.princehouse.mica.base.annotations.GossipRate;
 import org.princehouse.mica.base.annotations.GossipUpdate;
 import org.princehouse.mica.base.annotations.View;
+import org.princehouse.mica.base.model.Protocol;
 import org.princehouse.mica.base.net.model.Address;
 import org.princehouse.mica.util.Distribution;
 
@@ -44,8 +45,10 @@ public class ProtocolAdapter extends BaseProtocol {
 	}
 	
 	@GossipUpdate
-	public void update(ProtocolAdapter that) {
-		this.getProtocol().executeUpdate(that.getProtocol());
+	@Override
+	public void update(Protocol p) {
+		ProtocolAdapter that = (ProtocolAdapter) p;
+		this.getProtocol().update(that.getProtocol());
 	}
 	
 	@Override

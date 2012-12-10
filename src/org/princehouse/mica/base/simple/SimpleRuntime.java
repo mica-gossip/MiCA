@@ -462,13 +462,7 @@ public class SimpleRuntime<P extends Protocol> extends Runtime<P> implements
 		return compile(protocol).getRate(this, protocol);
 	}
 
-	@Override
-	public void executeUpdate(Protocol p1, Protocol p2) {
-		// TODO sanity check that p1, p2 are same types, or have a common parent
-		// class
-		SimpleRuntimeAgent<Protocol> agent = (SimpleRuntimeAgent<Protocol>) compile(p1);
-		agent.executeUpdate(this, p1, p2);
-	}
+	
 
 	private Compiler compiler = new SimpleCompiler();
 

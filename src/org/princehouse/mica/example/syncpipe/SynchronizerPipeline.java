@@ -7,8 +7,8 @@ import java.util.List;
 import org.princehouse.mica.base.BaseProtocol;
 import org.princehouse.mica.base.annotations.GossipUpdate;
 import org.princehouse.mica.base.annotations.View;
+import org.princehouse.mica.base.model.Protocol;
 import org.princehouse.mica.base.net.model.Address;
-import org.princehouse.mica.lib.abstractions.Overlay;
 import org.princehouse.mica.util.Functional;
 
 /**
@@ -69,7 +69,10 @@ public class SynchronizerPipeline<S extends Synchronizer> extends BaseProtocol {
 	}
 	
 	@GossipUpdate
-	public void update(SynchronizerPipeline<S> that) {
+	@Override
+	public void update(Protocol other) {
+		@SuppressWarnings("unchecked")
+		SynchronizerPipeline<S> that = (SynchronizerPipeline<S>) other;
 		// get vector of new values from that
 		List<Object> updateVector = that.getUpdateVector();
 		assert(updateVector.size() == k + 1);

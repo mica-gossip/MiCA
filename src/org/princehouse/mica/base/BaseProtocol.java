@@ -72,11 +72,6 @@ public abstract class BaseProtocol implements Protocol, Serializable {
 		return getRuntimeState().getAddress();
 	}
 
-	@Override
-	public void executeUpdate(Protocol other) {
-		Runtime.getRuntime().executeUpdate(this,other);
-	}
-
 	@Override 
 	public double getRate() {
 		return Runtime.getRuntime().getRate(this);

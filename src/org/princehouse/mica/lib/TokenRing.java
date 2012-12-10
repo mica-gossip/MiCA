@@ -3,6 +3,7 @@ package org.princehouse.mica.lib;
 import org.princehouse.mica.base.BaseProtocol;
 import org.princehouse.mica.base.annotations.GossipUpdate;
 import org.princehouse.mica.base.annotations.View;
+import org.princehouse.mica.base.model.Protocol;
 import org.princehouse.mica.base.net.model.Address;
 import org.princehouse.mica.lib.abstractions.LeaderElection;
 import org.princehouse.mica.lib.abstractions.NetworkSizeCounter;
@@ -90,7 +91,9 @@ public abstract class TokenRing extends BaseProtocol {
 	}
 
 	@GossipUpdate
-	public void update(TokenRing that) {
+	@Override
+	public void update(Protocol other) {
+		TokenRing that = (TokenRing) other;
 		int k = Math.max(1, kcount.size()) + 1;
 		counter %= k;
 		int thatCounter = that.counter % k;

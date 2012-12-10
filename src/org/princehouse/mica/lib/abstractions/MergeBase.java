@@ -118,7 +118,9 @@ public abstract class MergeBase extends BaseProtocol {
 	 * @param that
 	 */
 	@GossipUpdate
-	public void update(MergeBase that) {
+	@Override
+	public void update(Protocol p) {
+		MergeBase that = (MergeBase) p;
 		executeUpdateMerge(that, true);
 		
 	}
@@ -133,7 +135,7 @@ public abstract class MergeBase extends BaseProtocol {
 		if(i instanceof MergeBase) {
 			((MergeBase)i).executeUpdateMerge((MergeBase)r, false);
 		} else {
-			i.executeUpdate(r);
+			i.update(r);
 		}
 	}
 

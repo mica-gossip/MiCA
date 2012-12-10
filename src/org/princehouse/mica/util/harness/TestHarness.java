@@ -7,12 +7,12 @@ import java.util.List;
 import java.util.Random;
 import java.util.TimerTask;
 
+import org.princehouse.mica.base.a1.A1RuntimeInterface;
 import org.princehouse.mica.base.model.Protocol;
 import org.princehouse.mica.base.model.Runtime;
 import org.princehouse.mica.base.net.model.Address;
 import org.princehouse.mica.base.net.tcpip.TCPAddress;
 import org.princehouse.mica.base.sim.Simulator;
-import org.princehouse.mica.base.simple.SimpleRuntime;
 import org.princehouse.mica.base.simple.SimpleRuntimeInterface;
 import org.princehouse.mica.lib.abstractions.Overlay;
 import org.princehouse.mica.util.Functional;
@@ -79,7 +79,7 @@ public class TestHarness<Q extends Protocol> {
 		@Parameter(names = "-graphType", description = "Type of communication graph to use. Valid options: random, complete, singlering")
 		public String graphType = "random";
 
-		@Parameter(names = "-implementation", description = "Runtime implementation name. Valid options: simple, sim")
+		@Parameter(names = "-implementation", description = "Runtime implementation name. Valid options: simple, sim, a1")
 		public String implementation = "simple";
 
 		@Parameter(names = "-timeout", description = "Lock waiting timeout (ms)")
@@ -305,6 +305,8 @@ public class TestHarness<Q extends Protocol> {
 			runtimeInterface = new SimpleRuntimeInterface();
 		} else if(runtimeName.equals("sim")) {
 			runtimeInterface = Simulator.v();
+		} else if(runtimeName.equals("a1")) {
+			runtimeInterface = new A1RuntimeInterface();
 		}
 	}
 

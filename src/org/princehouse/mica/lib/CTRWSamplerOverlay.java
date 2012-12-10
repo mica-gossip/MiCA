@@ -10,6 +10,7 @@ import java.util.Set;
 import org.princehouse.mica.base.BaseProtocol;
 import org.princehouse.mica.base.annotations.GossipUpdate;
 import org.princehouse.mica.base.annotations.ViewUniformRandom;
+import org.princehouse.mica.base.model.Protocol;
 import org.princehouse.mica.base.net.model.Address;
 
 
@@ -62,7 +63,9 @@ public class CTRWSamplerOverlay extends BaseProtocol {
 	}
 	
 	@GossipUpdate
-	public void exchange(CTRWSamplerOverlay other) {
+	@Override
+	public void update(Protocol that) {
+		CTRWSamplerOverlay other = (CTRWSamplerOverlay) that;
 		SamplingMessage m = messages.poll(); 
 		if(m.finished()) {
 			other.samplePeer(this);

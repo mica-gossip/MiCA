@@ -10,6 +10,7 @@ import java.util.Set;
 import org.princehouse.mica.base.BaseProtocol;
 import org.princehouse.mica.base.annotations.GossipUpdate;
 import org.princehouse.mica.base.annotations.ViewUniformRandom;
+import org.princehouse.mica.base.model.Protocol;
 import org.princehouse.mica.base.net.model.Address;
 import org.princehouse.mica.lib.abstractions.Broadcast;
 import org.princehouse.mica.lib.abstractions.Overlay;
@@ -66,7 +67,10 @@ public abstract class NaiveBroadcast<Message extends Serializable> extends BaseP
 
 	
 	@GossipUpdate
-	public void update(NaiveBroadcast<Message> other) {
+	@Override
+	public void update(Protocol that) {
+		@SuppressWarnings("unchecked")
+		NaiveBroadcast<Message> other = (NaiveBroadcast<Message>) that;
 		Address oa = other.getAddress();
 		if(!sendQueues.containsKey(oa)) 
 			return;

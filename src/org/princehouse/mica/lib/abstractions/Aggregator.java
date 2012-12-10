@@ -92,7 +92,10 @@ public abstract class Aggregator<AgClass extends ExternalSelectProtocol, Summary
 	 * @param neighbor
 	 */
 	@GossipUpdate
-	public void update(AgClass neighbor) {
+	@Override
+	public void update(Protocol that) {
+		@SuppressWarnings("unchecked")
+		AgClass neighbor = (AgClass) that;
 		if (direction == Protocol.Direction.PULL
 				|| direction == Protocol.Direction.PUSHPULL) {
 			updatePull(neighbor);

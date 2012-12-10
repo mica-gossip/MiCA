@@ -7,6 +7,7 @@ import java.util.Set;
 import org.princehouse.mica.base.BaseProtocol;
 import org.princehouse.mica.base.annotations.GossipUpdate;
 import org.princehouse.mica.base.annotations.ViewUniformRandom;
+import org.princehouse.mica.base.model.Protocol;
 import org.princehouse.mica.base.model.Runtime;
 import org.princehouse.mica.base.net.model.Address;
 import org.princehouse.mica.base.net.tcpip.TCPAddress;
@@ -38,7 +39,9 @@ public class TestRuntimeStateProtocol extends BaseProtocol {
 	}
 
 	@GossipUpdate
-	public void update(TestRuntimeStateProtocol other) {
+	@Override
+	public void update(Protocol p) {
+		TestRuntimeStateProtocol other = (TestRuntimeStateProtocol) p;
 		
 		try {
 		System.out.printf("this address test: (%s,%s)   other address test: (%s,%s)   %s\n",

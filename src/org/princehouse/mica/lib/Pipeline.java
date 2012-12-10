@@ -2,6 +2,7 @@ package org.princehouse.mica.lib;
 
 import java.util.LinkedList;
 import java.util.List;
+
 import org.princehouse.mica.base.BaseProtocol;
 import org.princehouse.mica.base.annotations.GossipRate;
 import org.princehouse.mica.base.annotations.GossipUpdate;
@@ -141,10 +142,13 @@ public class Pipeline<P extends Protocol> extends BaseProtocol {
 	}
 
 	@GossipUpdate
-	public void update(Pipeline<P> that) {
+	@Override
+	public void update(Protocol other) {
+		@SuppressWarnings("unchecked")
+		Pipeline<P> that = (Pipeline<P>) other;
 		// TODO handle discrepancies in pipeline sizes that could arise from
 		// inconsistent k values
-		getMerged().executeUpdate(that.buildMerge());
+		getMerged().update(that.buildMerge());
 	}
 
 	@SuppressWarnings("unchecked")

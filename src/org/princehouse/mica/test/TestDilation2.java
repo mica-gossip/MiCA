@@ -24,10 +24,12 @@ public class TestDilation2 extends TestHarness<RoundRobinMerge> implements
 	@Override
 	public TestHarnessOptions defaultOptions() {
 		TestHarnessOptions options = super.defaultOptions();
-		options.n = 100;
-		options.graphType = "complete";
-		options.timeout = 5000;
-		options.roundLength = 10000;
+		options.n = 50;
+		options.graphType = "random";
+		options.rdegree = 8;
+		options.timeout = 4000;
+		options.roundLength = 4000;
+		options.stopAfter = 100;
 		return options;
 	}
 	
@@ -54,16 +56,10 @@ public class TestDilation2 extends TestHarness<RoundRobinMerge> implements
 		
 		Protocol p1 = subfactory.createProtocolInstance(nodeId, address, overlay);
 		Protocol p2 = subfactory.createProtocolInstance(nodeId, address, overlay);
-		Protocol p3 = subfactory.createProtocolInstance(nodeId, address, overlay);
-		Protocol p4 = subfactory.createProtocolInstance(nodeId, address, overlay);
 
-		p2 = Dilator.dilate(2,p2);
-		p3 = Dilator.dilate(3,p3);
-		p4 = Dilator.dilate(4,p4);
-		
-		return new RoundRobinMerge(
-				new RoundRobinMerge(p1,p2),
-				new RoundRobinMerge(p3,p4));
+		p2 = Dilator.dilate(4,p2);
+	
+		return new RoundRobinMerge(p1,p2);
 	}
 
 }

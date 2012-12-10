@@ -56,11 +56,13 @@ public class RoundRobinMerge extends BaseProtocol {
 	}
 	
 	@GossipUpdate 
-	public void update(RoundRobinMerge that) {
+	@Override
+	public void update(Protocol other) {
+		RoundRobinMerge that = (RoundRobinMerge) other;
 		if(!gossipP1) { // !gossipP1 because it gets flipped in preUpdate
-			p1.executeUpdate(that.p1);
+			p1.update(that.p1);
 		} else {
-			p2.executeUpdate(that.p2);
+			p2.update(that.p2);
 		}
 	}
 	

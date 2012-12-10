@@ -83,12 +83,6 @@ public class SimRuntime<P extends Protocol> extends Runtime<P> {
 		// TODO log message
 		return se.selected;
 	}
-	
-	@Override
-	public void executeUpdate(Protocol p1, Protocol p2) {
-		SimRuntimeAgent<Protocol> agent = (SimRuntimeAgent<Protocol>) compile(p1);
-		agent.executeUpdate(this, p1, p2);
-	}
 
 	@Override
 	public double getRate(Protocol protocol) {

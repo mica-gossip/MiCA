@@ -3,6 +3,7 @@ package org.princehouse.mica.test;
 import org.princehouse.mica.base.BaseProtocol;
 import org.princehouse.mica.base.annotations.GossipUpdate;
 import org.princehouse.mica.base.annotations.ViewUniformRandom;
+import org.princehouse.mica.base.model.Protocol;
 import org.princehouse.mica.base.net.model.Address;
 import org.princehouse.mica.lib.abstractions.Overlay;
 import org.princehouse.mica.util.harness.TestHarness;
@@ -44,7 +45,9 @@ public class TestLoggingRemoteLocal extends BaseProtocol {
 	}
 	
 	@GossipUpdate
-	public void update(TestLoggingRemoteLocal that) {
+	@Override
+	public void update(Protocol p) {
+		TestLoggingRemoteLocal that = (TestLoggingRemoteLocal) p;
 		this.logJson("log-this");
 		that.logJson("log-that");
 	}

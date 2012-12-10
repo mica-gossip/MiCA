@@ -1,13 +1,12 @@
 package org.princehouse.mica.example.dolev;
 
-import java.util.List;
 import java.util.Set;
 
 import org.princehouse.mica.base.BaseProtocol;
 import org.princehouse.mica.base.annotations.GossipUpdate;
 import org.princehouse.mica.base.annotations.View;
+import org.princehouse.mica.base.model.Protocol;
 import org.princehouse.mica.base.net.model.Address;
-import org.princehouse.mica.base.simple.SelectException;
 import org.princehouse.mica.lib.abstractions.Overlay;
 import org.princehouse.mica.util.Functional;
 
@@ -61,7 +60,9 @@ public class RoundManager extends BaseProtocol {
 	}
 
 	@GossipUpdate
-	public void update(RoundManager that) {
+	@Override
+	public void update(Protocol other) {
+		RoundManager that = (RoundManager) other;
 		reached.add(that.getAddress());
 		that.reached.add(this.getAddress());
 	}
