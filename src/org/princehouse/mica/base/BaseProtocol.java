@@ -101,15 +101,15 @@ public abstract class BaseProtocol implements Protocol, Serializable {
 	 * Convenience method for logging only an event type
 	 * @param eventType
 	 */
-	public void logJson(String eventType) {
-		getRuntime().logJson(eventType);
+	public void logJson(Object flags, String eventType) {
+		getRuntime().logJson(flags, eventType);
 	}
 	
-	public void logJson(String eventType, final Object obj) {
+	public void logJson(Object flags, String eventType, final Object obj) {
 //		InstanceLogObject logobj = new InstanceLogObject();
 //		logobj.data = obj;
 //		Runtime.getRuntime().logJson(getAddress(), eventType, logobj);
-		getRuntime().logJson(getAddress(), eventType, obj);
+		getRuntime().logJson(flags, getAddress(), eventType, obj);
 	}
 
 	/**

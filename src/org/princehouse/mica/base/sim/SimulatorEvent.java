@@ -32,7 +32,6 @@ public abstract class SimulatorEvent implements Comparable<SimulatorEvent> {
 								// event
 
 	public SimulatorEvent(Address src, Address dst) {
-		assert (src != null);
 		this.src = src;
 		this.dst = dst;
 	}

@@ -2,6 +2,7 @@ package org.princehouse.mica.example;
 
 import java.io.Serializable;
 
+import org.princehouse.mica.base.model.MicaOptions;
 import org.princehouse.mica.base.net.model.Address;
 import org.princehouse.mica.lib.MinAddressLeaderElection;
 import org.princehouse.mica.lib.Pipeline;
@@ -61,7 +62,7 @@ public class DemoTokenRingPipeline extends TestHarness<MergeCorrelated> implemen
 	 */
 	@Override
 	public void processOptions() {
-		TestHarness.TestHarnessOptions options = getOptions();
+		MicaOptions options = getOptions();
 		options.graphType = "singlering";
 		super.processOptions();
 	}

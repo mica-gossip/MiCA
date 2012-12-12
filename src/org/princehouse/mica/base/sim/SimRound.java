@@ -3,6 +3,7 @@ package org.princehouse.mica.base.sim;
 import static org.princehouse.mica.base.RuntimeErrorCondition.INITIATOR_LOCK_TIMEOUT;
 
 import org.princehouse.mica.base.BaseProtocol;
+import org.princehouse.mica.base.LogFlag;
 import org.princehouse.mica.base.exceptions.AbortRound;
 import org.princehouse.mica.base.exceptions.MicaRuntimeException;
 import org.princehouse.mica.base.model.Protocol;
@@ -118,7 +119,7 @@ public class SimRound {
 		}
 
 		public void onTimeout() throws MicaRuntimeException {
-			logJson(getSrc(), timeoutErrorMsg, null);
+			logJson(LogFlag.error, getSrc(), timeoutErrorMsg, null);
 		}
 
 		public abstract void onAcquireLock();
@@ -273,7 +274,7 @@ public class SimRound {
 				throw new AbortRound();
 			}
 
-			logJson(round.src, "mica-rate", rate);
+			logJson(LogFlag.rate, round.src, "mica-rate", rate);
 
 			int interval = simulator.getRuntime(round.src).getInterval();
 
@@ -287,9 +288,10 @@ public class SimRound {
 		}
 	}
 
-	protected void logJson(Address source, String msgType, Object payload) {
+	protected void logJson(Object flags, Address source, String msgType,
+			Object payload) {
 		((BaseProtocol) sim.getRuntime(source).getProtocolInstance()).logJson(
-				msgType, payload);
+				flags, msgType, payload);
 	}
 
 	public void reschedule(long sleepMs) {
@@ -309,7 +311,7 @@ public class SimRound {
 			stopwatch.reset();
 
 			SelectEvent se = rta.select();
-			logJson(getSrc(), "mica-select", se);
+			logJson(LogFlag.select, getSrc(), "mica-select", se);
 
 			round.dst = se.selected;
 			long t = stopwatch.elapsed();

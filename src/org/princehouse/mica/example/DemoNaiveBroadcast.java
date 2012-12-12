@@ -2,6 +2,7 @@ package org.princehouse.mica.example;
 
 import java.util.TimerTask;
 
+import org.princehouse.mica.base.LogFlag;
 import org.princehouse.mica.base.model.Runtime;
 import org.princehouse.mica.base.net.model.Address;
 import org.princehouse.mica.lib.NaiveBroadcast;
@@ -45,7 +46,7 @@ public class DemoNaiveBroadcast{
 		
 		@Override
 		public void receiveMessage(String m) {
-			logJson("receive-broadcast-message", m);
+			logJson(LogFlag.user, "receive-broadcast-message", m);
 		}
 		
 		

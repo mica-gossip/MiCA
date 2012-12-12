@@ -7,21 +7,23 @@ import java.util.List;
 import java.util.Random;
 import java.util.TimerTask;
 
+import org.princehouse.mica.base.LogFlag;
 import org.princehouse.mica.base.a1.A1RuntimeInterface;
 import org.princehouse.mica.base.model.MiCA;
 import org.princehouse.mica.base.model.Protocol;
 import org.princehouse.mica.base.model.Runtime;
 import org.princehouse.mica.base.model.RuntimeInterface;
+import org.princehouse.mica.base.model.MicaOptions;
 import org.princehouse.mica.base.net.model.Address;
 import org.princehouse.mica.base.net.tcpip.TCPAddress;
 import org.princehouse.mica.base.sim.Simulator;
 import org.princehouse.mica.base.simple.SimpleRuntimeInterface;
 import org.princehouse.mica.lib.abstractions.Overlay;
+import org.princehouse.mica.util.Array;
 import org.princehouse.mica.util.Functional;
 import org.princehouse.mica.util.SinglyLinkedRingGraph;
 
 import com.beust.jcommander.JCommander;
-import com.beust.jcommander.Parameter;
 
 import fj.F;
 import fj.F3;
@@ -43,51 +45,8 @@ public class TestHarness<Q extends Protocol> {
 
 	private RuntimeInterface runtimeInterface = null;
 	
-	public static class TestHarnessOptions {
-
-		@Parameter(names = "-stagger", description = "amount of time (ms) to stagger starting runtimes")
-		public int stagger = 10000;
-		
-		@Parameter(names = { "-log" }, description = "CSV Log file location (deprecated)")
-		public String logfile = "mica.log";
-
-		@Parameter(names = { "-logdir" }, description = "JSON log directory.  Default ./mica_log")
-		public String logdir = "mica_log";
-
-		@Parameter(names = { "-clearlogdir" }, description = "Delete pre-existing log files in logdir")
-		public Boolean clearLogdir = true;
-
-		@Parameter(names = "-n", description = "Number of nodes to run")
-		public Integer n = 25;
-
-		@Parameter(names = "-rdegree", description = "Degree of nodes in random graph. (Currently must be even).  Only used for graphType=random")
-		public Integer rdegree = 4;
-
-		@Parameter(names = "-port", description = "Starting port")
-		public Integer port = 8000;
-
-		@Parameter(names = "-host", description = "Host")
-		public String host = "localhost";
-
-		@Parameter(names = "-seed", description = "Random seed")
-		public Long seed = 0L;
-
-		@Parameter(names = "-round", description = "Round length (ms)")
-		public int roundLength = 5000;
-
-		@Parameter(names = "-stopAfter", description = "Halt simulation after this many rounds (0 = run forever)")
-		public double stopAfter = 0;
-
-		@Parameter(names = "-graphType", description = "Type of communication graph to use. Valid options: random, complete, singlering")
-		public String graphType = "random";
-
-		@Parameter(names = "-implementation", description = "Runtime implementation name. Valid options: simple, sim, a1")
-		public String implementation = "simple";
-
-		@Parameter(names = "-timeout", description = "Lock waiting timeout (ms)")
-		public int timeout = 5000;
-	}
-
+	public static final String LOG_NAMES = Array.join(", ", LogFlag.values());
+	
 	private List<P2<Long, TimerTask>> timers = Functional.list();
 
 	public void addTimer(long time, TimerTask task) {
@@ -147,7 +106,7 @@ public class TestHarness<Q extends Protocol> {
 		for (Address addr : g.getAddresses()) {
 			Overlay neighbors = g.getOverlay(addr);
 			Q pinstance = factory.createProtocolInstance(i++, addr, neighbors);
-			TestHarnessOptions options = getOptions();
+			MicaOptions options = getOptions();
 			int stagger = rng.nextInt(options.stagger);
 			int lockTimeout = options.timeout;
 			long seed = getRandom().nextLong();
@@ -236,18 +195,18 @@ public class TestHarness<Q extends Protocol> {
 		harness.runMain(argv, factory);
 	}
 
-	public TestHarnessOptions defaultOptions() {
-		return new TestHarnessOptions();
+	public MicaOptions defaultOptions() {
+		return new MicaOptions();
 	}
 
-	public TestHarnessOptions parseOptions(String[] argv) {
-		TestHarnessOptions options = defaultOptions();
+	public MicaOptions parseOptions(String[] argv) {
+		MicaOptions options = defaultOptions();
 		new JCommander(options, argv); // parse command line options
 		return options;
 	}
 
 	public void runMain(String[] argv, ProtocolInstanceFactory<Q> factory) {
-		TestHarnessOptions options = parseOptions(argv);
+		MicaOptions options = parseOptions(argv);
 		runMain(options, factory);
 	}
 
@@ -255,7 +214,7 @@ public class TestHarness<Q extends Protocol> {
 		@SuppressWarnings("unchecked")
 		// will throw an invalid cast exception of this harness doesn't implement ProtocolInstanceFactory<Q>
 		ProtocolInstanceFactory<Q> factory = (ProtocolInstanceFactory<Q>) this;
-		TestHarnessOptions options = parseOptions(argv);
+		MicaOptions options = parseOptions(argv);
 		runMain(options, factory);
 	}
 
@@ -293,13 +252,13 @@ public class TestHarness<Q extends Protocol> {
 		this.graph = graph;
 	}
 
-	private TestHarnessOptions options = null;
+	private MicaOptions options = null;
 
-	public TestHarnessOptions getOptions() {
+	public MicaOptions getOptions() {
 		return options;
 	}
 
-	private void setOptions(TestHarnessOptions options) {
+	private void setOptions(MicaOptions options) {
 		this.options = options;	
 		// validate options and do option processing...
 		String runtimeName = options.implementation;
@@ -311,10 +270,12 @@ public class TestHarness<Q extends Protocol> {
 			runtimeInterface = new A1RuntimeInterface();
 		}
 		MiCA.setRuntimeInterface(runtimeInterface);
+		MiCA.setOptions(options);
 	}
 
+	@SuppressWarnings({ "unchecked", "rawtypes" })
 	public void processOptions() {
-		TestHarnessOptions options = getOptions();
+		MicaOptions options = getOptions();
 
 		if (options.stopAfter > 0) {
 			addTimerRounds(options.stopAfter, taskStop());
@@ -345,6 +306,11 @@ public class TestHarness<Q extends Protocol> {
 		if (options.clearLogdir) {
 			clearLogdir();
 		}
+		
+		// logging options
+		LogFlag.setCurrentLogMask(LogFlag.set(LogFlag.getCurrentLogMask(), (List) options.logsEnable));
+		LogFlag.setCurrentLogMask(LogFlag.unset(LogFlag.getCurrentLogMask(), (List) options.logsDisable));
+
 	}
 
 	/**
@@ -369,7 +335,7 @@ public class TestHarness<Q extends Protocol> {
 		}
 	}
 
-	public void runMain(TestHarnessOptions options,
+	public void runMain(MicaOptions options,
 			ProtocolInstanceFactory<Q> factory) {
 		assert (options != null);
 		setOptions(options);

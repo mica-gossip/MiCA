@@ -23,6 +23,11 @@ public class SimRuntime<P extends Protocol> extends Runtime<P> {
 	public SimRuntime(Address address) {
 		setAddress(address);
 	}
+
+	@Override
+	public String getLogFilename() {
+		return "sim.log";
+	}
 	
 	@Override
 	public ReentrantLock getProtocolInstanceLock() {

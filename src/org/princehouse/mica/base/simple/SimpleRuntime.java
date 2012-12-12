@@ -17,6 +17,7 @@ import java.util.Random;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.ReentrantLock;
 
+import org.princehouse.mica.base.LogFlag;
 import org.princehouse.mica.base.MalformedViewException;
 import org.princehouse.mica.base.RuntimeErrorCondition;
 import org.princehouse.mica.base.exceptions.AbortRound;
@@ -31,7 +32,6 @@ import org.princehouse.mica.base.net.model.AcceptConnectionHandler;
 import org.princehouse.mica.base.net.model.Address;
 import org.princehouse.mica.base.net.model.Connection;
 import org.princehouse.mica.base.net.model.NotBoundException;
-import org.princehouse.mica.example.FindMinPull;
 import org.princehouse.mica.util.Distribution;
 import org.princehouse.mica.util.Logging;
 import org.princehouse.mica.util.WeakHashSet;
@@ -209,7 +209,7 @@ public class SimpleRuntime<P extends Protocol> extends Runtime<P> implements
 					return;
 				}
 				// failed to acquire lock; timeout
-				logJson("mica-error-accept-connection"); // sim-ok
+				logJson(LogFlag.error, "mica-error-accept-connection"); // sim-ok
 				System.err.printf(
 						"%s accept: failed to acquire lock (timeout)\n", this);
 				connection.close();
@@ -235,7 +235,7 @@ public class SimpleRuntime<P extends Protocol> extends Runtime<P> implements
 		try {
 			address.bind(this);
 		} catch (IOException e1) {
-			logJson("mica-error-internal", e1);
+			logJson(LogFlag.error, "mica-error-internal", e1);
 			try {
 				handleError(BIND_ADDRESS_EXCEPTION);
 			} catch (FatalErrorHalt e) {
@@ -259,7 +259,7 @@ public class SimpleRuntime<P extends Protocol> extends Runtime<P> implements
 				Address partner = null;
 
 				try {
-					logJson("mica-rate", rate); // sim-ok
+					logJson(LogFlag.rate, "mica-rate", rate); // sim-ok
 
 					int intervalLength = (int) (((double) intervalMS) / rate);
 					if (intervalLength <= 0) {
@@ -293,7 +293,7 @@ public class SimpleRuntime<P extends Protocol> extends Runtime<P> implements
 
 						partner = se.selected;
 
-						logJson("mica-select", se); // sim-ok
+						logJson(LogFlag.select, "mica-select", se); // sim-ok
 
 						try {
 							// preUpdate is called even if partner is

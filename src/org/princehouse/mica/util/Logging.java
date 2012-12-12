@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.lang.reflect.Type;
 import java.util.HashMap;
 
+import org.princehouse.mica.base.LogFlag;
 import org.princehouse.mica.base.model.Protocol;
 import org.princehouse.mica.base.net.model.Address;
 
@@ -23,17 +24,12 @@ import com.google.gson.stream.JsonWriter;
 /**
  * Contains subclasses for custom log events
  * 
+ * Note: The "current" preferences for logging are stored in LogFlag.currentLogMask
+ * 
  * @author lonnie
  * 
  */
 public class Logging {
-
-	// if true, the current view will be evaluated and recorded every time state
-	// is recorded
-	public static boolean LOG_VIEW = true;
-
-	// if true, current state will be included in logs
-	public static boolean LOG_STATE = true;
 
 	public static class SelectEvent {
 		public Address selected = null;
@@ -130,7 +126,7 @@ public class Logging {
 						obj.addProperty("stateType", src.getClass()
 								.getSimpleName());
 
-						if (LOG_STATE) {
+						if (LogFlag.state.test()) {
 							TypeAdapter<T> originalProtAdapter = null;
 							synchronized (originalAdapterCache) {
 								if (originalAdapterCache.containsKey(type)) {
@@ -147,7 +143,7 @@ public class Logging {
 									originalProtAdapter.toJsonTree(src));
 						}
 
-						if (LOG_VIEW) {
+						if (LogFlag.view.test()) {
 							obj.add("view",
 									gson.toJsonTree(((Protocol) src).getView()));
 						}

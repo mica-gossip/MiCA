@@ -147,9 +147,9 @@ public class Simulator implements RuntimeInterface {
 
 		assert(e.t >= getClock());
 		
-		if (queue == eventQueue) {
-			SimRuntime.debug.printf("    schedule @ %d: %s\n", e.t, e.toString());
-		}
+		//if (queue == eventQueue) {
+		//	SimRuntime.debug.printf("    schedule @ %d: %s\n", e.t, e.toString());
+		//}
 		boolean added = false;
 
 		for (ListIterator<SimulatorEvent> it = queue.listIterator(queue.size()); it
@@ -162,7 +162,7 @@ public class Simulator implements RuntimeInterface {
 			}
 		}
 
-		// FIXME remove call to drastically speed things up...
+		// sanity check
 		//assert(queueIsCorrectlySorted(queue));
 		
 		if (!added) {
@@ -203,6 +203,9 @@ public class Simulator implements RuntimeInterface {
 		running = true;
 		setClock(0L);
 		
+		StopWatch simtimer = new StopWatch();
+		simtimer.reset();
+		
 		while (running) {
 			SimulatorEvent e = getNextEvent();
 			if (e == null) {
@@ -228,6 +231,9 @@ public class Simulator implements RuntimeInterface {
 			}
 		}
 		running = false;
+		
+		double sfac = ((double)getClock())/((double)simtimer.elapsed()+1);
+		SimRuntime.debug.printf("Simulator stopped @%d; speed-up factor of %f\n", getClock(), sfac);
 	}
 
 	protected void stopRuntime(SimRuntime<?> rt) {
@@ -283,7 +289,7 @@ public class Simulator implements RuntimeInterface {
 
 	@Override
 	public void scheduleTask(long delay, TimerTask task) {
-		throw new RuntimeException("not implemented in sim runtime");
+		this.scheduleRelative(new TimerEvent(null, task), delay);
 	}
 
 	@Override

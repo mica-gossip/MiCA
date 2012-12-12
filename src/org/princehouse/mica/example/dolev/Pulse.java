@@ -1,15 +1,24 @@
 package org.princehouse.mica.example.dolev;
 
+import static org.princehouse.mica.example.dolev.LSSMMessage.MessageSource.DIRECT;
+import static org.princehouse.mica.example.dolev.LSSMMessage.MessageSource.INDIRECT;
+import static org.princehouse.mica.example.dolev.PulseState.COLLECT;
+import static org.princehouse.mica.example.dolev.PulseState.DOORWAY;
+import static org.princehouse.mica.example.dolev.PulseState.ENTRY;
+import static org.princehouse.mica.example.dolev.PulseState.PROPOSE;
+import static org.princehouse.mica.example.dolev.PulseState.PULSE;
+import static org.princehouse.mica.example.dolev.PulseState.READY;
+import static org.princehouse.mica.example.dolev.PulseState.RECOVER;
+import static org.princehouse.mica.example.dolev.PulseState.WAIT;
+
 import java.util.List;
 import java.util.Set;
 
-import static org.princehouse.mica.example.dolev.LSSMMessage.MessageSource.*;
+import org.princehouse.mica.base.LogFlag;
 import org.princehouse.mica.example.dolev.LSSMMessage.MessageSource;
-
 import org.princehouse.mica.lib.abstractions.Overlay;
 import org.princehouse.mica.util.Array;
 import org.princehouse.mica.util.Functional;
-import static org.princehouse.mica.example.dolev.PulseState.*;
 
 /*
  *
@@ -105,7 +114,7 @@ public class Pulse extends LogStructuredStateMachine {
 			// manipulation of log should go here.
 			// executed before new state is set
 			if (dst.equals(PulseState.PULSE)) {
-				node.logJson("pulse-pulse");
+				node.logJson(LogFlag.user, "pulse-pulse");
 			}
 		}
 

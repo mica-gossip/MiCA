@@ -11,6 +11,7 @@ import java.util.Date;
 import java.util.Random;
 import java.util.concurrent.locks.ReentrantLock;
 
+import org.princehouse.mica.base.LogFlag;
 import org.princehouse.mica.base.RuntimeErrorCondition;
 import org.princehouse.mica.base.RuntimeErrorResponse;
 import org.princehouse.mica.base.exceptions.AbortRound;
@@ -80,17 +81,24 @@ public abstract class Runtime<P extends Protocol> {
 	// json log file for this runtime instance
 	private File logfile = null;
 
-	// initial value; can be changed with command line options
-	private File logDirectory = new File("mica_log");
 
+	public String getLogFilename() {
+		String s = String.format("%s.log", getAddress().toString());
+		s = s.replace("/","_");
+		return s;
+	}
+	
+	public File getLogDirectory() {
+		return new File(MiCA.getOptions().logdir);
+	}
+	
 	public File getLogFile() {
+		File logDirectory = getLogDirectory();
 		if (logfile == null) {
 			if (!logDirectory.exists()) {
 				logDirectory.mkdirs();
 			}
-			String addr = getAddress().toString();
-			addr = addr.replace("/", "_");
-			logfile = new File(logDirectory, String.format("%s.log", addr));
+			logfile = new File(logDirectory, getLogFilename());
 		}
 		return logfile;
 	}
@@ -99,7 +107,8 @@ public abstract class Runtime<P extends Protocol> {
 		this.logfile = logfile;
 	}
 
-	public void setLogDirectory(File logDirectory, boolean create) {
+	
+	/*public void setLogDirectory(File logDirectory, boolean create) {
 		if (create && !logDirectory.exists()) {
 			logDirectory.mkdirs();
 		}
@@ -109,7 +118,7 @@ public abstract class Runtime<P extends Protocol> {
 					"Log directory %s does not exist", logDirectory));
 		}
 		this.logDirectory = logDirectory;
-	}
+	} */
 
 	// private long runtimeStartingTimestamp = 0;
 
@@ -138,20 +147,32 @@ public abstract class Runtime<P extends Protocol> {
 		}
 	}
 
-	public void logJson(final String eventType) {
-		logJson(eventType, null);
+	public void logJson(Object logMask, final String eventType) {
+		logJson(logMask, eventType, null);
 	}
 
-	public void logJson(final String eventType, final Object theEvent) {
-		logJson(getAddress(), eventType, theEvent);
+	public void logJson(Object logMask, final String eventType, final Object theEvent) {
+		logJson(logMask, getAddress(), eventType, theEvent);
 	}
 
-	public void logJson(final Address origin, final String eventType,
+	/**
+	 * 
+	 * @param logMask  Conjunctive bitmask: All log flags in the mask must be set in LogFlag.currentLogMask in order for this message to print
+	 *                     May either be an Integer, which is interpreted as a set of bit flags, or a LogFlag enum object, which is interpreted as
+	 *                     the bit mask for that flag.
+	 * @param origin Address originating the message
+	 * @param eventType 
+	 * @param theEvent
+	 */
+	public void logJson(Object logMask, final Address origin, final String eventType,
 			final Object theEvent) {
 
 		if (!Runtime.LOGGING_JSON)
 			return;
-
+		
+		if(!LogFlag.testConjunctive(logMask)) 
+			return;
+		
 		runtimeLoglock.lock();
 
 		File logfile = getLogFile();
@@ -235,14 +256,22 @@ public abstract class Runtime<P extends Protocol> {
 	 * It writes a log message with runtime configuration parameters
 	 */
 	public void initLog() {
+		File logDirectory = getLogDirectory();
+		
+		if(!logDirectory.exists()) {
+			logDirectory.mkdir();
+		}
+		
 		// clear old log
 		File logfile = this.getLogFile();
+		
+		
 		if (logfile.exists()) {
 			logfile.delete();
 		}
 		int intervalMS = getInterval();
 		long randomSeed = Randomness.getSeed(getRandom());
-		logJson("mica-runtime-init", Functional.<String, Object> mapFromPairs(
+		logJson(LogFlag.init, "mica-runtime-init", Functional.<String, Object> mapFromPairs(
 				"round_ms", intervalMS, "random_seed", randomSeed));
 	};
 
@@ -351,13 +380,13 @@ public abstract class Runtime<P extends Protocol> {
 
 	public void handleError(RuntimeErrorCondition condition, Object payload)
 			throws FatalErrorHalt, AbortRound {
-		logJson("mica-error-internal", payload);
+		logJson(LogFlag.error, "mica-error-internal", payload);
 		handleError(condition);
 	}
 
 	public void handleError(RuntimeErrorCondition condition, String msg,
 			Object payload) throws FatalErrorHalt, AbortRound {
-		logJson("mica-error-internal", new Object[] { msg, payload });
+		logJson(LogFlag.error, "mica-error-internal", new Object[] { msg, payload });
 		handleError(condition);
 	}
 
@@ -402,7 +431,7 @@ public abstract class Runtime<P extends Protocol> {
 	}
 
 	public void logState(String label) {
-		logJson("mica-state-" + label, getProtocolInstance().getLogState());
+		logJson(LogFlag.state, "mica-state-" + label, getProtocolInstance().getLogState());
 	}
 
 	public void setRandomSeed(Long seed) {

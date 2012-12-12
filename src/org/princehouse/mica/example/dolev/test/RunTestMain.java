@@ -2,6 +2,7 @@ package org.princehouse.mica.example.dolev.test;
 
 import java.util.List;
 
+import org.princehouse.mica.base.model.MicaOptions;
 import org.princehouse.mica.base.net.model.Address;
 import org.princehouse.mica.base.simple.SelectException;
 import org.princehouse.mica.lib.abstractions.Overlay;
@@ -10,7 +11,6 @@ import org.princehouse.mica.util.Functional;
 import org.princehouse.mica.util.Randomness;
 import org.princehouse.mica.util.harness.TestHarness;
 import org.princehouse.mica.util.harness.TestHarness.ProtocolInstanceFactory;
-import org.princehouse.mica.util.harness.TestHarness.TestHarnessOptions;
 
 /**
  * Test the pulse protocol
@@ -28,7 +28,7 @@ public class RunTestMain {
 	public static void main(String[] args) {
 		final TestHarness<TestStateMachine> harness = new TestHarness<TestStateMachine>();
 		
-		TestHarnessOptions options = harness.parseOptions(args);
+		MicaOptions options = harness.parseOptions(args);
 		options.graphType = "complete";
 		
 		final int f = options.n / 4;

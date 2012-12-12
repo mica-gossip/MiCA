@@ -1,6 +1,7 @@
 package org.princehouse.mica.test;
 
 import org.princehouse.mica.base.BaseProtocol;
+import org.princehouse.mica.base.LogFlag;
 import org.princehouse.mica.base.annotations.GossipUpdate;
 import org.princehouse.mica.base.annotations.ViewUniformRandom;
 import org.princehouse.mica.base.model.Protocol;
@@ -48,8 +49,8 @@ public class TestLoggingRemoteLocal extends BaseProtocol {
 	@Override
 	public void update(Protocol p) {
 		TestLoggingRemoteLocal that = (TestLoggingRemoteLocal) p;
-		this.logJson("log-this");
-		that.logJson("log-that");
+		this.logJson(LogFlag.user, "log-this");
+		that.logJson(LogFlag.user, "log-that");
 	}
 	
 	/** 

@@ -8,6 +8,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import org.princehouse.mica.base.LogFlag;
 import org.princehouse.mica.base.annotations.GossipUpdate;
 import org.princehouse.mica.base.net.model.Address;
 import org.princehouse.mica.lib.abstractions.Overlay;
@@ -235,7 +236,7 @@ public abstract class LogStructuredStateMachine extends RoundManager {
 	public void postUpdate() {
 
 		if (ready()) {
-			logJson("lssm-ready");
+			logJson(LogFlag.user, "lssm-ready");
 			reset();
 			doRound();
 		} else {
@@ -308,7 +309,7 @@ public abstract class LogStructuredStateMachine extends RoundManager {
 		}
 
 		if (completedTransitions == 0) {
-			logJson("lssm-error-no-transitions");
+			logJson(LogFlag.user, "lssm-error-no-transitions");
 		}
 	}
 
@@ -327,7 +328,7 @@ public abstract class LogStructuredStateMachine extends RoundManager {
 
 		s -= log.size();
 		if (s > 0) {
-			this.logJson("purged-log-messages", s);
+			this.logJson(LogFlag.user, "purged-log-messages", s);
 		}
 	}
 }

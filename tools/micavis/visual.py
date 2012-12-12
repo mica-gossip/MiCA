@@ -218,11 +218,11 @@ class IGraphDrawingArea(gtk.DrawingArea):
         self.display_layers = [
             NodesLayer(self,True),
             CommunicationGraphLayer(self, False),
-            CurrentViewLayer(self, True),
-            GossipExchangeLayer(self, True),
+            CurrentViewLayer(self, False),
+            GossipExchangeLayer(self, False),
             CurrentStateLayer(self, True),
             CurrentEventApertureLayer(self, False),
-            CurrentEventLayer(self, True)
+            CurrentEventLayer(self, False)
             ]
 
     def expose(self, widget, event):

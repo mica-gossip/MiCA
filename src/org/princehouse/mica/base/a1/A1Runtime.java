@@ -17,6 +17,7 @@ import java.util.Random;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.ReentrantLock;
 
+import org.princehouse.mica.base.LogFlag;
 import org.princehouse.mica.base.MalformedViewException;
 import org.princehouse.mica.base.RuntimeErrorCondition;
 import org.princehouse.mica.base.exceptions.AbortRound;
@@ -209,7 +210,7 @@ public class A1Runtime<P extends Protocol> extends Runtime<P> implements
 					return;
 				}
 				// failed to acquire lock; timeout
-				logJson("mica-error-accept-connection");
+				logJson(LogFlag.error, "mica-error-accept-connection");
 				System.err.printf(
 						"%s accept: failed to acquire lock (timeout)\n", this);
 				connection.close();
@@ -235,7 +236,7 @@ public class A1Runtime<P extends Protocol> extends Runtime<P> implements
 		try {
 			address.bind(this);
 		} catch (IOException e1) {
-			logJson("mica-error-internal", e1);
+			logJson(LogFlag.error, "mica-error-internal", e1);
 			try {
 				handleError(BIND_ADDRESS_EXCEPTION);
 			} catch (FatalErrorHalt e) {
@@ -259,7 +260,7 @@ public class A1Runtime<P extends Protocol> extends Runtime<P> implements
 				Address partner = null;
 
 				try {
-					logJson("mica-rate", rate);
+					logJson(LogFlag.rate, "mica-rate", rate);
 
 					int intervalLength = (int) (((double) intervalMS) / rate);
 					if (intervalLength <= 0) {
@@ -292,7 +293,7 @@ public class A1Runtime<P extends Protocol> extends Runtime<P> implements
 
 						partner = se.selected;
 
-						logJson("mica-select", se);
+						logJson(LogFlag.select, "mica-select", se);
 
 						try {
 							// preUpdate is called even if partner is

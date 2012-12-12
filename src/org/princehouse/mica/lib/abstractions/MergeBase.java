@@ -3,6 +3,7 @@ package org.princehouse.mica.lib.abstractions;
 import java.util.List;
 
 import org.princehouse.mica.base.BaseProtocol;
+import org.princehouse.mica.base.LogFlag;
 import org.princehouse.mica.base.annotations.GossipUpdate;
 import org.princehouse.mica.base.model.Protocol;
 import org.princehouse.mica.base.net.model.Address;
@@ -183,7 +184,7 @@ public abstract class MergeBase extends BaseProtocol {
 				outstr += String.format("%s:%s", temp._1(), temp._2());				
 			}
 			
-			logJson("merge-execute-subprotocols", outstr);
+			logJson(LogFlag.merge, "merge-execute-subprotocols", outstr);
 		}
 	}
 

@@ -2,6 +2,7 @@ package org.princehouse.mica.test;
 
 import java.net.UnknownHostException;
 
+import org.princehouse.mica.base.model.MicaOptions;
 import org.princehouse.mica.base.model.Protocol;
 import org.princehouse.mica.base.net.model.Address;
 import org.princehouse.mica.example.Dilator;
@@ -22,8 +23,8 @@ public class TestDilation2 extends TestHarness<RoundRobinMerge> implements
 
 
 	@Override
-	public TestHarnessOptions defaultOptions() {
-		TestHarnessOptions options = super.defaultOptions();
+	public MicaOptions defaultOptions() {
+		MicaOptions options = super.defaultOptions();
 		options.n = 50;
 		options.graphType = "random";
 		options.rdegree = 8;
