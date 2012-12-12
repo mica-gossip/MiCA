@@ -8,8 +8,10 @@ import java.util.Random;
 import java.util.TimerTask;
 
 import org.princehouse.mica.base.a1.A1RuntimeInterface;
+import org.princehouse.mica.base.model.MiCA;
 import org.princehouse.mica.base.model.Protocol;
 import org.princehouse.mica.base.model.Runtime;
+import org.princehouse.mica.base.model.RuntimeInterface;
 import org.princehouse.mica.base.net.model.Address;
 import org.princehouse.mica.base.net.tcpip.TCPAddress;
 import org.princehouse.mica.base.sim.Simulator;
@@ -308,6 +310,7 @@ public class TestHarness<Q extends Protocol> {
 		} else if(runtimeName.equals("a1")) {
 			runtimeInterface = new A1RuntimeInterface();
 		}
+		MiCA.setRuntimeInterface(runtimeInterface);
 	}
 
 	public void processOptions() {
@@ -320,7 +323,12 @@ public class TestHarness<Q extends Protocol> {
 		// initialize random number generator
 		rng = new Random(options.seed);
 
-		F<Integer, Address> addressFunc = defaultAddressFunc;
+		F<Integer, Address> addressFunc = runtimeInterface.getAddressFunc();
+				
+		if(addressFunc == null) {
+			addressFunc = defaultAddressFunc;
+		}
+		
 		List<Address> addresses = Functional.list(Functional.map(
 				Functional.range(options.n), addressFunc));
 

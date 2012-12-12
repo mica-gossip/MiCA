@@ -7,11 +7,14 @@ import java.util.Map;
 import java.util.Timer;
 import java.util.TimerTask;
 
+import org.princehouse.mica.base.model.MiCA;
 import org.princehouse.mica.base.model.Protocol;
 import org.princehouse.mica.base.model.Runtime;
+import org.princehouse.mica.base.model.RuntimeInterface;
 import org.princehouse.mica.base.net.model.Address;
 import org.princehouse.mica.util.Functional;
-import org.princehouse.mica.util.harness.RuntimeInterface;
+
+import fj.F;
 
 public class SimpleRuntimeInterface implements RuntimeInterface {
 	private List<Runtime<?>> runtimes = Functional.list();
@@ -24,7 +27,7 @@ public class SimpleRuntimeInterface implements RuntimeInterface {
 
 		Runtime<P> rt = new SimpleRuntime<P>(address);
 
-		Runtime.setRuntime(rt); // tell the runtime mechanism that this is
+		MiCA.getRuntimeInterface().setRuntime(rt); // tell the runtime mechanism that this is
 								// the current runtime when the protocol is
 								// started
 
@@ -33,7 +36,8 @@ public class SimpleRuntimeInterface implements RuntimeInterface {
 		rt.setRandomSeed(randomSeed);
 		rt.setRoundLength(roundLength);
 		rt.setLockWaitTimeout(lockTimeout);
-		Runtime.setRuntime(null);
+		MiCA.getRuntimeInterface().setRuntime(null);
+
 		runtimes.add(rt);
 	}
 
@@ -63,9 +67,9 @@ public class SimpleRuntimeInterface implements RuntimeInterface {
 				e.printStackTrace();
 			}
 			t0 = t1;
-			Runtime.setRuntime(rt);
+			MiCA.getRuntimeInterface().setRuntime(rt);
 			rt.start();
-			Runtime.setRuntime(null);
+			MiCA.getRuntimeInterface().setRuntime(null);
 		}
 		
 		try {
@@ -95,5 +99,24 @@ public class SimpleRuntimeInterface implements RuntimeInterface {
 		Timer timer = new Timer(true);
 		timer.schedule(task, delay);
 	}
+	
+	@Override
+	public <T extends Protocol> Runtime<T> getRuntime(Protocol p) {
+		return ThreadLocalRuntimeMechanism.getRuntime();
+	}
 
+	@Override
+	public <T extends Protocol> void setRuntime(Runtime<T> rt) {
+		ThreadLocalRuntimeMechanism.setRuntime(rt);
+	}
+
+	@Override
+	public F<Integer, Address> getAddressFunc() {
+		return null;
+	}
+	
+
+
+
+	
 }

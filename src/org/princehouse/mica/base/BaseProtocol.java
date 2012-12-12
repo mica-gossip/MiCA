@@ -6,6 +6,7 @@ import java.io.ObjectInputStream;
 import java.io.Serializable;
 
 import org.princehouse.mica.base.annotations.GossipRate;
+import org.princehouse.mica.base.model.MiCA;
 import org.princehouse.mica.base.model.Protocol;
 import org.princehouse.mica.base.model.Runtime;
 import org.princehouse.mica.base.model.RuntimeState;
@@ -42,7 +43,7 @@ public abstract class BaseProtocol implements Protocol, Serializable {
 
 	@Override
 	public final RuntimeState getRuntimeState() {
-		return Runtime.getRuntime().getRuntimeState(this);
+		return getRuntime().getRuntimeState(this);
 	}
 
 	@Override
@@ -57,11 +58,13 @@ public abstract class BaseProtocol implements Protocol, Serializable {
 	@Override
 	final public Distribution<Address> getView() {
 		try {
-			return Runtime.getRuntime().getView(this);
+			return getRuntime().getView(this);
 		} catch (SelectException e) {
 			throw new RuntimeException(e);
 		}
 	}
+	
+	
 
 
 	/**
@@ -74,7 +77,7 @@ public abstract class BaseProtocol implements Protocol, Serializable {
 
 	@Override 
 	public double getRate() {
-		return Runtime.getRuntime().getRate(this);
+		return getRuntime().getRate(this);
 	}
 
 	// TODO "local_timestamp":  Is that in ms or rounds?
@@ -99,14 +102,14 @@ public abstract class BaseProtocol implements Protocol, Serializable {
 	 * @param eventType
 	 */
 	public void logJson(String eventType) {
-		Runtime.getRuntime().logJson(eventType);
+		getRuntime().logJson(eventType);
 	}
 	
 	public void logJson(String eventType, final Object obj) {
 //		InstanceLogObject logobj = new InstanceLogObject();
 //		logobj.data = obj;
 //		Runtime.getRuntime().logJson(getAddress(), eventType, logobj);
-		Runtime.getRuntime().logJson(getAddress(), eventType, obj);
+		getRuntime().logJson(getAddress(), eventType, obj);
 	}
 
 	/**
@@ -130,5 +133,10 @@ public abstract class BaseProtocol implements Protocol, Serializable {
 	
 	@Override
 	public void postUpdate() {}
+	
+	@Override
+	public <T extends Protocol> Runtime<T> getRuntime() {
+		return MiCA.getRuntimeInterface().getRuntime(this);
+	}
 	
 }

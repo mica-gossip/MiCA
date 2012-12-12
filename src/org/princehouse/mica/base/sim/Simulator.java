@@ -1,18 +1,23 @@
 package org.princehouse.mica.base.sim;
 
+import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.ListIterator;
 import java.util.Map;
-import java.util.Set;
 import java.util.TimerTask;
 
-import org.princehouse.mica.base.exceptions.AbortRound;
-import org.princehouse.mica.base.exceptions.FatalErrorHalt;
+import org.princehouse.mica.base.exceptions.MicaRuntimeException;
 import org.princehouse.mica.base.model.Protocol;
+import org.princehouse.mica.base.model.Runtime;
+import org.princehouse.mica.base.model.RuntimeInterface;
 import org.princehouse.mica.base.model.RuntimeState;
+import org.princehouse.mica.base.net.dummy.DummyAddress;
 import org.princehouse.mica.base.net.model.Address;
 import org.princehouse.mica.util.Functional;
-import org.princehouse.mica.util.harness.RuntimeInterface;
+import org.princehouse.mica.util.reflection.FindReachableObjects;
+
+import fj.F;
 
 /**
  * Single-threaded MiCA emulator.
@@ -22,234 +27,204 @@ import org.princehouse.mica.util.harness.RuntimeInterface;
  */
 public class Simulator implements RuntimeInterface {
 
-	protected class Event implements Comparable<Event> {
-		public long t;
+	private long clock = 0; // current clock
 
-		private boolean cancelled = false;
-		
-		public void cancel() {
-			cancelled = true;
-		}
-		
-		@Override
-		public int compareTo(Event e) {
-			return Long.valueOf(t).compareTo(Long.valueOf(e.t));
-		}
-
-		public boolean isCancelled() {
-			return cancelled;
-		}
-		
-		/**
-		 * Returns how long the event took, in simulation time units. "now" is
-		 * current time when event starts
-		 * 
-		 * @return
-		 */
-		public void execute() throws FatalErrorHalt, AbortRound {
-		}
-
-		// successCallback should release the lock!
-		public void doWithLock(Address a, long timeout,
-				SuccessEvent successCallback, TimeoutEvent timeoutCallback) throws FatalErrorHalt, AbortRound {
-			if (acquireLock(a)) {
-				// we got the lock!
-				successCallback.t = t;
-				successCallback.timeoutCallback = null;
-				successCallback.execute();
-			} else {
-				addLockWaiter(a, successCallback);
-				successCallback.timeoutCallback = timeoutCallback;
-				timeoutCallback.successCallback = successCallback;
-				timeoutCallback.address = a;
-				timeoutCallback.t = t + timeout;
-				schedule(timeoutCallback);
-			}
-		}
-
-		public void scheduleLockRelease(Address a, long rtime) {
-			schedule(new LockReleaseEvent(a, rtime));
-		}
+	public long getClock() {
+		return clock;
 	}
 
-	protected class LockReleaseEvent extends Event {
-		private Address address;
-		public LockReleaseEvent(Address address, long t) {
-			this.t = t;
-			this.address = address;
-		}
-		@Override
-		public void execute() throws FatalErrorHalt, AbortRound {
-			releaseLock(address,t);
-		}
+	public void setClock(long clock) {
+		this.clock = clock;
+	}
+
+	private LinkedList<SimulatorEvent> eventQueue = new LinkedList<SimulatorEvent>();
+
+	private Map<Address, SimRuntime<?>> addressBindings = Functional.map();
+
+	// maps lock_address -> lock_holder_address
+	// 
+	// lock_holder will never be none (keys will just be removed)
+	// yes, we could track this with a set, but this lets us sanity-check the property
+	// that only a lock-holder should be able to release a lock
+	private Map<Address,Address> lockHolders = new HashMap<Address,Address>();
+
+	private Map<Address, List<SimulatorEvent>> lockWaitQueues = Functional
+			.map();
+
+	private List<Address> unlockedQueue = Functional.list();
+
+	public void bind(Address address, SimRuntime<?> rt, int starttime) {
+		addressBindings.put(address, rt);
+		markUnlocked(address);
+		rt.start();
+		new SimRound(address, this, starttime);
 	}
 	
-	protected class SuccessEvent extends Event {
-		public TimeoutEvent timeoutCallback = null;
-
-		@Override
-		public void execute() throws FatalErrorHalt, AbortRound {
-			if (timeoutCallback != null) {
-				timeoutCallback.cancelled = true;
-			}
-		}
+	private void logState(Address address, String stateLabel) {
+		getRuntime(address).logState(stateLabel);
 	}
-
-	protected class TimeoutEvent extends Event {
-		public Event successCallback = null;
-		public Address address = null;
-		public boolean cancelled = false;
-
-		public void execute() {
-			if (!cancelled) {
-				removeLockWaiter(address, successCallback);
-			}
-		}
-	}
-
-	protected class EventBind extends Event {
-		private SimRuntime<? extends Protocol> runtime = null;
-
-		public EventBind(SimRuntime<? extends Protocol> runtime) {
-			this.runtime = runtime;
-		}
-
-		@Override
-		public void execute() throws FatalErrorHalt, AbortRound {
-			Address a = runtime.getAddress();
-			addressBindings.put(a, runtime);
-			acquireLock(a);
-			releaseLock(a, t);
-		}
-	};
-
-	protected class EventInitGossip extends Event {
-		private Address src;
-		public EventInitGossip(Address src) {
-			this.src = src;
-		}
-		
-		@Override
-		public void execute() throws FatalErrorHalt, AbortRound {
-			SuccessEvent successCallback = new SuccessEvent() {
-				@Override
-				public void execute() throws FatalErrorHalt, AbortRound {
-					// we have the lock.
-					// call select, get lock for other
-					// TODO
-					SimRuntime<?> rt = getRuntime(src);
-					assert(rt != null);
-					Address dst = rt.select();
-					
-				}
-			};
-			
-			// failed to acquire lock
-			TimeoutEvent timeoutCallback = new TimeoutEvent() {
-				public void execute() {
-					// FIXME -- log message for init gossip failure - initiator failed to get its own lock
-				}
-			};
-			
-			// FIXME hardcoded timeout	
-			doWithLock(src, 30000, successCallback, timeoutCallback);
-		}
-	}
-		
-	
-	
-	private boolean acquireLock(Address a) {
-		if(!addressBindings.containsKey(a)) {
+	/**
+	 * Returns false if lock failed, true if successful otherwise Fails if lock
+	 * already held by someone else, or if the address is not bound
+	 * 
+	 * @param lock
+	 * @return
+	 */
+	protected boolean lock(Address lock, Address requestor) {
+		if (!addressBindings.containsKey(lock)) {
 			return false;
 		}
-		if (locked.contains(a)) {
+		if (lockHolders.containsKey(lock)) {
 			return false;
 		} else {
-			locked.add(a);
+			lockHolders.put(lock, requestor);
 			return true;
 		}
 	}
 
-	// lock is released at time t
-	private void releaseLock(Address a, long t) throws FatalErrorHalt, AbortRound {
-		assert (locked.contains(a));
-		if(lockWaitQueues.containsKey(a)) {
-			List<Event> lockq = lockWaitQueues.get(a);
-			if(lockq.size() > 0) {
-				Event triggered = lockq.remove(0);
-				triggered.t = t;
-				triggered.execute();
-				return;
+	// lock is being released at time t
+	protected void unlock(Address lock, Address requestor) {
+		if (lockHolders.containsKey(lock)) {
+			Address holder = lockHolders.get(lock);
+			if(!requestor.equals(holder)) {
+				throw new RuntimeException("tried to unlock an address locked by someone else");
 			}
-		}
-		locked.remove(a);
-	}
-
-	private LinkedList<Event> eventQueue = new LinkedList<Event>();
-
-	private Map<Address, SimRuntime<?>> addressBindings = Functional
-			.map();
-	private Set<Address> locked = Functional.set();
-
-	private Map<Address, List<Event>> lockWaitQueues = Functional.map();
-
-	private void addLockWaiter(Address a, Event acquisitionCallback) {
-		if (!lockWaitQueues.containsKey(a)) {
-			lockWaitQueues.put(a, Functional.list(acquisitionCallback));
+			lockHolders.remove(lock);
+			markUnlocked(lock);
 		} else {
-			List<Event> lockq = lockWaitQueues.get(a);
-			if(lockq.size() > 0) {
-				// TODO --- is it possible for events with lesser timestamp to be added to the end of queue?  
-				// If events are being added out of order, it will be a problem, we'll need to insert at appropriate place
-				assert(lockq.get(lockq.size()-1).t <= acquisitionCallback.t);
-			}
-			lockWaitQueues.get(a).add(acquisitionCallback);
+			throw new RuntimeException("tried to unlock an already-unlocked address");
 		}
 	}
 
-	private void removeLockWaiter(Address a, Event acquisitionCallback) {
-		lockWaitQueues.get(a).remove(acquisitionCallback);
+	protected void markUnlocked(Address a) {
+		unlockedQueue.add(a);
 	}
 
-	public void schedule(Event e, long t) {
-		e.t = t;
-		schedule(e);
+	/*
+	 * if(lockWaitQueues.containsKey(a)) { List<SimulatorEvent> lockq =
+	 * lockWaitQueues.get(a); while(lockq.size() > 0) { SimulatorEvent triggered
+	 * = lockq.remove(0); if(triggered.isCancelled()) continue;
+	 * triggered.execute(this); return; } } locked.remove(a); }
+	 */
+
+	protected void addLockWaiter(Address a, SimulatorEvent acquisitionCallback) {
+		if (!lockWaitQueues.containsKey(a)) {
+			lockWaitQueues.put(a, Functional.<SimulatorEvent> list());
+		}
+		acquisitionCallback.t = getClock();
+		schedule(acquisitionCallback, lockWaitQueues.get(a));
+	}
+
+	public void schedule(SimulatorEvent e) {
+		schedule(e, eventQueue);
+	}
+
+	public void scheduleRelative(SimulatorEvent e, long offset) {
+		e.t = getClock() + offset;
+		schedule(e, eventQueue);
+	}
+
+	public SimulatorEvent pollEventQueue(List<SimulatorEvent> queue) {
+		if (queue == null) {
+			return null;
+		}
+
+		while (queue.size() > 0) {
+			SimulatorEvent e = queue.remove(0);
+			if (e.isCancelled()) {
+				SimRuntime.debug.printf("   (cancelled)@%d   %s\n", e.t,
+						e.toString());
+				continue;
+			} else {
+				return e;
+			}
+		}
+		return null;
+	}
+
+	public void schedule(SimulatorEvent e, List<SimulatorEvent> queue) {
+		assert (e != null);
+
+		assert(e.t >= getClock());
+		
+		if (queue == eventQueue) {
+			SimRuntime.debug.printf("    schedule @ %d: %s\n", e.t, e.toString());
+		}
+		boolean added = false;
+
+		for (ListIterator<SimulatorEvent> it = queue.listIterator(queue.size()); it
+				.hasPrevious();) {
+			if (it.previous().t <= e.t) {
+				it.next();
+				it.add(e);
+				added = true;
+				break;
+			}
+		}
+
+		// FIXME remove call to drastically speed things up...
+		//assert(queueIsCorrectlySorted(queue));
+		
+		if (!added) {
+			// all events in queue have timestamps greater than e.t
+			queue.add(0, e);
+		}
+
+	}
+
+	@SuppressWarnings("unused")
+	private boolean queueIsCorrectlySorted(List<SimulatorEvent> queue) {
+		// sanity check --- O(n), use sparingly
+		long t = 0;
+		for(SimulatorEvent e : queue) {
+			if(e.t < t) return false;
+			t = e.t;
+		}
+		return true;
 	}
 	
-	public void schedule(Event e) {
-		assert (e != null);
-		Event pred = null; // insertion point
-		for (int i = eventQueue.size() - 1; i >= 0; i--) {
-			pred = eventQueue.get(i);
-			if (pred.compareTo(e) <= 0) {
-				eventQueue.add(i, e);
-				return;
+	private boolean running = false;
+
+	private SimulatorEvent getNextEvent() {
+		while (unlockedQueue.size() > 0) {
+			Address a = unlockedQueue.remove(0);
+			SimulatorEvent callback = pollEventQueue(lockWaitQueues.get(a));
+			if (callback != null) {
+				callback.t = getClock();
+				return callback;
 			}
 		}
-		eventQueue.add(0, e);
+		return pollEventQueue(eventQueue);
 	}
-
-	private boolean running = false;
 
 	@Override
 	public void run() {
 		// run the simulation
 		running = true;
-		long time = 0L;
-		while (running && eventQueue.size() > 0) {
-			Event e = eventQueue.removeFirst();
-			assert (e.t >= time);
-			time = e.t;
-			if(e.isCancelled())
-				continue;
+		setClock(0L);
+		
+		while (running) {
+			SimulatorEvent e = getNextEvent();
+			if (e == null) {
+				break;
+			}
+			
+			SimRuntime<?> rt = getRuntime(e.getSrc());
+			long clock = getClock();
+			
+			String msg = String.format("@%d -> %d execute %s", clock, e.t, e.toString());
+			//rt.logJson("debug-event", msg);
+			SimRuntime.debug.println(msg);
+
+			assert (e.t >= clock);
+			setClock(e.t);
+
 			try {
-				e.execute();
-			} catch (FatalErrorHalt ex) {
-				// kill the runtime
-			} catch (AbortRound ex) {
-				// cancel the round (release locks if applicable)
-				// TODO FIXME
-				//e.abortRound();
+				
+				e.execute(this);
+			} catch (MicaRuntimeException ex) {
+				throw new RuntimeException(ex);
+				// e.handleError(ex, this);
 			}
 		}
 		running = false;
@@ -259,21 +234,6 @@ public class Simulator implements RuntimeInterface {
 		// TODO
 	}
 
-	protected void startRuntime(SimRuntime<?> rt) {
-		// TODO register a new runtime and mark it for execution --- but do not
-		// actually run the simulator yet
-		if(running) {
-			throw new RuntimeException("can't add runtime when simulator running");
-		}
-		startRuntime(rt,0);
-	}
-	
-	protected void startRuntime(SimRuntime<?> rt, long t) {
-		if(running) {
-			throw new RuntimeException("can't add runtime when simulator running");
-		}
-		schedule(new EventBind(rt), t);
-	}
 
 	// Simulator is a singleton...
 	private static Simulator singleton = null;
@@ -285,20 +245,24 @@ public class Simulator implements RuntimeInterface {
 		return singleton;
 	}
 
-	
-	private SimRuntime<?> getRuntime(Address a) {
+	protected SimRuntime<?> getRuntime(Address a) {
 		SimRuntime<?> rt = addressBindings.get(a);
 		return rt;
 	}
-	
+
 	protected RuntimeState getRuntimeState(Protocol p) {
-		// TODO Auto-generated method stub
-		return null;
+		return getRuntime(p).getRuntimeState();
 	}
 
 	public <P extends Protocol> P getReceiver(SimConnection sc) {
 		// TODO Auto-generated method stub
 		return null;
+	}
+
+	public void killRuntime(SimRuntime<?> rt) {
+		// unbind, unlock
+		// TODO
+		rt.stop();
 	}
 
 	public <P extends Protocol> P getSender(SimConnection sc) {
@@ -309,8 +273,12 @@ public class Simulator implements RuntimeInterface {
 	@Override
 	public <P extends Protocol> void addRuntime(Address address, P protocol,
 			long randomSeed, int roundLength, int startTime, int lockTimeout) {
-		// TODO
-		throw new RuntimeException("not implemented yet");
+		SimRuntime<P> rt = new SimRuntime<P>(address);
+		rt.setProtocolInstance(protocol);
+		rt.setRandomSeed(randomSeed);
+		rt.setRoundLength(roundLength);
+		rt.setLockWaitTimeout(lockTimeout);
+		bind(address, rt, startTime);
 	}
 
 	@Override
@@ -321,6 +289,58 @@ public class Simulator implements RuntimeInterface {
 	@Override
 	public void stop() {
 		running = false;
+	}
+
+	@SuppressWarnings("unchecked")
+	@Override
+	public <T extends Protocol> Runtime<T> getRuntime(Protocol p) {
+		Runtime<T> rt = (Runtime<T>) protocolRuntimeContext.get(p);
+		if (rt == null) {
+			throw new RuntimeException(String.format(
+					"runtime %x is null for %s", p.hashCode(), p.getClass()
+							.getName()));
+		}
+		return rt;
+	}
+
+	// Maps protocol -> runtime
+	// for all reachable protocol objects
+	private Map<Protocol, SimRuntime<?>> protocolRuntimeContext = Functional
+			.map();
+
+	@Override
+	public <T extends Protocol> void setRuntime(Runtime<T> rt) {
+		FindReachableObjects<Protocol> reachableProtocolFinder = new FindReachableObjects<Protocol>() {
+			@Override
+			public boolean match(Object obj) {
+				return (obj instanceof Protocol);
+			}
+		};
+
+		for (Protocol p : reachableProtocolFinder
+				.find(rt.getProtocolInstance())) {
+
+			SimRuntime<?> previousEntry = protocolRuntimeContext.get(p);
+
+			if (previousEntry != null && previousEntry != rt) {
+				throw new RuntimeException(
+						String.format(
+								"protocol instance has two conflicting runtime contexts: rt-%x, rt-%x  -->  %x (%s)\n",
+								previousEntry.hashCode(), rt.hashCode(),
+								p.hashCode(), p.getClass().getName()));
+			}
+			protocolRuntimeContext.put(p, (SimRuntime<?>) rt);
+		}
+	}
+
+	@Override
+	public F<Integer, Address> getAddressFunc() {
+		return new F<Integer, Address>() {
+			@Override
+			public Address f(Integer i) {
+				return new DummyAddress(String.format("n%d",i));
+			}
+		};
 	}
 
 }

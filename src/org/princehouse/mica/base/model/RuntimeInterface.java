@@ -1,9 +1,10 @@
-package org.princehouse.mica.util.harness;
+package org.princehouse.mica.base.model;
 
 import java.util.TimerTask;
 
-import org.princehouse.mica.base.model.Protocol;
 import org.princehouse.mica.base.net.model.Address;
+
+import fj.F;
 
 public interface RuntimeInterface {
 
@@ -26,5 +27,22 @@ public interface RuntimeInterface {
 	public void scheduleTask(long delay, TimerTask task);
 
 	public void stop();
+	
+	
+	// get the runtime associated with a protocol instance
+	public <T extends Protocol> Runtime<T> getRuntime(Protocol p);
+	
+	// set the current thread's runtime
+	public <T extends Protocol> void setRuntime(Runtime<T> rt);
+
+	/**
+	 * Returns a functionalJava function:
+	 *    input: the index number of a node
+	 *    output: a unique address for that node
+	 *    
+	 * If null is returned, the default is to generate TCP/IP addresses on localhost starting at port 8000 
+	 * @return
+	 */
+	public F<Integer, Address> getAddressFunc();
 	
 }

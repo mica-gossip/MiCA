@@ -9,9 +9,12 @@ import java.util.TimerTask;
 
 import org.princehouse.mica.base.model.Protocol;
 import org.princehouse.mica.base.model.Runtime;
+import org.princehouse.mica.base.model.RuntimeInterface;
 import org.princehouse.mica.base.net.model.Address;
+import org.princehouse.mica.base.simple.ThreadLocalRuntimeMechanism;
 import org.princehouse.mica.util.Functional;
-import org.princehouse.mica.util.harness.RuntimeInterface;
+
+import fj.F;
 
 public class A1RuntimeInterface implements RuntimeInterface {
 	private List<Runtime<?>> runtimes = Functional.list();
@@ -24,7 +27,7 @@ public class A1RuntimeInterface implements RuntimeInterface {
 
 		Runtime<P> rt = new A1Runtime<P>(address);
 
-		Runtime.setRuntime(rt); // tell the runtime mechanism that this is
+		setRuntime(rt); // tell the runtime mechanism that this is
 								// the current runtime when the protocol is
 								// started
 
@@ -33,7 +36,7 @@ public class A1RuntimeInterface implements RuntimeInterface {
 		rt.setRandomSeed(randomSeed);
 		rt.setRoundLength(roundLength);
 		rt.setLockWaitTimeout(lockTimeout);
-		Runtime.setRuntime(null);
+		setRuntime(null);
 		runtimes.add(rt);
 	}
 
@@ -63,9 +66,9 @@ public class A1RuntimeInterface implements RuntimeInterface {
 				e.printStackTrace();
 			}
 			t0 = t1;
-			Runtime.setRuntime(rt);
+			setRuntime(rt);
 			rt.start();
-			Runtime.setRuntime(null);
+			setRuntime(null);
 		}
 		
 		try {
@@ -94,6 +97,21 @@ public class A1RuntimeInterface implements RuntimeInterface {
 	public void scheduleTask(long delay, TimerTask task) {
 		Timer timer = new Timer(true);
 		timer.schedule(task, delay);
+	}
+	
+	@Override
+	public <T extends Protocol> Runtime<T> getRuntime(Protocol p) {
+		return ThreadLocalRuntimeMechanism.getRuntime();
+	}
+
+	@Override
+	public <T extends Protocol> void setRuntime(Runtime<T> rt) {
+		ThreadLocalRuntimeMechanism.setRuntime(rt);
+	}
+
+	@Override
+	public F<Integer, Address> getAddressFunc() {
+		return null;
 	}
 
 }

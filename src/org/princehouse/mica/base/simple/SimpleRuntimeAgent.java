@@ -310,7 +310,7 @@ class SimpleRuntimeAgent<P extends Protocol> extends RuntimeAgent<P> {
 				runtime.handleUpdateException(e);
 			}
 
-			runtime.logState("gossip-receiver");
+			runtime.logState("gossip-receiver"); // sim-ok
 
 			srt.clearForeignState();
 

@@ -5,6 +5,7 @@ import org.princehouse.mica.base.annotations.GossipRate;
 import org.princehouse.mica.base.annotations.GossipUpdate;
 import org.princehouse.mica.base.annotations.View;
 import org.princehouse.mica.base.model.Protocol;
+import org.princehouse.mica.base.model.RuntimeState;
 import org.princehouse.mica.base.net.model.Address;
 
 public class Dilator extends BaseProtocol {
@@ -42,7 +43,9 @@ public class Dilator extends BaseProtocol {
 	public void update(Protocol other) {
 		Dilator that = (Dilator) other;
 		for(int i = 0; i < dilationLevel; i++) {
-			if(getRuntimeState().getRandom().nextBoolean()) {
+			RuntimeState rts = getRuntimeState();
+			assert(rts != null);
+			if(rts.getRandom().nextBoolean()) {
 				return;
 			}
 		}

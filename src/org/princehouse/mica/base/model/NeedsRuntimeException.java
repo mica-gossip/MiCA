@@ -1,4 +1,4 @@
-package org.princehouse.mica.model;
+package org.princehouse.mica.base.model;
 
 import org.princehouse.mica.base.simple.SelectException;
 

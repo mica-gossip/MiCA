@@ -1,6 +1,6 @@
 package org.princehouse.mica.base.exceptions;
 
-public class FatalErrorHalt extends Exception {
+public class FatalErrorHalt extends MicaRuntimeException {
 
 	/**
 	 * 

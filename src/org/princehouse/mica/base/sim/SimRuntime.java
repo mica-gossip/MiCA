@@ -38,6 +38,7 @@ public class SimRuntime<P extends Protocol> extends Runtime<P> {
 	@Override
 	public void setProtocolInstance(P pinstance) {
 		protocol = pinstance;
+		Simulator.v().setRuntime(this);
 	}
 
 	@Override
@@ -72,7 +73,7 @@ public class SimRuntime<P extends Protocol> extends Runtime<P> {
 		return view;
 	}
 
-	public Address select() throws FatalErrorHalt, AbortRound  {
+	public SelectEvent select() throws FatalErrorHalt, AbortRound  {
 		Protocol p = getProtocolInstance();
 		SelectEvent se = null;
 		try {
@@ -80,8 +81,12 @@ public class SimRuntime<P extends Protocol> extends Runtime<P> {
 		} catch (SelectException e) {
 			handleError(RuntimeErrorCondition.SELECT_EXCEPTION);
 		}
-		// TODO log message
-		return se.selected;
+		return se;
+	}
+	
+	@Override
+	public long getRuntimeClock() {
+		return getSimulator().getClock();
 	}
 
 	@Override
@@ -112,12 +117,14 @@ public class SimRuntime<P extends Protocol> extends Runtime<P> {
 	protected Simulator getSimulator() {
 		return Simulator.v();
 	}
-
+	
 	@Override
 	public void start() {
-		getSimulator().startRuntime(this);
+		initLog();
+		logState("initial");
 	}
 
+	
 	@Override
 	public P getProtocolInstance() {
 		return protocol;

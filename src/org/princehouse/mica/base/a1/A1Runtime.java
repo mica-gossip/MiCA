@@ -22,6 +22,7 @@ import org.princehouse.mica.base.RuntimeErrorCondition;
 import org.princehouse.mica.base.exceptions.AbortRound;
 import org.princehouse.mica.base.exceptions.FatalErrorHalt;
 import org.princehouse.mica.base.model.Compiler;
+import org.princehouse.mica.base.model.MiCA;
 import org.princehouse.mica.base.model.Protocol;
 import org.princehouse.mica.base.model.Runtime;
 import org.princehouse.mica.base.model.RuntimeAgent;
@@ -195,10 +196,10 @@ public class A1Runtime<P extends Protocol> extends Runtime<P> implements
 					connection.close();
 					return;
 				}
-				setRuntime(this);
+				MiCA.getRuntimeInterface().setRuntime(this);
 				((A1RuntimeAgent<P>) compile(pinstance)).acceptConnection(
 						this, getProtocolInstance(), connection);
-				clearRuntime(this);
+				MiCA.getRuntimeInterface().setRuntime(null);
 				lock.unlock();
 			} else {
 				if (!running) {

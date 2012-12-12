@@ -22,6 +22,7 @@ import org.princehouse.mica.base.RuntimeErrorCondition;
 import org.princehouse.mica.base.exceptions.AbortRound;
 import org.princehouse.mica.base.exceptions.FatalErrorHalt;
 import org.princehouse.mica.base.model.Compiler;
+import org.princehouse.mica.base.model.MiCA;
 import org.princehouse.mica.base.model.Protocol;
 import org.princehouse.mica.base.model.Runtime;
 import org.princehouse.mica.base.model.RuntimeAgent;
@@ -195,10 +196,10 @@ public class SimpleRuntime<P extends Protocol> extends Runtime<P> implements
 					connection.close();
 					return;
 				}
-				setRuntime(this);
+				MiCA.getRuntimeInterface().setRuntime(this);
 				((SimpleRuntimeAgent<P>) compile(pinstance)).acceptConnection(
 						this, getProtocolInstance(), connection);
-				clearRuntime(this);
+				MiCA.getRuntimeInterface().setRuntime(null);
 				lock.unlock();
 			} else {
 				if (!running) {
@@ -208,7 +209,7 @@ public class SimpleRuntime<P extends Protocol> extends Runtime<P> implements
 					return;
 				}
 				// failed to acquire lock; timeout
-				logJson("mica-error-accept-connection");
+				logJson("mica-error-accept-connection"); // sim-ok
 				System.err.printf(
 						"%s accept: failed to acquire lock (timeout)\n", this);
 				connection.close();
@@ -229,7 +230,7 @@ public class SimpleRuntime<P extends Protocol> extends Runtime<P> implements
 
 		final Address address = getAddress();
 		super.run();
-		logState("initial");
+		logState("initial"); // sim-ok
 
 		try {
 			address.bind(this);
@@ -258,7 +259,7 @@ public class SimpleRuntime<P extends Protocol> extends Runtime<P> implements
 				Address partner = null;
 
 				try {
-					logJson("mica-rate", rate);
+					logJson("mica-rate", rate); // sim-ok
 
 					int intervalLength = (int) (((double) intervalMS) / rate);
 					if (intervalLength <= 0) {
@@ -283,6 +284,7 @@ public class SimpleRuntime<P extends Protocol> extends Runtime<P> implements
 						RuntimeAgent<P> agent = compile(getProtocolInstance());
 
 						Logging.SelectEvent se = null;
+						
 						try {
 							se = agent.select(this, getProtocolInstance());
 						} catch (SelectException e) {
@@ -291,7 +293,7 @@ public class SimpleRuntime<P extends Protocol> extends Runtime<P> implements
 
 						partner = se.selected;
 
-						logJson("mica-select", se);
+						logJson("mica-select", se); // sim-ok
 
 						try {
 							// preUpdate is called even if partner is
@@ -301,7 +303,7 @@ public class SimpleRuntime<P extends Protocol> extends Runtime<P> implements
 						} catch (Throwable t) {
 							handleError(PREUDPATE_EXCEPTION, t);
 						}
-						logState("preupdate");
+						logState("preupdate"); // sim-ok
 
 						if (getAddress().equals(partner)) {
 							handleError(SELF_GOSSIP);
@@ -329,14 +331,14 @@ public class SimpleRuntime<P extends Protocol> extends Runtime<P> implements
 							handleError(ACTIVE_GOSSIP_EXCEPTION, t);
 						}
 
-						logState("gossip-initiator");
+						logState("gossip-initiator"); // sim-ok
 
 						try {
 							getProtocolInstance().postUpdate();
 						} catch (Throwable t) {
 							handleError(POSTUDPATE_EXCEPTION, t);
 						}
-						logState("postupdate");
+						logState("postupdate"); // sim-ok
 
 						getRuntimeState().incrementRound();
 						rate = getRate(getProtocolInstance());

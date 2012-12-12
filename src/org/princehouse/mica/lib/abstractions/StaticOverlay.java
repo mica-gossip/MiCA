@@ -4,11 +4,11 @@ package org.princehouse.mica.lib.abstractions;
 import java.io.Serializable;
 
 import org.princehouse.mica.base.MalformedViewException;
+import org.princehouse.mica.base.model.NeedsRuntimeException;
 import org.princehouse.mica.base.model.RuntimeState;
 import org.princehouse.mica.base.net.model.Address;
 import org.princehouse.mica.base.simple.SelectException;
 import org.princehouse.mica.base.simple.Selector;
-import org.princehouse.mica.model.NeedsRuntimeException;
 import org.princehouse.mica.util.Distribution;
 
 

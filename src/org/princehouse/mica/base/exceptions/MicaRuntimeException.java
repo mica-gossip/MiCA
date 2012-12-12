@@ -1,6 +1,6 @@
 package org.princehouse.mica.base.exceptions;
 
-public class AbortRound extends MicaRuntimeException {
+public class MicaRuntimeException extends Exception {
 
 	/**
 	 * 

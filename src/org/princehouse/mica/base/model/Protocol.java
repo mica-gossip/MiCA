@@ -79,4 +79,6 @@ public interface Protocol {
 	 * @return JSON-serializable object representing node state for logging purposes
 	 */
 	public Object getLogState();
+	
+	public <T extends Protocol> Runtime<T> getRuntime();
 }

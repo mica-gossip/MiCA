@@ -226,19 +226,24 @@ public abstract class Runtime<P extends Protocol> {
 	 * @throws InterruptedException
 	 */
 	public void run() throws InterruptedException {
+		initLog();
+		MiCA.getRuntimeInterface().setRuntime(this);
+	}
+	
+	/**
+	 * Runtime implementation should call this before the runtime execution begins.
+	 * It writes a log message with runtime configuration parameters
+	 */
+	public void initLog() {
 		// clear old log
 		File logfile = this.getLogFile();
 		if (logfile.exists()) {
 			logfile.delete();
 		}
-
 		int intervalMS = getInterval();
 		long randomSeed = Randomness.getSeed(getRandom());
-
 		logJson("mica-runtime-init", Functional.<String, Object> mapFromPairs(
 				"round_ms", intervalMS, "random_seed", randomSeed));
-
-		setRuntime(this);
 	};
 
 	/**
@@ -300,45 +305,16 @@ public abstract class Runtime<P extends Protocol> {
 		e.printStackTrace(debug);
 	}
 
-	private static ThreadLocal<Runtime<?>> runtimeSingleton = new ThreadLocal<Runtime<?>>();
-
-	public static void setRuntime(Runtime<?> rt) {
-		// System.err.printf("[set %s for thread %d]\n", rt,
-		// Thread.currentThread().getId());
-		if (runtimeSingleton.get() != null && rt != null
-				&& !runtimeSingleton.equals(rt)) {
-			throw new RuntimeException(
-					String.format(
-							"Attempt to set two runtimes in one thread; existing runtime is %s, new runtime is %s",
-							runtimeSingleton.get(), rt));
-		}
-		runtimeSingleton.set(rt);
-	}
-
-	public static Runtime<?> getRuntime() {
-		Runtime<?> rt = runtimeSingleton.get();
-		if (rt == null)
-			throw new RuntimeException(String.format(
-					"Failed attempt to get null runtime for thread %d", Thread
-							.currentThread().getId()));
-		return rt;
-	}
-
-	public static void clearRuntime(Runtime<?> rt) {
-		Runtime<?> current = runtimeSingleton.get();
-		if (current != null && !current.equals(rt)) {
-			throw new RuntimeException("attempt to replace active runtime");
-		}
-		setRuntime(null);
-	}
 
 	
+
 	public abstract RuntimeState getRuntimeState(Protocol p);
 
 	private RuntimeState runtimeState = new RuntimeState();
 
 	// Called by agents. Protocols should not use directly
 	public RuntimeState getRuntimeState() {
+		assert(runtimeState != null);
 		return runtimeState;
 	}
 	
@@ -372,9 +348,6 @@ public abstract class Runtime<P extends Protocol> {
 	 */
 	public abstract double getRate(Protocol protocol);
 
-	public long getTime() {
-		return new Date().getTime();
-	}
 
 	public void handleError(RuntimeErrorCondition condition, Object payload)
 			throws FatalErrorHalt, AbortRound {
