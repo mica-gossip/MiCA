@@ -17,7 +17,7 @@ public class SimRound {
 	private Simulator sim;
 	private SimRound round;
 	private boolean cancelled = false;
-
+	private long roundStartTime = 0L;
 	private boolean haveLockSrc = false;
 	private boolean haveLockDst = false;
 
@@ -36,26 +36,42 @@ public class SimRound {
 		this.src = src;
 		this.round = this;
 		// schedule lock acquisition for beginning of round
+		roundStartTime = sim.getClock() + sleepTime;
 		sim.scheduleRelative(new AcquireSrcLock(), sleepTime);
 	}
 
 	private void cancel() {
-		System.out.printf("     --------------> cancel round at %s\n", src);
+	//	System.out.printf("     --------------> cancel round at %s\n", src);
 		cancelled = true;
 	}
 
-	public void abortRound(long offsetTime) {
+	public void abortRound(long releaseLockOffset) {
 		assert (!cancelled); // no reason we should be cancelled more than once
 
 		cancel();
 
+		long clock = sim.getClock();
+		
 		if (haveLockSrc) {
-			sim.scheduleRelative(new ReleaseSrcLock(), offsetTime);
+			sim.scheduleRelative(new ReleaseSrcLock(), releaseLockOffset);
 		}
 		if (haveLockDst) {
-			sim.scheduleRelative(new ReleaseDstLock(), offsetTime);
+			sim.scheduleRelative(new ReleaseDstLock(), releaseLockOffset);
 		}
-		reschedule(sim.getRuntime(src).getInterval() + offsetTime);
+		
+		SimRuntime<?> rta = sim.getRuntime(src);
+		sim.setRuntime(rta);
+		double rate = 1.0;
+		try {
+			rate = rta.getProtocolInstance().getRate();
+		} catch (Throwable t) {
+			// Suppress error; default interval will be used
+		}
+		
+		long abortedRoundElapsed = clock - roundStartTime;
+		long interval = (long) (((double)rta.getInterval()) / rate);
+		long sleepTime = Math.max(interval - abortedRoundElapsed, releaseLockOffset+1);
+		reschedule(sleepTime);
 	}
 
 	public class RoundEvent extends SimulatorEvent {
@@ -76,12 +92,12 @@ public class SimRound {
 
 		@Override
 		public void abortRound(Simulator simulator) {
-			round.abortRound(sim.getRuntime(src).getLockWaitTimeout());
+			round.abortRound(0);
 		}
 
 		@Override
 		public void fatalErrorHalt(Simulator simulator) {
-			round.abortRound(sim.getRuntime(src).getLockWaitTimeout());
+			round.abortRound(0);
 			super.fatalErrorHalt(simulator);
 		}
 	}

@@ -69,7 +69,7 @@ public enum LogFlag {
 		} else if(flags instanceof LogFlag) {
 			return ((LogFlag) flags).mask;
 		} else {
-			throw new RuntimeException("don't know how to interpret flags argument");
+			throw new RuntimeException(String.format("don't know how to interpret flags argument %s", flags));
 		}
 	}
 

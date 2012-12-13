@@ -1,15 +1,13 @@
 package org.princehouse.mica.base.sim;
 
-import java.util.TimerTask;
-
 import org.princehouse.mica.base.exceptions.MicaRuntimeException;
 import org.princehouse.mica.base.net.model.Address;
 
 public class TimerEvent extends SimulatorEvent {
 
-	private TimerTask task = null;
+	private Runnable task = null;
 	
-	public TimerEvent(Address src, TimerTask task) {
+	public TimerEvent(Address src, Runnable task) {
 		super(src);
 		this.task = task;
 	}

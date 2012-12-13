@@ -393,7 +393,7 @@ public abstract class Runtime<P extends Protocol> {
 	public void handleError(RuntimeErrorCondition condition)
 			throws FatalErrorHalt, AbortRound {
 		RuntimeErrorResponse policy = getErrorPolicy(condition);
-		logJson("mica-error-handler",
+		logJson(LogFlag.error,"mica-error-handler",
 				String.format("%s -> %s", condition, policy));
 		switch (policy) {
 		case FATAL_ERROR_HALT:

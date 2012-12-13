@@ -8,6 +8,7 @@ import java.util.Map;
 import java.util.TimerTask;
 
 import org.princehouse.mica.base.exceptions.MicaRuntimeException;
+import org.princehouse.mica.base.model.MiCA;
 import org.princehouse.mica.base.model.Protocol;
 import org.princehouse.mica.base.model.Runtime;
 import org.princehouse.mica.base.model.RuntimeInterface;
@@ -60,9 +61,11 @@ public class Simulator implements RuntimeInterface {
 		new SimRound(address, this, starttime);
 	}
 	
-	private void logState(Address address, String stateLabel) {
-		getRuntime(address).logState(stateLabel);
+	public void unbind(SimRuntime<?> rt) {
+		addressBindings.remove(rt.getAddress());
+		markUnlocked(rt.getAddress());
 	}
+	
 	/**
 	 * Returns false if lock failed, true if successful otherwise Fails if lock
 	 * already held by someone else, or if the address is not bound
@@ -132,8 +135,8 @@ public class Simulator implements RuntimeInterface {
 		while (queue.size() > 0) {
 			SimulatorEvent e = queue.remove(0);
 			if (e.isCancelled()) {
-				SimRuntime.debug.printf("   (cancelled)@%d   %s\n", e.t,
-						e.toString());
+//				SimRuntime.debug.printf("   (cancelled)@%d   %s\n", e.t,
+//						e.toString());
 				continue;
 			} else {
 				return e;
@@ -206,7 +209,15 @@ public class Simulator implements RuntimeInterface {
 		StopWatch simtimer = new StopWatch();
 		simtimer.reset();
 		
+		long round = 0;
+		int roundSize = MiCA.getOptions().roundLength;
+		
 		while (running) {
+			long curRound = (getClock() / roundSize) + 1;
+			if(curRound != round) {
+				SimRuntime.debug.printf("Round %d\n",curRound);
+				round = curRound;
+			}
 			SimulatorEvent e = getNextEvent();
 			if (e == null) {
 				break;
@@ -215,9 +226,9 @@ public class Simulator implements RuntimeInterface {
 			SimRuntime<?> rt = getRuntime(e.getSrc());
 			long clock = getClock();
 			
-			String msg = String.format("@%d -> %d execute %s", clock, e.t, e.toString());
+			//String msg = String.format("@%d -> %d execute %s", clock, e.t, e.toString());
 			//rt.logJson("debug-event", msg);
-			SimRuntime.debug.println(msg);
+			//SimRuntime.debug.println(msg);
 
 			assert (e.t >= clock);
 			setClock(e.t);
@@ -237,7 +248,7 @@ public class Simulator implements RuntimeInterface {
 	}
 
 	protected void stopRuntime(SimRuntime<?> rt) {
-		// TODO
+		unbind(rt);
 	}
 
 
@@ -261,13 +272,10 @@ public class Simulator implements RuntimeInterface {
 	}
 
 	public <P extends Protocol> P getReceiver(SimConnection sc) {
-		// TODO Auto-generated method stub
-		return null;
+		throw new UnsupportedOperationException();
 	}
 
 	public void killRuntime(SimRuntime<?> rt) {
-		// unbind, unlock
-		// TODO
 		rt.stop();
 	}
 

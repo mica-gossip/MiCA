@@ -42,7 +42,20 @@ public interface Protocol {
 	 *
 	 */
 	public static enum Direction {
-		PUSH, PULL, PUSHPULL
+		PUSH(true,false), PULL(false,true), PUSHPULL(true,true);
+		
+		private boolean doesPush;
+		private boolean doesPull;
+		private Direction(boolean push, boolean pull) {
+			doesPush = push;
+			doesPull = pull;
+		}
+		public boolean push() {
+			return doesPush;
+		}
+		public boolean pull() {
+			return doesPull;
+		}
 	};
 	
 	/**

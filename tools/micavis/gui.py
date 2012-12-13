@@ -110,10 +110,23 @@ class GraphWindow(object):
         analysis.set_submenu(menu)
         analysis.show()
         bar.append(analysis)
-        self.append_analysis_menuitem("State change graph", self.analysis_state_change_graph)
-        self.append_analysis_menuitem("State change graph (leaves)", self.analysis_state_change_graph_leaves)
+        self.append_analysis_menuitem(
+            "State change graph", self.analysis_state_change_graph)
 
-#        self.append_analysis_menuitem("(demo matplotlib graph)", self.demo_matplotlib_graph)
+        self.append_analysis_menuitem(
+            "State change graph (leaves)", self.analysis_state_change_graph_leaves)
+
+        for ne_suffix in self.micavis.notable_event_labels():
+            self.append_analysis_menuitem(
+                "Notable events: %s" % ne_suffix, 
+                lambda widget,sfx=ne_suffix: self.analysis_notable_events(sfx,widget))
+
+        for ne_suffix in self.micavis.notable_event_labels():
+            self.append_analysis_menuitem(
+                "Notable event timing histogram: %s" % ne_suffix, 
+                lambda widget,sfx=ne_suffix: self.analysis_notable_events_histogram(sfx,widget))
+
+
         for label, callback in self.micavis.temp_analysis_menus:
             self.append_analysis_menuitem(label, callback)
 
@@ -148,11 +161,101 @@ class GraphWindow(object):
         ylabel = "State changes per node per round"
         self.analysis_plot_2d(x,y, xlabel, ylabel)
 
+    def analysis_notable_events(self, ne_suffix, widget):
+        import matplotlib.pyplot as plt
+        import numpy as np
+        import analysis
+
+        ne_categories = {}  # key -> sequence
+
+        for key, timestamp, address in self.micavis.notable_events(ne_suffix):
+            if key not in ne_categories:
+                ne_categories[key] = []
+            ne_categories[key].append(timestamp)
+        
+        notable_sequences = sorted(ne_categories.items())
+
+        xlabel =  "MiCA Rounds (%s ms)" % self.micavis.runtime_info.round_ms
+        ylabel = "Rate (events per round)"
+        legend_labels = []
+        xyvals = []
+
+        for key, sequence in notable_sequences:
+            legend_labels += [key]
+            xy = analysis.frequency_count(self.micavis, sequence, subdivisions=5)
+            xyvals += [xy]
+
+        self.analysis_plot_2d_multiple(xyvals, xlabel, ylabel, legend_labels)
+
+    def analysis_notable_events_histogram(self, ne_suffix, widget):
+        import matplotlib.pyplot as plt
+        import numpy as np
+        import analysis
+
+        ne = {}  # key -> sequence
+
+        for key, timestamp, address in self.micavis.notable_events(ne_suffix):
+            if key not in ne:
+                ne[key] = {}
+            if address not in ne[key]:
+                ne[key][address] = []
+            ne[key][address].append(timestamp)
+
+        collated = {}
+        # fashion histograms
+        for key, kdic in ne.items():
+            for addr, seq in kdic.items():
+                deltas = list(analysis.deltas(seq))
+                if key not in collated:
+                    collated[key] = []
+                collated[key] += deltas
+        
+        for key,seq in collated.items():
+            collated[key] = np.array(seq)
+#            collated[key] = np.log(np.array(seq))
+
+        maxval = max([d.max() for d in collated.itervalues()]) 
+        minval = min([d.min() for d in collated.itervalues()]) 
+
+        rng = maxval - minval
+        #nbins = min(rng+1,100)
+        nbins = 100
+
+        collated = sorted(collated.items())
+
+        xlabel =  "Time delta (ms)"
+        ylabel = "Event Delta Count"
+        legend_labels = [k for k,v in collated]
+        datasets = [v for k,v in collated]
+        
+        self.analysis_plot_hist_multiple(datasets, 
+                                         xlabel=xlabel, ylabel=ylabel,
+                                         legends=legend_labels, nbins=nbins)
+
+    # plot multiple histograms
+    def analysis_plot_hist_multiple(self, datasets, xlabel="value", ylabel = "count", legends=None, nbins=50):
+        fig = plt.figure()
+        ax = fig.add_subplot(111)
+
+        artists = []
+
+        for data in datasets:
+            n,bins,patches = ax.hist(data, nbins, alpha=0.5)
+            #artists += [ax.hist(data, nbins, alpha=0.5)]
+
+        ax.grid(True)
+        #ax.axhline(0, color='black', lw=2)
+        ax.set_ylabel(ylabel)
+        ax.set_xlabel(xlabel)
+#        if legends:
+#            ax.legend(artists, legends)
+        plt.show()
+
+
     def analysis_state_change_graph_leaves(self, widget):
         import matplotlib.pyplot as plt
         import numpy as np
         import analysis
-        
 
         saved_projection = self.micavis.get_projection()
 
@@ -164,7 +267,7 @@ class GraphWindow(object):
         # restore previous projection
         self.micavis.set_projection(saved_projection)
         xlabel =  "MiCA Rounds (%s ms)" % self.micavis.runtime_info.round_ms
-        ylabel = "State changes per node per round"
+        ylabel = "State changes per round"
         legend_labels = self.micavis.leaf_projections
         self.analysis_plot_2d_multiple(xyvals, xlabel, ylabel, legend_labels)
 
@@ -188,7 +291,6 @@ class GraphWindow(object):
 
 
 class MicaVisMicavis:
-
 
     standard_display_options = dict(
         vertex_color = "#cccccc",
@@ -249,6 +351,42 @@ class MicaVisMicavis:
 
         # NOTE: This cursor listener should be last executed!
         self.add_cursor_listener(lambda i: self.graph_window.refresh_graph())
+
+    def notable_event_labels(self):
+        suffixes = set()
+        for (suffix,data),timestamp,address in self.notable_events():
+            suffixes.add(suffix)
+        return sorted(list(suffixes))
+
+    # yields (key,timestamp,address) triples
+    # 
+    # if restrict_netype is given, key is simply the "data" value
+    # of the event.  If restrict_type is not given,
+    # key is a pair of (ne_type,data) where ne_type is the suffix
+    # from the event_type after notable-event-
+    def notable_events(self,restrict_netype=None):
+        for e in self.events:
+            et = e['event_type']
+            if not et.startswith('notable-event'):
+                continue
+            temp = et.split('-',2)
+            if len(temp) == 2:
+                ne_type = ""
+            else:
+                ne_type = temp[-1]
+            
+            if restrict_netype is not None and restrict_netype != ne_type:
+                continue
+
+            ne_name = e['data']
+
+            if restrict_netype is None:
+                key = (ne_type,ne_name)
+                yield key,e['timestamp'],e['address']
+            else:
+                key = ne_name
+                yield key,e['timestamp'],e['address']
+        
     
     def add_analysis(self, label, callback):
         # called by custom protocols before graph window is created

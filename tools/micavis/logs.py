@@ -602,25 +602,31 @@ def ep_view_event_formatter(event):
     return event
 
 def remove_redundant_state_update(event):
-    del event['data']['state']
+    try:
+        del event['data']['state']
+    except KeyError:
+        pass
     event['data']['state-unchanged'] = True
     return event
 
 def remove_redundant_view_update(event):
-    del event['data']['view']
+    try:
+        del event['data']['view']
+    except KeyError:
+        pass
     event['data']['view-unchanged'] = True
     return event
 
 ep_redundant_state_update_eliminator = RedundantEventEliminator(
     filter_func = lambda e: e['event_type'].startswith('mica-state-'),
-    value_func = lambda e: (e['address'], e['data']['state']),
+    value_func = lambda e: (e['address'], e['data'].get('state')),
     adapter_func = remove_redundant_state_update)
 
 ep_redundant_view_update_eliminator = RedundantEventEliminator(
     filter_func = lambda e: e['event_type'].startswith('mica-state-'),
-    value_func = lambda e: (e['address'], e['data']['view']),
+    value_func = lambda e: (e['address'], e['data'].get('view')),
     adapter_func = remove_redundant_view_update)
-    
+
 
 default_event_processors = [
     ep_view_event_formatter,
@@ -713,16 +719,17 @@ def build_comm_matrix(unique_address_list, events):
     matrix = [ [0.] * n for i in xrange(n) ]
     index = dict((a,i) for i,a in enumerate(unique_address_list))
     selevts = filter(EVENTS_FILTER_EVENTTYPE("mica-select"), events)
-    assert(len(selevts) > 0)
+    
     for e in selevts:
         tot += 1
         src = e['address']
         dst = e['data']['selected']
         matrix[index[src]][index[dst]] += 1.0
 
-    for i in xrange(n):
-        for j in xrange(n):
-            matrix[i][j] /= tot
+    if tot > 0:
+        for i in xrange(n):
+            for j in xrange(n):
+                matrix[i][j] /= tot
 
     return matrix
 

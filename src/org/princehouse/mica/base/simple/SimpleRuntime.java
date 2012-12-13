@@ -191,7 +191,7 @@ public class SimpleRuntime<P extends Protocol> extends Runtime<P> implements
 		try {
 			if (lock.tryLock(getLockWaitTimeout(), TimeUnit.MILLISECONDS)) {
 				if (!running) {
-					logJson("mica-error-internal",
+					logJson(LogFlag.error,"mica-error-internal",
 							"acceptConnection called on a stopped runtime");
 					connection.close();
 					return;
@@ -203,7 +203,7 @@ public class SimpleRuntime<P extends Protocol> extends Runtime<P> implements
 				lock.unlock();
 			} else {
 				if (!running) {
-					logJson("mica-error-internal",
+					logJson(LogFlag.error,"mica-error-internal",
 							"acceptConnection called on a stopped runtime + lock failed");
 					connection.close();
 					return;
