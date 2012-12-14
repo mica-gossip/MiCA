@@ -1,6 +1,6 @@
 package org.princehouse.mica.base;
 
-import org.princehouse.mica.base.annotations.View;
+import org.princehouse.mica.base.sugar.annotations.View;
 
 /**
  * ExternalSelectProtocol delegates its selection to a another object, of any

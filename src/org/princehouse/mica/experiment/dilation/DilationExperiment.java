@@ -1,10 +1,10 @@
 package org.princehouse.mica.experiment.dilation;
 
 import org.princehouse.mica.base.LogFlag;
-import org.princehouse.mica.base.annotations.GossipUpdate;
 import org.princehouse.mica.base.model.MiCA;
 import org.princehouse.mica.base.model.Protocol;
 import org.princehouse.mica.base.net.model.Address;
+import org.princehouse.mica.base.sugar.annotations.GossipUpdate;
 import org.princehouse.mica.example.Dilator;
 import org.princehouse.mica.example.FindMin;
 import org.princehouse.mica.lib.abstractions.MergeIndependent;

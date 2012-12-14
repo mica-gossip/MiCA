@@ -4,7 +4,9 @@ import static org.princehouse.mica.base.RuntimeErrorCondition.INITIATOR_LOCK_TIM
 
 import org.princehouse.mica.base.BaseProtocol;
 import org.princehouse.mica.base.LogFlag;
+import org.princehouse.mica.base.RuntimeErrorCondition;
 import org.princehouse.mica.base.exceptions.AbortRound;
+import org.princehouse.mica.base.exceptions.FatalErrorHalt;
 import org.princehouse.mica.base.exceptions.MicaRuntimeException;
 import org.princehouse.mica.base.model.MiCA;
 import org.princehouse.mica.base.model.Protocol;
@@ -62,7 +64,8 @@ public class SimRound {
 		
 		SimRuntime rta = sim.getRuntime(src);
 		rta.logJson(LogFlag.user, "notable-event-abort", MiCA.getOptions().expname);
-		sim.setRuntimeSingleNode(rta);
+		
+		sim.getRuntimeContextManager().setNativeRuntime(rta);
 		double rate = 1.0;
 		try {
 			rate = rta.getProtocolInstance().getRate();
@@ -70,7 +73,7 @@ public class SimRound {
 			rta.logJson(LogFlag.user, "notable-event-ratefail");
 			// Suppress error; default interval will be used
 		} finally {
-			sim.clearRuntimeSingleNode();
+			sim.getRuntimeContextManager().clear();
 		}
 		
 		long abortedRoundElapsed = clock - roundStartTime;
@@ -119,7 +122,7 @@ public class SimRound {
 
 		@Override
 		public void onTimeout() throws MicaRuntimeException {
-			sim.getRuntime(getSrc()).handleError(INITIATOR_LOCK_TIMEOUT);
+			sim.getRuntime(getSrc()).handleError(INITIATOR_LOCK_TIMEOUT, null);
 		}
 	}
 
@@ -253,53 +256,48 @@ public class SimRound {
 			Protocol a = rta.getProtocolInstance();
 			Protocol b = rtb.getProtocolInstance();
 
-			simulator.setRuntime(rta);
-			simulator.setRuntime(rtb);
-
+			simulator.getRuntimeContextManager().setNativeRuntime(rta);
+			simulator.getRuntimeContextManager().setForeignRuntimeState(b, rtb.getRuntimeState());
 			stopwatch.reset();
+			
 
 			try {
 				a.update(b);
+				rta.logState("gossip-initiator");
+				rtb.logState("gossip-receiver");
 			} catch (Throwable t) {
-				// FIXME HANDLE UPDATE ERROR
-				// HANDLE ERROR MORE GRACEFULLY --- runtime exception is
-				// temporary for debugging
-				throw new RuntimeException(t);
-				// throw new AbortRound();
+				rta.handleError(RuntimeErrorCondition.UPDATE_EXCEPTION, t);
+			} finally {
+				sim.getRuntimeContextManager().clear();
 			}
 
 			long completionTimeRemote = stopwatch.elapsed();
-
-			rta.logState("gossip-initiator");
-			rtb.logState("gossip-receiver");
 
 			simulator.scheduleRelative(new ReleaseDstLock(),
 					completionTimeRemote);
 
 			// run post-update
-			simulator.setRuntimeSingleNode(rta);
+			simulator.getRuntimeContextManager().setNativeRuntime(rta);
 			try {
 				rta.getProtocolInstance().postUpdate();
+				rta.logState("preupdate");
 			} catch (Throwable t) {
-				// FIXME HANDLE POST-UDPATE ERROR
-				throw new AbortRound();
+				rta.handleError(RuntimeErrorCondition.POSTUDPATE_EXCEPTION, t);
 			} finally {
-				simulator.clearRuntimeSingleNode();
+				simulator.getRuntimeContextManager().clear();
 			}
 			
-			rta.logState("preupdate");
 
-			simulator.setRuntimeSingleNode(rta);
+			simulator.getRuntimeContextManager().setNativeRuntime(rta);
 			double rate = 0;
 			try {
 				rate = a.getRate();
 			} catch (Throwable t) {
-				// FIXME HANDLE RATE ERROR
-				throw new AbortRound();
+				rta.handleError(RuntimeErrorCondition.RATE_EXCEPTION, t);
 			} finally {
-				simulator.clearRuntimeSingleNode();
-			}
+				simulator.getRuntimeContextManager().clear();
 
+			}
 
 			logJson(LogFlag.rate, round.src, "mica-rate", rate);
 
@@ -327,6 +325,20 @@ public class SimRound {
 		new SimRound(src, sim, sleepMs);
 	}
 
+	public SelectEvent select(Protocol p) throws FatalErrorHalt, AbortRound {
+		SelectEvent se = null;
+		try {
+			se = new SelectEvent();
+			se.selected = p.getView().sample(p.getRuntimeState().getRandom());
+			if(se.selected.equals(p.getAddress())) {
+				se.selected = null;
+			}
+		} catch (Throwable e) {
+			sim.getRuntimeContextManager().getNativeRuntime().handleError(RuntimeErrorCondition.SELECT_EXCEPTION,e);
+		}
+		return se;
+	}
+	
 	public class SelectPhase extends RoundEvent {
 		public SelectPhase(Address src) {
 			super(src);
@@ -335,16 +347,18 @@ public class SimRound {
 		@Override
 		public void execute(Simulator simulator) throws MicaRuntimeException {
 			SimRuntime rta = simulator.getRuntime(getSrc());
-			simulator.setRuntimeSingleNode(rta);
+			simulator.getRuntimeContextManager().setNativeRuntime(rta);
+
 
 			stopwatch.reset();
 			SelectEvent se = null;
 
 			try {
-				se = rta.select();
+				se = select(rta.getProtocolInstance());
 				logJson(LogFlag.select, getSrc(), "mica-select", se);
 			} finally {
-				simulator.clearRuntimeSingleNode();
+				simulator.getRuntimeContextManager().clear();
+
 			}
 			round.dst = se.selected;
 			long t = stopwatch.elapsed();
@@ -354,16 +368,15 @@ public class SimRound {
 			}
 
 			// run pre-update
-			simulator.setRuntimeSingleNode(rta);
+			simulator.getRuntimeContextManager().setNativeRuntime(rta);
 			try {
 				rta.getProtocolInstance().preUpdate(round.dst);
+				rta.logState("preupdate");
 			} catch (Throwable th) {
-				// FIXME HANDLE ERROR CORRECTLY FROM PRE-UPDATE
-				throw new AbortRound();
+				rta.handleError(RuntimeErrorCondition.POSTUDPATE_EXCEPTION, th);
 			} finally {
-				simulator.clearRuntimeSingleNode();
+				simulator.getRuntimeContextManager().clear();
 			}
-			rta.logState("preupdate");
 
 		}
 

@@ -8,10 +8,10 @@ import java.util.Random;
 import java.util.Set;
 
 import org.princehouse.mica.base.BaseProtocol;
-import org.princehouse.mica.base.annotations.GossipUpdate;
-import org.princehouse.mica.base.annotations.ViewUniformRandom;
 import org.princehouse.mica.base.model.Protocol;
 import org.princehouse.mica.base.net.model.Address;
+import org.princehouse.mica.base.sugar.annotations.GossipUpdate;
+import org.princehouse.mica.base.sugar.annotations.ViewUniformRandom;
 
 
 /**

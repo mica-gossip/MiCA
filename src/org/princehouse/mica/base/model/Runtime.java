@@ -17,9 +17,7 @@ import org.princehouse.mica.base.RuntimeErrorResponse;
 import org.princehouse.mica.base.exceptions.AbortRound;
 import org.princehouse.mica.base.exceptions.FatalErrorHalt;
 import org.princehouse.mica.base.net.model.Address;
-import org.princehouse.mica.base.simple.SelectException;
 import org.princehouse.mica.util.ClassUtils;
-import org.princehouse.mica.util.Distribution;
 import org.princehouse.mica.util.Functional;
 import org.princehouse.mica.util.Logging;
 import org.princehouse.mica.util.Randomness;
@@ -216,8 +214,15 @@ public abstract class Runtime {
 			System.exit(-1);
 
 		} catch (UnsupportedOperationException f) {
-			logJson(origin, "mica-error-internal", f);
-			tolerate(f);
+			try {
+				handleError(RuntimeErrorCondition.MISC_INTERNAL_ERROR, f);
+			} catch (FatalErrorHalt e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			} catch (AbortRound e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
 		}
 
 		try {
@@ -248,7 +253,6 @@ public abstract class Runtime {
 	 */
 	public void run() throws InterruptedException {
 		initLog();
-		MiCA.getRuntimeInterface().setRuntime(this);
 	}
 	
 	/**
@@ -301,35 +305,6 @@ public abstract class Runtime {
 		getRuntimeState().setAddress(address);
 	}
 
-	public void punt(Exception e) {
-		throw new RuntimeException(e);
-	}
-
-	public void fatal(Exception e) {
-		stop();
-		System.err.printf("Fatal exception happened in runtime %s\n", this);
-		e.printStackTrace();
-		System.exit(1);
-	}
-
-	public void tolerate(Exception e) {
-		// ignore exception, but print diagnostic info
-		debug.printf("[%s Suppressed exception: %s]\n", getAddress(), e);
-		e.printStackTrace(debug);
-	}
-
-	public void handleUpdateException(Exception e) {
-		debug.printf("[%s update execution exception: %s]\n", getAddress(), e);
-		e.printStackTrace(debug);
-	}
-
-	public void handleSelectException(Exception e) {
-		debug.printf("[%s select execution exception: %s]\n", getAddress(), e);
-		e.printStackTrace(debug);
-	}
-
-	public abstract RuntimeState getRuntimeState(Protocol p);
-
 	private RuntimeState runtimeState = new RuntimeState();
 
 	// Called by agents. Protocols should not use directly
@@ -342,80 +317,41 @@ public abstract class Runtime {
 		runtimeState = rts;
 	}
 	
-
 	public String toString() {
 		return String.format("<Runtime %d>", hashCode());
 	}
 
-	/**
-	 * Returns null if view is an empty distribution
-	 * 
-	 * Throws MalformedViewException if view has non-one, non-empty magnitude
-	 * 
-	 * @param p
-	 * @return
-	 * @throws SelectException
-	 */
-	public abstract Distribution<Address> getView(Protocol p)
-			throws SelectException;
-
-	
-	/**
-	 * Get the rate for a protocol
-	 * 
-	 * @param protocol
-	 * @return
-	 */
-	public abstract double getRate(Protocol protocol);
-
-
-	public void handleError(RuntimeErrorCondition condition, Object payload)
-			throws FatalErrorHalt, AbortRound {
-		logJson(LogFlag.error, "mica-error-internal", payload);
-		handleError(condition);
+	public void handleError(RuntimeErrorCondition condition, Throwable exception, String msg) throws FatalErrorHalt, AbortRound {
+		logJson(LogFlag.error, "mica-error-internal", msg);
+		handleError(condition, exception);
 	}
 
-	public void handleError(RuntimeErrorCondition condition, String msg,
-			Object payload) throws FatalErrorHalt, AbortRound {
-		logJson(LogFlag.error, "mica-error-internal", new Object[] { msg, payload });
-		handleError(condition);
-	}
-
-	public void handleError(RuntimeErrorCondition condition)
+	public void handleError(RuntimeErrorCondition condition, Throwable exception)
 			throws FatalErrorHalt, AbortRound {
 		RuntimeErrorResponse policy = getErrorPolicy(condition);
 		logJson(LogFlag.error,"mica-error-handler",
 				String.format("%s -> %s", condition, policy));
 		switch (policy) {
 		case FATAL_ERROR_HALT:
-			fatalErrorHalt(condition);
-			break;
+			throw new FatalErrorHalt(condition, exception);
 		case IGNORE:
 			return; // do nothing at all!
 		case ABORT_ROUND:
-			tolerateError();
-			break;
+			throw new AbortRound(condition, exception);
 		default:
 			throw new RuntimeException(
 					"unhandled error response shouldn't happen");
 		}
 	}
 
-	protected abstract void tolerateError() throws AbortRound;
-
-	protected abstract void fatalErrorHalt(RuntimeErrorCondition condition)
-			throws FatalErrorHalt;
-
 	public RuntimeErrorResponse getErrorPolicy(RuntimeErrorCondition condition) {
 		switch (condition) {
 		case NULL_SELECT:
-			return ABORT_ROUND;
 		case OPEN_CONNECTION_FAIL:
-			return ABORT_ROUND;
 		case INITIATOR_LOCK_TIMEOUT:
-			return ABORT_ROUND;
 		case GOSSIP_IO_ERROR:
-			return ABORT_ROUND;
+		case UPDATE_EXCEPTION:
+			return RuntimeErrorResponse.ABORT_ROUND;
 		default:
 			return RuntimeErrorResponse.FATAL_ERROR_HALT;
 		}

@@ -1,10 +1,10 @@
 package org.princehouse.mica.lib;
 
 import org.princehouse.mica.base.BaseProtocol;
-import org.princehouse.mica.base.annotations.GossipUpdate;
-import org.princehouse.mica.base.annotations.View;
 import org.princehouse.mica.base.model.Protocol;
 import org.princehouse.mica.base.net.model.Address;
+import org.princehouse.mica.base.sugar.annotations.GossipUpdate;
+import org.princehouse.mica.base.sugar.annotations.View;
 import org.princehouse.mica.lib.abstractions.LeaderElection;
 import org.princehouse.mica.lib.abstractions.NetworkSizeCounter;
 import org.princehouse.mica.lib.abstractions.SinglyLinkedRingOverlay;

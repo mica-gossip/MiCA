@@ -230,15 +230,7 @@ public class Distribution<T> extends HashMap<T,Double> {
 		}
 		throw new RuntimeException("code should never reach this point");	
 	}
-	
-	public T sample(long rseed) {
-		return sample(new Random(rseed));
-	}
-	
-	public T sample() {
-		return sample(new Random().nextLong());
-	}
-	
+		
 	// debugging
 	public void dump(PrintStream out) {
 		out.printf("%d keys:\n",keySet().size());

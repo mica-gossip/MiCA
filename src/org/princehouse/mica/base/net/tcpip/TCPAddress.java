@@ -9,6 +9,8 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.UnknownHostException;
 
+import org.princehouse.mica.base.exceptions.AbortRound;
+import org.princehouse.mica.base.exceptions.FatalErrorHalt;
 import org.princehouse.mica.base.net.BaseConnection;
 import org.princehouse.mica.base.net.model.AcceptConnectionHandler;
 import org.princehouse.mica.base.net.model.Address;
@@ -123,7 +125,7 @@ public class TCPAddress implements Address, Externalizable {
 		return new TCPAddress(InetAddress.getByName(host), port);
 	}
 
-	protected void acceptCallback(Socket clientSocket) {
+	protected void acceptCallback(Socket clientSocket) throws FatalErrorHalt, AbortRound {
 		// clientSocket is returned from ServerSocket.accept
 		assert(receiveCallback != null);
 		

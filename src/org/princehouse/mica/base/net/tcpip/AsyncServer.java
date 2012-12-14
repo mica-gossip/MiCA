@@ -4,6 +4,9 @@ import java.io.IOException;
 import java.net.Socket;
 import java.util.LinkedList;
 
+import org.princehouse.mica.base.exceptions.AbortRound;
+import org.princehouse.mica.base.exceptions.FatalErrorHalt;
+
 /**
  * TCP/IP communication facilitator
  * 
@@ -25,7 +28,13 @@ public class AsyncServer {
 			while(true) {
 				try {
 					Socket s = address.sock.accept();
-					address.acceptCallback(s);
+					try {
+						address.acceptCallback(s);
+					} catch (FatalErrorHalt e) {
+						break; // thread dies
+					} catch (AbortRound e) {
+						// ignore
+					}
 				} catch (IOException e) {
 					// TODO Auto-generated catch block
 					e.printStackTrace();

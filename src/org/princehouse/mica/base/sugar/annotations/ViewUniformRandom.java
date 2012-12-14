@@ -1,4 +1,4 @@
-package org.princehouse.mica.base.annotations;
+package org.princehouse.mica.base.sugar.annotations;
 
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;

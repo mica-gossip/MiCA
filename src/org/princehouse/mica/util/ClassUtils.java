@@ -12,7 +12,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import org.princehouse.mica.base.annotations.GossipUpdate;
+import org.princehouse.mica.base.sugar.annotations.GossipUpdate;
 
 public class ClassUtils {
 

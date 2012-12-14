@@ -2,8 +2,8 @@ package org.princehouse.mica.example;
 
 
 import org.princehouse.mica.base.ExternalSelectProtocol;
-import org.princehouse.mica.base.annotations.GossipUpdate;
 import org.princehouse.mica.base.model.Protocol;
+import org.princehouse.mica.base.sugar.annotations.GossipUpdate;
 import org.princehouse.mica.lib.abstractions.Overlay;
 
 import com.beust.jcommander.Parameter;

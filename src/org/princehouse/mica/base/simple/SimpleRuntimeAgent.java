@@ -7,25 +7,19 @@ import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.Serializable;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
 import java.net.SocketException;
 
-import org.princehouse.mica.base.annotations.AnnotationInspector;
+import org.princehouse.mica.base.RuntimeErrorCondition;
 import org.princehouse.mica.base.exceptions.AbortRound;
 import org.princehouse.mica.base.exceptions.FatalErrorHalt;
 import org.princehouse.mica.base.model.CompilerException;
+import org.princehouse.mica.base.model.MiCA;
 import org.princehouse.mica.base.model.Protocol;
 import org.princehouse.mica.base.model.Runtime;
 import org.princehouse.mica.base.model.RuntimeAgent;
+import org.princehouse.mica.base.model.RuntimeContextManager;
 import org.princehouse.mica.base.model.RuntimeState;
-import org.princehouse.mica.base.net.model.Address;
 import org.princehouse.mica.base.net.model.Connection;
-import org.princehouse.mica.util.Distribution;
-import org.princehouse.mica.util.Logging.SelectEvent;
-import org.princehouse.mica.util.MarkingObjectInputStream;
-import org.princehouse.mica.util.NotFoundException;
-import org.princehouse.mica.util.TooManyException;
 
 /**
  * RuntimeAgent for the simple runtime.
@@ -99,14 +93,6 @@ class SimpleRuntimeAgent extends RuntimeAgent {
 		}
 	}
 
-	private Class<Protocol> pclass;
-
-	private Selector selector = null;
-
-	private Method updateMethod;
-
-	private Method frequencyMethod;
-
 	/**
 	 * Initialize Runtime Agent, including searching for select, update, rate
 	 * annotated elements.
@@ -116,23 +102,6 @@ class SimpleRuntimeAgent extends RuntimeAgent {
 	 * @throws CompilerException
 	 */
 	public SimpleRuntimeAgent(Class<Protocol> pclass) throws CompilerException {
-		this.pclass = pclass;
-		process();
-	}
-
-	@Override
-	public SelectEvent select(Runtime rt, Protocol pinstance)
-			throws SelectException {
-		// Sanity check to prevent self-gossip added by Josh Endries
-		// (and since moved into SimpleRuntimeAgent --- select() can return
-		// self's address, but the runtime
-		// will not gossip in this case
-		SelectEvent rvalue = new SelectEvent();
-		rvalue.view = getView(rt, pinstance);
-		if (rvalue.view != null && rvalue.view.size() > 0) {
-			rvalue.selected = rvalue.view.sample(rt.getRandom().nextLong());
-		}
-		return rvalue;
 	}
 
 	@Override
@@ -149,38 +118,18 @@ class SimpleRuntimeAgent extends RuntimeAgent {
 					connection.getOutputStream());
 			oos.writeObject(msg);
 		} catch (SocketException se) {
-			Object mg;
-			if (SimpleRuntime.DEBUG_NETWORKING)
-				mg = se;
-			else
-				mg = se.getMessage();
-			rt.handleError(GOSSIP_IO_ERROR, mg);
+			rt.handleError(GOSSIP_IO_ERROR, se);
 		} catch (IOException e) {
-			Object mg;
-			if (SimpleRuntime.DEBUG_NETWORKING)
-				mg = e;
-			else
-				mg = e.getMessage();
-			rt.handleError(GOSSIP_IO_ERROR, mg);
+			rt.handleError(GOSSIP_IO_ERROR, e);
 		}
 
 		ObjectInputStream ois = null;
 		try {
 			ois = new ObjectInputStream(connection.getInputStream());
 		} catch (SocketException e) {
-			Object mg;
-			if (SimpleRuntime.DEBUG_NETWORKING)
-				mg = e;
-			else
-				mg = e.getMessage();
-			rt.handleError(GOSSIP_IO_ERROR, mg);
+			rt.handleError(GOSSIP_IO_ERROR, e);
 		} catch (IOException e) {
-			Object mg;
-			if (SimpleRuntime.DEBUG_NETWORKING)
-				mg = e;
-			else
-				mg = e.getMessage();
-			rt.handleError(GOSSIP_IO_ERROR, mg);
+			rt.handleError(GOSSIP_IO_ERROR, e);
 		}
 
 		try {
@@ -204,69 +153,6 @@ class SimpleRuntimeAgent extends RuntimeAgent {
 	}
 
 	/**
-	 * Validate the Protocol class and locate its select, update, rate methods.
-	 * 
-	 * @throws CompilerException
-	 */
-	private void process() throws CompilerException {
-		// TODO needs sanity check that protocol implements serializable
-
-		try {
-			locateSelectMethod(pclass);
-		} catch (TooManyException e) {
-			throw new CompilerException("Failure to identify protocol select",
-					e);
-		} catch (NotFoundException e) {
-			throw new CompilerException(String.format(
-					"Failure to identify protocol select for %s",
-					pclass.getName()), e);
-		} catch (SelectException e) {
-			throw new CompilerException(e.toString(), e);
-		}
-
-		try {
-			locateUpdateMethod();
-		} catch (TooManyException e) {
-			throw new CompilerException("Failure to identify protocol update",
-					e);
-		} catch (NotFoundException e) {
-			throw new CompilerException("Failure to identify protocol update",
-					e);
-		}
-
-		try {
-			locateFrequencyMethod();
-		} catch (TooManyException e) {
-			throw new CompilerException(
-					"Failure to identify protocol frequency", e);
-		} catch (NotFoundException e) {
-			throw new CompilerException(
-					"Failure to identify protocol frequency", e);
-		}
-
-		/*
-		 * Runtime.debug .printf(
-		 * "SimpleRuntimeAgent processing for %s:\n   select = %s\n   update = %s\n   freq = %s\n"
-		 * , pclass.getName(), selector, updateMethod, frequencyMethod);
-		 */
-	}
-
-	private void locateUpdateMethod() throws TooManyException,
-			NotFoundException {
-		updateMethod = AnnotationInspector.locateUpdateMethod(pclass);
-	}
-
-	private void locateFrequencyMethod() throws TooManyException,
-			NotFoundException {
-		frequencyMethod = AnnotationInspector.locateFrequencyMethod(pclass);
-	}
-
-	private void locateSelectMethod(Class<?> klass) throws NotFoundException,
-			TooManyException, SelectException {
-		selector = AnnotationInspector.locateSelectMethod(klass);
-	}
-
-	/**
 	 * Callback executed when a gossip request arrives. Deserializes a
 	 * RequestMessage from the incoming connection and sends back a
 	 * ResponseMessage.
@@ -276,45 +162,50 @@ class SimpleRuntimeAgent extends RuntimeAgent {
 	 * 
 	 * @param runtime
 	 *            Current Runtime
-	 * @param receiverState
+	 * @param receiver
 	 *            Protocol instance
 	 * @param connection
 	 * @throws IOException
+	 * @throws AbortRound 
+	 * @throws FatalErrorHalt 
 	 */
-	public void acceptConnection(Runtime runtime, Protocol receiverState,
-			Connection connection) throws IOException {
+	public void acceptConnection(Runtime runtime, Protocol receiver,
+			Connection connection) throws IOException, FatalErrorHalt, AbortRound {
 
-		MarkingObjectInputStream ois = null; // can distinguish deserialized
-		// objects from others
+		ObjectInputStream ois = null; 
 
 		try {
-			ois = new MarkingObjectInputStream(connection.getInputStream());
+			ois = new ObjectInputStream(connection.getInputStream());
 		} catch (java.io.EOFException e) {
-			runtime.tolerate(e);
-			return;
+			runtime.handleError(RuntimeErrorCondition.MISC_INTERNAL_ERROR, e);
 		}
 		try {
 			RequestMessage rqm = (RequestMessage) ois.readObject();
-			Protocol initiatorState = rqm.protocolInstance;
+			Protocol initiator = rqm.protocolInstance;
 
 			// foreign state is used by the visiting node to access remote
 			// runtime state data
-			SimpleRuntime srt = (SimpleRuntime) runtime;
 
-			srt.setForeignState(ois.getForeignObjectSet(), rqm.runtimeState);
+			RuntimeContextManager context = MiCA.getRuntimeInterface().getRuntimeContextManager();
+			context.setForeignRuntimeState(initiator, rqm.runtimeState);
+			context.setNativeRuntime(runtime);
 			try {
-				runGossipUpdate(runtime, initiatorState, receiverState);
-			} catch (RuntimeException e) {
-				runtime.handleUpdateException(e);
+				try {
+					initiator.update(receiver);
+				} catch (Throwable t) {
+					throw new RuntimeException(t);
+				}
+				runtime.logState("gossip-receiver"); // sim-ok
+			} catch (Throwable e) {
+				runtime.handleError(RuntimeErrorCondition.UPDATE_EXCEPTION, e);
 			}
+			context.clear();
+			
 
-			runtime.logState("gossip-receiver"); // sim-ok
-
-			srt.clearForeignState();
 
 			ObjectOutputStream oos = new ObjectOutputStream(
 					connection.getOutputStream());
-			ResponseMessage rpm = new ResponseMessage(initiatorState,
+			ResponseMessage rpm = new ResponseMessage(initiator,
 					rqm.runtimeState);
 			oos.writeObject(rpm);
 			oos.close();
@@ -340,57 +231,11 @@ class SimpleRuntimeAgent extends RuntimeAgent {
 	 */
 	private void runGossipUpdate(Runtime runtime, Protocol pinit, Protocol precv) {
 		// imperative update of p1 and p2 states
-		try {
-			updateMethod.invoke(pinit, precv);
-		} catch (IllegalArgumentException e) {
-			runtime.fatal(e);
-		} catch (IllegalAccessException e) {
-			runtime.fatal(e);
-		} catch (InvocationTargetException e) {
-			Throwable tgt = e.getTargetException();
-			if (tgt instanceof RuntimeException)
-				throw (RuntimeException) tgt;
-			else {
-				throw new RuntimeException(e); // shouldn't happen --- update
-				// doesn't declare any
-				// exceptions; anything
-				// thrown must be a
-				// RuntimeException
-			}
-		}
+		
 	}
+	
 	public void executeUpdate(Runtime rt, Protocol p1, Protocol p2) {
 		runGossipUpdate(rt, p1, p2);
-	}
-	@Override
-	public Distribution<Address> getView(Runtime rt, Protocol pinstance)
-			throws SelectException {
-		return selector.select(rt, pinstance);
-	}
-
-	
-
-	@Override
-	public double getRate(Runtime rt, Protocol pinstance) {
-		try {
-			return (Double) frequencyMethod.invoke(pinstance);
-		} catch (IllegalArgumentException e) {
-			rt.fatal(e);
-		} catch (IllegalAccessException e) {
-			rt.fatal(e);
-		} catch (InvocationTargetException e) {
-			Throwable tgt = e.getTargetException();
-			if (tgt instanceof RuntimeException)
-				throw (RuntimeException) tgt;
-			else {
-				throw new RuntimeException(e); // shouldn't happen --- update
-				// doesn't declare any
-				// exceptions, so anything
-				// thrown should be a
-				// runtimeexception
-			}
-		}
-		return 1.0;
 	}
 
 }

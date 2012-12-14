@@ -5,7 +5,6 @@ import java.lang.reflect.Field;
 import java.util.Collection;
 
 import org.princehouse.mica.base.model.Protocol;
-import org.princehouse.mica.base.model.Runtime;
 import org.princehouse.mica.base.net.model.Address;
 import org.princehouse.mica.util.Distribution;
 
@@ -44,7 +43,7 @@ class UniformRandomCollectionFieldSelector extends Selector {
 	}
 
 	@Override
-	public Distribution<Address> select(Runtime rt, Protocol pinstance) {
+	public Distribution<Address> select(Protocol pinstance) {
 		return Distribution.uniform(getCollection(pinstance));
 	}
 	

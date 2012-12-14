@@ -1,7 +1,7 @@
 package org.princehouse.mica.lib.abstractions;
 
 import org.princehouse.mica.base.BaseProtocol;
-import org.princehouse.mica.base.annotations.GossipRate;
+import org.princehouse.mica.base.sugar.annotations.GossipRate;
 
 /**
  * Scale the rate of a protocol

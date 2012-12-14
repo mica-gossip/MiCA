@@ -4,7 +4,6 @@ package org.princehouse.mica.base.simple;
 import java.lang.reflect.Field;
 
 import org.princehouse.mica.base.model.Protocol;
-import org.princehouse.mica.base.model.Runtime;
 import org.princehouse.mica.base.net.model.Address;
 import org.princehouse.mica.util.Distribution;
 
@@ -36,7 +35,7 @@ public class SelectFieldSelector extends Selector {
 	}
 
 	@Override
-	public Distribution<Address> select(Runtime rt, Protocol pinstance) throws SelectException  {
+	public Distribution<Address> select(Protocol pinstance) throws SelectException  {
 		Object obj = null;
 		try {
 			obj = field.get(pinstance);
@@ -45,7 +44,7 @@ public class SelectFieldSelector extends Selector {
 		} catch (IllegalAccessException e) {
 			throw new RuntimeException(e);
 		}
-		return asDistribution(obj, rt.getRuntimeState(pinstance));
+		return asDistribution(obj, pinstance.getRuntimeState());
 	}
 
 	

@@ -1,4 +1,4 @@
-package org.princehouse.mica.base.annotations;
+package org.princehouse.mica.base.sugar.annotations;
 
 import java.lang.reflect.AnnotatedElement;
 import java.lang.reflect.Method;

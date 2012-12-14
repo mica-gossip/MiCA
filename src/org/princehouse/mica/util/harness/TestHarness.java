@@ -8,7 +8,6 @@ import java.util.Random;
 import java.util.TimerTask;
 
 import org.princehouse.mica.base.LogFlag;
-import org.princehouse.mica.base.a1.A1RuntimeInterface;
 import org.princehouse.mica.base.model.MiCA;
 import org.princehouse.mica.base.model.Protocol;
 import org.princehouse.mica.base.model.Runtime;
@@ -95,10 +94,7 @@ public class TestHarness {
 
 	public void launchProtocol(ProtocolInstanceFactory factory,
 			TestHarnessGraph g) {
-		
-		//List<Runtime> runtimes = Functional.list();
-		//running = true;
-
+	
 		launchTimers(); // TODO lift to runtime interface
 
 		
@@ -106,12 +102,17 @@ public class TestHarness {
 		
 		for (Address addr : g.getAddresses()) {
 			Overlay neighbors = g.getOverlay(addr);
-			Protocol pinstance = factory.createProtocolInstance(i++, addr, neighbors);
 			MicaOptions options = getOptions();
 			int stagger = rng.nextInt(options.stagger);
 			int lockTimeout = options.timeout;
 			long seed = getRandom().nextLong();
-			runtimeInterface.addRuntime(addr, pinstance, seed, options.roundLength, stagger, lockTimeout);		
+			Runtime rt = runtimeInterface.addRuntime(addr, seed, options.roundLength, stagger, lockTimeout);		
+			
+			MiCA.getRuntimeInterface().getRuntimeContextManager().setNativeRuntime(rt);
+			Protocol pinstance = factory.createProtocolInstance(i++, addr, neighbors);
+			MiCA.getRuntimeInterface().getRuntimeContextManager().clear();
+			
+			rt.setProtocolInstance(pinstance);
 		} 
 	}
 
@@ -267,7 +268,8 @@ public class TestHarness {
 		} else if(runtimeName.equals("sim")) {
 			runtimeInterface = Simulator.v();
 		} else if(runtimeName.equals("a1")) {
-			runtimeInterface = new A1RuntimeInterface();
+			throw new UnsupportedOperationException();
+			//runtimeInterface = new A1RuntimeInterface();
 		}
 		runtimeInterface.reset();
 		MiCA.setRuntimeInterface(runtimeInterface);

@@ -35,6 +35,8 @@ public interface Protocol {
 	public double getRate();
 
 	
+	public Address getAddress();
+	
 	/** 
 	 * Not currently used
 	 * 
@@ -92,6 +94,5 @@ public interface Protocol {
 	 * @return JSON-serializable object representing node state for logging purposes
 	 */
 	public Object getLogState();
-	
-	public Runtime getRuntime();
+
 }

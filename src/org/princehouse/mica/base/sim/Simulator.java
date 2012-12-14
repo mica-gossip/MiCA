@@ -14,12 +14,11 @@ import org.princehouse.mica.base.exceptions.MicaRuntimeException;
 import org.princehouse.mica.base.model.MiCA;
 import org.princehouse.mica.base.model.Protocol;
 import org.princehouse.mica.base.model.Runtime;
+import org.princehouse.mica.base.model.RuntimeContextManager;
 import org.princehouse.mica.base.model.RuntimeInterface;
-import org.princehouse.mica.base.model.RuntimeState;
 import org.princehouse.mica.base.net.dummy.DummyAddress;
 import org.princehouse.mica.base.net.model.Address;
 import org.princehouse.mica.util.Functional;
-import org.princehouse.mica.util.reflection.FindReachableObjects;
 
 import fj.F;
 
@@ -305,10 +304,6 @@ public class Simulator implements RuntimeInterface {
 		return rt;
 	}
 
-	protected RuntimeState getRuntimeState(Protocol p) {
-		return getRuntime(p).getRuntimeState();
-	}
-
 	public  Protocol getReceiver(SimConnection sc) {
 		throw new UnsupportedOperationException();
 	}
@@ -322,10 +317,9 @@ public class Simulator implements RuntimeInterface {
 	}
 
 	@Override
-	public  Runtime addRuntime(Address address, Protocol protocol,
+	public  Runtime addRuntime(Address address, 
 			long randomSeed, int roundLength, int startTime, int lockTimeout) {
 		SimRuntime rt = new SimRuntime(address);
-		rt.setProtocolInstance(protocol);
 		rt.setRandomSeed(randomSeed);
 		rt.setRoundLength(roundLength);
 		rt.setLockWaitTimeout(lockTimeout);
@@ -343,64 +337,6 @@ public class Simulator implements RuntimeInterface {
 		running = false;
 	}
 
-	@Override
-	public  Runtime getRuntime(Protocol p) {
-		if(runtimeSingleNode != null) {
-			return runtimeSingleNode;
-		}
-		
-		Runtime rt = protocolRuntimeContext.get(p);
-		if (rt == null) {
-			throw new RuntimeException(String.format(
-					"runtime %x is null for %s", p.hashCode(), p.getClass()
-							.getName()));
-		}
-		return rt;
-	}
-
-	// Maps protocol -> runtime
-	// for all reachable protocol objects
-	private Map<Protocol, SimRuntime> protocolRuntimeContext = Functional
-			.map();
-
-
-	private SimRuntime runtimeSingleNode = null;
-	
-	public void setRuntimeSingleNode(SimRuntime rt) {
-		assert(runtimeSingleNode == null);
-		runtimeSingleNode = rt;
-	}
-	
-	public void clearRuntimeSingleNode() {
-		runtimeSingleNode = null;
-	}
-	
-	@Override
-	public  void setRuntime(Runtime rt) {
-		assert(runtimeSingleNode == null);
-		FindReachableObjects<Protocol> reachableProtocolFinder = new FindReachableObjects<Protocol>() {
-			@Override
-			public boolean match(Object obj) {
-				return (obj instanceof Protocol);
-			}
-		};
-
-		for (Protocol p : reachableProtocolFinder
-				.find(rt.getProtocolInstance())) {
-
-			SimRuntime previousEntry = protocolRuntimeContext.get(p);
-
-			if (previousEntry != null && previousEntry != rt) {
-				throw new RuntimeException(
-						String.format(
-								"protocol instance has two conflicting runtime contexts: rt-%x, rt-%x  -->  %x (%s)\n",
-								previousEntry.hashCode(), rt.hashCode(),
-								p.hashCode(), p.getClass().getName()));
-			}
-			protocolRuntimeContext.put(p, (SimRuntime) rt);
-		}
-	}
-
 	/**
 	 * Default node name is options.expname + i
 	 */
@@ -412,6 +348,19 @@ public class Simulator implements RuntimeInterface {
 				return new DummyAddress(String.format("%s%d",MiCA.getOptions().expname,i));
 			}
 		};
+	}
+
+	@Override
+	public void logJson(Object flags, Address origin,
+			String eventType, Object obj) {
+		getRuntimeContextManager().getNativeRuntime().logJson(flags, origin, eventType, obj);
+	}
+
+	private RuntimeContextManager runtimeContextManager = new RuntimeContextManager();
+	
+	@Override
+	public RuntimeContextManager getRuntimeContextManager() {
+		return runtimeContextManager;
 	}
 
 }

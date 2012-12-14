@@ -2,11 +2,7 @@ package org.princehouse.mica.base.model;
 
 import org.princehouse.mica.base.exceptions.AbortRound;
 import org.princehouse.mica.base.exceptions.FatalErrorHalt;
-import org.princehouse.mica.base.net.model.Address;
 import org.princehouse.mica.base.net.model.Connection;
-import org.princehouse.mica.base.simple.SelectException;
-import org.princehouse.mica.util.Distribution;
-import org.princehouse.mica.util.Logging.SelectEvent;
 
 /**
  * Represents the "compiled" protocol to the MiCA Runtime.
@@ -22,38 +18,8 @@ import org.princehouse.mica.util.Logging.SelectEvent;
  */
 public abstract class RuntimeAgent {
 
-	public RuntimeAgent() {
-	}
+	public RuntimeAgent() {}
 
-	// TODO modify to take a Random instance instead of a pre-generated random double
-	/**
-	 * Executes the select function for the specified protocol instance and
-	 * chooses an address from the resulting address distribution.
-	 * 
-	 * @param runtime Current Runtime
-	 * @param pinstance Protocol instance
-	 * @param randomValue A random double supplied by the runtime. select should be deterministic.
-	 * 
-	 * @return Address of the chosen gossip peer
-	 * @throws SelectException 
-	 */
-	public abstract SelectEvent select(Runtime runtime, Protocol pinstance) throws SelectException;
-
-	// Called on subprotocols as well as the top protocol; Runtime type
-	// parameter doesn't necessarily match pinstance type
-	/**
-	 * Executes the select function for the specified protocol instance. Returns an
-	 * address distribution.
-	 * 
-	 * This may be called for protocols that are not necessarily of class P.
-	 * 
-	 * @param runtime Current Runtime 
-	 * @param pinstance Protocol instance
-	 * @return
-	 * @throws SelectException 
-	 */
-	public abstract Distribution<Address> getView(Runtime runtime,
-			Protocol pinstance) throws SelectException;
 
 	/**
 	 * Execute the gossip update with a remote peer.
@@ -64,17 +30,6 @@ public abstract class RuntimeAgent {
 	 */
 	public abstract void gossip(Runtime runtime, Protocol pinstance,
 			Connection connection) throws AbortRound, FatalErrorHalt;
-
-	
-	/**
-	 * Returns the "rate" of a protocol instance, i.e., the number of times  
-	 * per "round" the protocol gossips.
-	 * 
-	 * @param runtime
-	 * @param pinstance
-	 * @return
-	 */
-	public abstract double getRate(Runtime runtime, Protocol pinstance);
 
 	
 }

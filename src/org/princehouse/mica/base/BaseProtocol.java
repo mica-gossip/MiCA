@@ -5,15 +5,15 @@ import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.Serializable;
 
-import org.princehouse.mica.base.annotations.GossipRate;
 import org.princehouse.mica.base.model.MiCA;
 import org.princehouse.mica.base.model.Protocol;
-import org.princehouse.mica.base.model.Runtime;
 import org.princehouse.mica.base.model.RuntimeState;
 import org.princehouse.mica.base.net.model.Address;
-import org.princehouse.mica.base.simple.SelectException;
+import org.princehouse.mica.base.sugar.Sugar;
+import org.princehouse.mica.base.sugar.annotations.GossipRate;
 import org.princehouse.mica.util.Distribution;
 import org.princehouse.mica.util.MarkingObjectInputStream;
+
 
 /**
  * Base for all MiCA protocols.  Extend this class to create your own protocol.
@@ -42,8 +42,8 @@ public abstract class BaseProtocol implements Protocol, Serializable {
 	}
 
 	@Override
-	public final RuntimeState getRuntimeState() {
-		return getRuntime().getRuntimeState(this);
+	public RuntimeState getRuntimeState() {
+		return MiCA.getRuntimeInterface().getRuntimeContextManager().getRuntimeState(this);
 	}
 
 	@Override
@@ -56,29 +56,25 @@ public abstract class BaseProtocol implements Protocol, Serializable {
 	}
 
 	@Override
-	final public Distribution<Address> getView() {
-		try {
-			return getRuntime().getView(this);
-		} catch (SelectException e) {
-			throw new RuntimeException(e);
-		}
+	public Distribution<Address> getView() {
+		return Sugar.v().executeSugarView(this);
 	}
 	
-	
-
+	@Override 
+	public double getRate() {
+		return Sugar.v().executeSugarRate(this);
+	}
 
 	/**
 	 * Get the current node's address. This is part of Runtime state.
 	 * @return Current node's address
 	 */
+	@Override
 	public Address getAddress() {
 		return getRuntimeState().getAddress();
 	}
 
-	@Override 
-	public double getRate() {
-		return getRuntime().getRate(this);
-	}
+	
 
 	// TODO "local_timestamp":  Is that in ms or rounds?
 	/**
@@ -102,14 +98,11 @@ public abstract class BaseProtocol implements Protocol, Serializable {
 	 * @param eventType
 	 */
 	public void logJson(Object flags, String eventType) {
-		getRuntime().logJson(flags, eventType);
+		logJson(flags, eventType, null);
 	}
 	
 	public void logJson(Object flags, String eventType, final Object obj) {
-//		InstanceLogObject logobj = new InstanceLogObject();
-//		logobj.data = obj;
-//		Runtime.getRuntime().logJson(getAddress(), eventType, logobj);
-		getRuntime().logJson(flags, getAddress(), eventType, obj);
+		MiCA.getRuntimeInterface().logJson(flags, getAddress(), eventType, obj);
 	}
 
 	/**
@@ -133,10 +126,5 @@ public abstract class BaseProtocol implements Protocol, Serializable {
 	
 	@Override
 	public void postUpdate() {}
-	
-	@Override
-	public  Runtime getRuntime() {
-		return MiCA.getRuntimeInterface().getRuntime(this);
-	}
 	
 }

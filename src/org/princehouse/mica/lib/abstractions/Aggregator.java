@@ -3,9 +3,9 @@ package org.princehouse.mica.lib.abstractions;
 import java.util.Map;
 
 import org.princehouse.mica.base.ExternalSelectProtocol;
-import org.princehouse.mica.base.annotations.GossipUpdate;
 import org.princehouse.mica.base.model.Protocol;
 import org.princehouse.mica.base.net.model.Address;
+import org.princehouse.mica.base.sugar.annotations.GossipUpdate;
 import org.princehouse.mica.util.Functional;
 
 /**

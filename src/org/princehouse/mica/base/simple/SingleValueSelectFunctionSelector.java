@@ -1,11 +1,9 @@
 package org.princehouse.mica.base.simple;
 
 
-import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 
 import org.princehouse.mica.base.model.Protocol;
-import org.princehouse.mica.base.model.Runtime;
 import org.princehouse.mica.base.net.model.Address;
 import org.princehouse.mica.util.Distribution;
 
@@ -23,19 +21,14 @@ public class SingleValueSelectFunctionSelector extends Selector {
 	}
 	
 	@Override
-	public Distribution<Address> select(Runtime rt, Protocol pinstance) {
+	public Distribution<Address> select(Protocol pinstance) {
 		try {
 			Object robj = selectMethod.invoke(pinstance);
 			Address addr = (Address) robj;
 			return Distribution.create(addr);
-		} catch (IllegalArgumentException e) {
-			rt.punt(e);
-		} catch (IllegalAccessException e) {
-			rt.punt(e);
-		} catch (InvocationTargetException e) {
-			rt.punt(e);
+		} catch (Throwable t) {
+			throw new RuntimeException(t);
 		}	
-		return null; // unreachable
 	}
 	
 	public String toString() {

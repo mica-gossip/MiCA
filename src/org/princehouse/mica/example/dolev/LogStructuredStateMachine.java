@@ -9,8 +9,8 @@ import java.util.Map;
 import java.util.Set;
 
 import org.princehouse.mica.base.LogFlag;
-import org.princehouse.mica.base.annotations.GossipUpdate;
 import org.princehouse.mica.base.net.model.Address;
+import org.princehouse.mica.base.sugar.annotations.GossipUpdate;
 import org.princehouse.mica.lib.abstractions.Overlay;
 import org.princehouse.mica.util.Functional;
 
