@@ -24,7 +24,8 @@ import com.google.gson.stream.JsonWriter;
 /**
  * Contains subclasses for custom log events
  * 
- * Note: The "current" preferences for logging are stored in LogFlag.currentLogMask
+ * Note: The "current" preferences for logging are stored in
+ * LogFlag.currentLogMask
  * 
  * @author lonnie
  * 
@@ -77,7 +78,6 @@ public class Logging {
 		getGsonBuilder().registerTypeHierarchyAdapter(Address.class,
 				addressSerializer);
 
-		
 		JsonSerializer<Throwable> throwableSerializer = new JsonSerializer<Throwable>() {
 			@Override
 			public JsonElement serialize(Throwable throwable, Type typeOfSrc,
@@ -86,8 +86,9 @@ public class Logging {
 				return new JsonPrimitive(stacktrace);
 			}
 		};
-		getGsonBuilder().registerTypeHierarchyAdapter(Throwable.class, throwableSerializer);
-		
+		getGsonBuilder().registerTypeHierarchyAdapter(Throwable.class,
+				throwableSerializer);
+
 		getGsonBuilder().registerTypeAdapterFactory(new TypeAdapterFactory() {
 
 			private HashMap<Class<?>, TypeAdapter<?>> typeAdapterCache = new HashMap<Class<?>, TypeAdapter<?>>();
@@ -126,22 +127,19 @@ public class Logging {
 						obj.addProperty("stateType", src.getClass()
 								.getSimpleName());
 
-						if (LogFlag.state.test()) {
-							TypeAdapter<T> originalProtAdapter = null;
-							synchronized (originalAdapterCache) {
-								if (originalAdapterCache.containsKey(type)) {
-									originalProtAdapter = (TypeAdapter<T>) originalAdapterCache
-											.get(type);
-								} else {
-									originalProtAdapter = gson
-											.getDelegateAdapter(factory, type);
-									originalAdapterCache.put(type,
-											originalProtAdapter);
-								}
+						TypeAdapter<T> originalProtAdapter = null;
+						synchronized (originalAdapterCache) {
+							if (originalAdapterCache.containsKey(type)) {
+								originalProtAdapter = (TypeAdapter<T>) originalAdapterCache
+										.get(type);
+							} else {
+								originalProtAdapter = gson.getDelegateAdapter(
+										factory, type);
+								originalAdapterCache.put(type,
+										originalProtAdapter);
 							}
-							obj.add("state",
-									originalProtAdapter.toJsonTree(src));
 						}
+						obj.add("state", originalProtAdapter.toJsonTree(src));
 
 						if (LogFlag.view.test()) {
 							obj.add("view",

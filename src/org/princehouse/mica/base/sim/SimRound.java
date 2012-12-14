@@ -6,6 +6,7 @@ import org.princehouse.mica.base.BaseProtocol;
 import org.princehouse.mica.base.LogFlag;
 import org.princehouse.mica.base.exceptions.AbortRound;
 import org.princehouse.mica.base.exceptions.MicaRuntimeException;
+import org.princehouse.mica.base.model.MiCA;
 import org.princehouse.mica.base.model.Protocol;
 import org.princehouse.mica.base.net.model.Address;
 import org.princehouse.mica.util.Logging.SelectEvent;
@@ -60,12 +61,16 @@ public class SimRound {
 		}
 		
 		SimRuntime<?> rta = sim.getRuntime(src);
-		sim.setRuntime(rta);
+		rta.logJson(LogFlag.user, "notable-event-abort", MiCA.getOptions().expname);
+		sim.setRuntimeSingleNode(rta);
 		double rate = 1.0;
 		try {
 			rate = rta.getProtocolInstance().getRate();
 		} catch (Throwable t) {
+			rta.logJson(LogFlag.user, "notable-event-ratefail");
 			// Suppress error; default interval will be used
+		} finally {
+			sim.clearRuntimeSingleNode();
 		}
 		
 		long abortedRoundElapsed = clock - roundStartTime;
@@ -272,23 +277,29 @@ public class SimRound {
 					completionTimeRemote);
 
 			// run post-update
-			simulator.setRuntime(rta);
+			simulator.setRuntimeSingleNode(rta);
 			try {
 				rta.getProtocolInstance().postUpdate();
 			} catch (Throwable t) {
 				// FIXME HANDLE POST-UDPATE ERROR
 				throw new AbortRound();
+			} finally {
+				simulator.clearRuntimeSingleNode();
 			}
+			
 			rta.logState("preupdate");
 
-			simulator.setRuntime(rta);
+			simulator.setRuntimeSingleNode(rta);
 			double rate = 0;
 			try {
 				rate = a.getRate();
 			} catch (Throwable t) {
 				// FIXME HANDLE RATE ERROR
 				throw new AbortRound();
+			} finally {
+				simulator.clearRuntimeSingleNode();
 			}
+
 
 			logJson(LogFlag.rate, round.src, "mica-rate", rate);
 
@@ -300,7 +311,9 @@ public class SimRound {
 
 			long sleepMs = (long) (((double) interval) / rate);
 
-			reschedule(sleepMs + completionTimeLocal);
+			long adjustedSleepTime = roundStartTime + sleepMs - (sim.getClock() + completionTimeLocal);
+			
+			reschedule(Math.max(0, adjustedSleepTime));
 		}
 	}
 
@@ -322,13 +335,17 @@ public class SimRound {
 		@Override
 		public void execute(Simulator simulator) throws MicaRuntimeException {
 			SimRuntime<?> rta = simulator.getRuntime(getSrc());
-			simulator.setRuntime(rta);
+			simulator.setRuntimeSingleNode(rta);
 
 			stopwatch.reset();
+			SelectEvent se = null;
 
-			SelectEvent se = rta.select();
-			logJson(LogFlag.select, getSrc(), "mica-select", se);
-
+			try {
+				se = rta.select();
+				logJson(LogFlag.select, getSrc(), "mica-select", se);
+			} finally {
+				simulator.clearRuntimeSingleNode();
+			}
 			round.dst = se.selected;
 			long t = stopwatch.elapsed();
 
@@ -337,12 +354,14 @@ public class SimRound {
 			}
 
 			// run pre-update
-			simulator.setRuntime(rta);
+			simulator.setRuntimeSingleNode(rta);
 			try {
 				rta.getProtocolInstance().preUpdate(round.dst);
 			} catch (Throwable th) {
 				// FIXME HANDLE ERROR CORRECTLY FROM PRE-UPDATE
 				throw new AbortRound();
+			} finally {
+				simulator.clearRuntimeSingleNode();
 			}
 			rta.logState("preupdate");
 

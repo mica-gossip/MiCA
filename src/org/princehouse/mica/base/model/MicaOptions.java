@@ -10,7 +10,13 @@ public class MicaOptions  {
 
 	@Parameter(names = "-stagger", description = "amount of time (ms) to stagger starting runtimes")
 	public int stagger = 10000;
-	
+
+	@Parameter(names = { "-expname" }, description = "Short experiment name")
+	public String expname = "n";
+
+	@Parameter(names = { "-logprefix" }, description = "Prefix for logfilenames")
+	public String logprefix = "";
+
 	@Parameter(names = { "-log" }, description = "CSV Log file location (deprecated)")
 	public String logfile = "mica.log";
 
@@ -55,4 +61,6 @@ public class MicaOptions  {
 
 	@Parameter(names = "-lenable", variableArity=true, description = "Log types to enable (space separated log names). See LogFlags enum for log names.")
 	public List<String> logsEnable = Functional.list();
+	
+	public String mainClassName = null;
 }

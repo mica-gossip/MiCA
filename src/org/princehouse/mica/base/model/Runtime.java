@@ -262,15 +262,10 @@ public abstract class Runtime<P extends Protocol> {
 			logDirectory.mkdir();
 		}
 		
-		// clear old log
-		File logfile = this.getLogFile();
-		
-		
-		if (logfile.exists()) {
-			logfile.delete();
-		}
+	
 		int intervalMS = getInterval();
-		long randomSeed = Randomness.getSeed(getRandom());
+		long randomSeed = Randomness.getSeed(getRandom());		
+		
 		logJson(LogFlag.init, "mica-runtime-init", Functional.<String, Object> mapFromPairs(
 				"round_ms", intervalMS, "random_seed", randomSeed));
 	};
@@ -431,7 +426,11 @@ public abstract class Runtime<P extends Protocol> {
 	}
 
 	public void logState(String label) {
-		logJson(LogFlag.state, "mica-state-" + label, getProtocolInstance().getLogState());
+		LogFlag flag = LogFlag.state;
+		if(label.equals("initial")) {
+			flag = LogFlag.state_initial;
+		}
+		logJson(flag, "mica-state-" + label, getProtocolInstance().getLogState());
 	}
 
 	public void setRandomSeed(Long seed) {

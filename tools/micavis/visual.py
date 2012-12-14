@@ -203,9 +203,6 @@ class IGraphDrawingArea(gtk.DrawingArea):
     select_color = "#ffffc0"
 
     def __init__(self, micavis, graph, node_name_map, plot_keywords=None):
-        if graph is None:
-            raise Exception
-
         self.micavis = micavis
         self.border = (15,15) # x,y blank pixel space on the display
         gtk.DrawingArea.__init__(self)
@@ -213,16 +210,23 @@ class IGraphDrawingArea(gtk.DrawingArea):
         self.connect("expose_event", self.expose)
         self.plot_keywords = plot_keywords
         self.set_graph(graph, node_name_map)
+        
+        # if true, disable all visualization
+        enable = True
+        disable = False
 
         # self is passed as the vis argument
-        self.display_layers = [
-            NodesLayer(self,True),
-            CommunicationGraphLayer(self, False),
-            CurrentViewLayer(self, False),
-            GossipExchangeLayer(self, False),
-            CurrentStateLayer(self, True),
-            CurrentEventApertureLayer(self, False),
-            CurrentEventLayer(self, False)
+        if self.micavis.options['nolayout']:
+            self.display_layers = []
+        else:
+            self.display_layers = [
+                NodesLayer(self,enable),
+                CommunicationGraphLayer(self, disable),
+                CurrentViewLayer(self, enable),
+                GossipExchangeLayer(self, disable),
+                CurrentStateLayer(self, enable),
+                CurrentEventApertureLayer(self, disable),
+                CurrentEventLayer(self, disable)
             ]
 
     def expose(self, widget, event):
@@ -235,6 +239,9 @@ class IGraphDrawingArea(gtk.DrawingArea):
         return False
  
     def draw(self, context):
+        if self.graph is None:
+            return
+    
         rect = self.get_allocation()
  
         cairo_surface = cairo.ImageSurface(cairo.FORMAT_ARGB32,
@@ -473,5 +480,6 @@ class IGraphDrawingArea(gtk.DrawingArea):
     def set_graph(self, graph, node_name_map):
         self.graph = graph
         self.node_name_map = node_name_map
-        self.node_coordinates = graph.layout('fr')
+        if graph:
+            self.node_coordinates = graph.layout('fr')
 

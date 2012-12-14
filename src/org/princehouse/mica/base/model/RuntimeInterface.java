@@ -11,13 +11,14 @@ public interface RuntimeInterface {
 	
 	/**
 	 * Add a runtime but do not start it yet.  Call start function to start all runtimes.
+	 * Returns the newly created runtime.
 	 * @param address 
 	 * @param protocol
 	 * @param randomSeed
 	 * @param roundLength 
 	 * @param startTime   Delay of initial sleep (in the runtime's units, probably ms)
 	 */
-	public <P extends Protocol> void addRuntime(Address address, P protocol, long randomSeed, int roundLength,int startTime, int lockTimeout);	
+	public <P extends Protocol> Runtime<?> addRuntime(Address address, P protocol, long randomSeed, int roundLength,int startTime, int lockTimeout);	
 	
 	/**
 	 * Start all runtimes and block until they're finished
@@ -28,6 +29,10 @@ public interface RuntimeInterface {
 
 	public void stop();
 	
+	/**
+	 * Reset everything. Prepare for new experiments to be run.
+	 */
+	public void reset();
 	
 	// get the runtime associated with a protocol instance
 	public <T extends Protocol> Runtime<T> getRuntime(Protocol p);

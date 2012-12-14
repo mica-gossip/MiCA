@@ -19,6 +19,8 @@ def round_bucketer(micavis):
 def state_event_filter(event):
     return event['event_type'].startswith('mica-state-') and 'state' in event['data']
 
+def view_event_filter(event):
+    return event['event_type'].startswith('mica-state-') and 'view' in event['data']
 
 def EVENTS_TIMESTAMP_CMP(ev1, ev2): 
     return cmp(ev1['timestamp'], ev2['timestamp'])
@@ -172,6 +174,9 @@ default_value is the value assigned to a key if no suitable events have occurred
             
         self.debug("(debug) scanpoint %s.  nvalues = %s" % (i,len(self.values)))
     
+    def get_i(self):
+        return self.i
+
     def __getitem__(self, key):
         j, val = self.get(key)
         return val
@@ -709,9 +714,26 @@ def query_timestamp_range(events):
     return stamps[0], stamps[-1]
 
 
+def build_final_view_matrix(unique_address_list, events, view_tracker):
+    init_i = view_tracker.get_i()
+    view_tracker.set_i(len(events)-1)
+    n = len(unique_address_list)
+    matrix = [ [0.] * n for i in xrange(n) ]
+    index = dict((a,i) for i,a in enumerate(unique_address_list))
+    for i,addr in enumerate(unique_address_list):
+        view = view_tracker[addr]
+        if view is not None:
+            for dst,weight in view.iteritems():
+                j = index[dst]
+                matrix[i][j] = weight
+    view_tracker.set_i(init_i) # restore original position
+    return matrix
+
 # returns a matrix weighted by the (relatively normalized) number of times each
 # address selected each other address
 #   graph[src][dst]
+#
+# returns None if no communication log info exists
 def build_comm_matrix(unique_address_list, events):
     print "Building communication matrix"
     tot = 0
@@ -730,8 +752,9 @@ def build_comm_matrix(unique_address_list, events):
         for i in xrange(n):
             for j in xrange(n):
                 matrix[i][j] /= tot
-
-    return matrix
+        return matrix
+    else:
+        return None
 
 
 def matrix_edge_generator(comm_matrix):

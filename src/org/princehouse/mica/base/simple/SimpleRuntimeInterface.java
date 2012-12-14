@@ -7,6 +7,7 @@ import java.util.Map;
 import java.util.Timer;
 import java.util.TimerTask;
 
+import org.princehouse.mica.base.LogFlag;
 import org.princehouse.mica.base.model.MiCA;
 import org.princehouse.mica.base.model.Protocol;
 import org.princehouse.mica.base.model.Runtime;
@@ -22,7 +23,15 @@ public class SimpleRuntimeInterface implements RuntimeInterface {
 	private Map<Runtime<?>,Integer> startTimes = Functional.map();
 	
 	@Override
-	public <P extends Protocol> void addRuntime(Address address, P protocol,
+	public void reset() {
+		stop();
+		runtimes.clear();
+		startTimes.clear();
+		running = false;
+	}
+
+	@Override
+	public <P extends Protocol> Runtime<?> addRuntime(Address address, P protocol,
 			long randomSeed, int roundLength, int startTime, int lockTimeout) {
 
 		Runtime<P> rt = new SimpleRuntime<P>(address);
@@ -37,14 +46,17 @@ public class SimpleRuntimeInterface implements RuntimeInterface {
 		rt.setRoundLength(roundLength);
 		rt.setLockWaitTimeout(lockTimeout);
 		MiCA.getRuntimeInterface().setRuntime(null);
-
 		runtimes.add(rt);
+		return rt;
 	}
 
 	private boolean running = false;
 
 	@Override
 	public void run() {
+		Runtime<?> arbitraryRuntime = runtimes.get(0);
+		arbitraryRuntime.logJson(LogFlag.init, "mica-options", MiCA.getOptions());
+
 		// wait for interrupt
 		running = true;
 		// start runtimes

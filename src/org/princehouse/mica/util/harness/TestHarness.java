@@ -103,6 +103,7 @@ public class TestHarness<Q extends Protocol> {
 
 		
 		int i = 0;
+		
 		for (Address addr : g.getAddresses()) {
 			Overlay neighbors = g.getOverlay(addr);
 			Q pinstance = factory.createProtocolInstance(i++, addr, neighbors);
@@ -110,7 +111,7 @@ public class TestHarness<Q extends Protocol> {
 			int stagger = rng.nextInt(options.stagger);
 			int lockTimeout = options.timeout;
 			long seed = getRandom().nextLong();
-			runtimeInterface.addRuntime(addr, pinstance, seed, options.roundLength, stagger, lockTimeout);			
+			runtimeInterface.addRuntime(addr, pinstance, seed, options.roundLength, stagger, lockTimeout);		
 		} 
 	}
 
@@ -269,6 +270,7 @@ public class TestHarness<Q extends Protocol> {
 		} else if(runtimeName.equals("a1")) {
 			runtimeInterface = new A1RuntimeInterface();
 		}
+		runtimeInterface.reset();
 		MiCA.setRuntimeInterface(runtimeInterface);
 		MiCA.setOptions(options);
 	}
@@ -276,7 +278,8 @@ public class TestHarness<Q extends Protocol> {
 	@SuppressWarnings({ "unchecked", "rawtypes" })
 	public void processOptions() {
 		MicaOptions options = getOptions();
-
+		options.mainClassName = this.getClass().getName();
+		
 		if (options.stopAfter > 0) {
 			addTimerRounds(options.stopAfter, taskStop());
 		}

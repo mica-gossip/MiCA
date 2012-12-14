@@ -157,7 +157,7 @@ class GraphWindow(object):
         import analysis
         
         x,y = analysis.compute_changes_per_round(self.micavis)
-        xlabel =  "MiCA Rounds (%s ms)" % self.micavis.runtime_info.round_ms
+        xlabel =  "Round"
         ylabel = "State changes per node per round"
         self.analysis_plot_2d(x,y, xlabel, ylabel)
 
@@ -168,6 +168,11 @@ class GraphWindow(object):
 
         ne_categories = {}  # key -> sequence
 
+#        ms_per_round = self.micavis.runtime_info.round_ms
+#        def round(ms):
+#            return float(ms)/ms_per_round
+
+
         for key, timestamp, address in self.micavis.notable_events(ne_suffix):
             if key not in ne_categories:
                 ne_categories[key] = []
@@ -175,8 +180,8 @@ class GraphWindow(object):
         
         notable_sequences = sorted(ne_categories.items())
 
-        xlabel =  "MiCA Rounds (%s ms)" % self.micavis.runtime_info.round_ms
-        ylabel = "Rate (events per round)"
+        xlabel =  "Round"
+        ylabel = "Rate (%s events per round)" % ne_suffix
         legend_labels = []
         xyvals = []
 
@@ -194,12 +199,16 @@ class GraphWindow(object):
 
         ne = {}  # key -> sequence
 
+        ms_per_round = self.micavis.runtime_info.round_ms
+        def round(ms):
+            return float(ms)/ms_per_round
+
         for key, timestamp, address in self.micavis.notable_events(ne_suffix):
             if key not in ne:
                 ne[key] = {}
             if address not in ne[key]:
                 ne[key][address] = []
-            ne[key][address].append(timestamp)
+            ne[key][address].append(round(timestamp))
 
         collated = {}
         # fashion histograms
@@ -223,32 +232,41 @@ class GraphWindow(object):
 
         collated = sorted(collated.items())
 
-        xlabel =  "Time delta (ms)"
-        ylabel = "Event Delta Count"
-        legend_labels = [k for k,v in collated]
+        xlabel =  "Interval length between %s events (rounds)" % ne_suffix
+        ylabel = "Number of intervals"
+        legend_labels = ["%s (%s total)" % (k,len(v)) for k,v in collated]
+
+
         datasets = [v for k,v in collated]
-        
+
+        # manually layout bins so they're the same for all...
+        binsize = (maxval-minval) / float(nbins)
+        nbins = [minval + i*binsize for i in xrange(nbins+1)]
+
         self.analysis_plot_hist_multiple(datasets, 
                                          xlabel=xlabel, ylabel=ylabel,
                                          legends=legend_labels, nbins=nbins)
 
     # plot multiple histograms
-    def analysis_plot_hist_multiple(self, datasets, xlabel="value", ylabel = "count", legends=None, nbins=50):
+    def analysis_plot_hist_multiple(self, datasets, xlabel="value", ylabel = "count", legends=None, nbins=100):
         fig = plt.figure()
         ax = fig.add_subplot(111)
 
         artists = []
 
-        for data in datasets:
-            n,bins,patches = ax.hist(data, nbins, alpha=0.5)
+        if legends is None:
+            legends = [None] * len(datasets)
+        assert(len(legends) == len(datasets))
+        for data,label in zip(datasets,legends):
+            n,bins,patches = ax.hist(data, nbins, alpha=0.5, histtype='stepfilled',label=label)
             #artists += [ax.hist(data, nbins, alpha=0.5)]
 
         ax.grid(True)
         #ax.axhline(0, color='black', lw=2)
         ax.set_ylabel(ylabel)
         ax.set_xlabel(xlabel)
-#        if legends:
-#            ax.legend(artists, legends)
+        if legends and legends[0] != None:
+            ax.legend()
         plt.show()
 
 
@@ -299,8 +317,9 @@ class MicaVisMicavis:
         )
 
 
-    def __init__(self, events):
+    def __init__(self, events, options):
         self.current = 0
+        self.options = options
         self.cursor_listeners = []   # functions that updated cursor ("current") values will be passed to, whenever it changes
         self.adj = None
         self.events = events
@@ -309,6 +328,26 @@ class MicaVisMicavis:
         custom.init(self)
         # initialize event processing (one-time analysis on events)
         self.process_events()
+
+        self.current_node_state = logs.CurrentValueTracker(
+            events, 
+            filter_func =  logs.state_event_filter,
+            value_func = lambda e,mv=self: (e['address'],mv.project(e['data'])) )
+
+        def view_value_func(data):
+            # if view is empty, logging will omit it 
+            return data.get('view',{})
+
+        self.current_node_view = logs.CurrentValueTracker(
+            events,
+            filter_func = logs.view_event_filter,
+#self.projected_filter(lambda ed: 'view' in ed),
+            value_func = lambda e: (e['address'],
+                                    view_value_func(self.project(e['data']))))
+#            value_func = lambda e: (e['address'],
+#                                    self.project(e['data'])['view']))
+
+
         self.create_event_window()
         self.create_graph_window()
         # Move cursor to start
@@ -319,29 +358,11 @@ class MicaVisMicavis:
 
         self.runtime_info = logs.RuntimeInfoParser(events)
 
-        self.current_node_state = logs.CurrentValueTracker(
-            events, 
-            filter_func =  logs.state_event_filter,
-            value_func = lambda e,mv=self: (e['address'],mv.project(e['data'])) )
 
         self.add_cursor_listener(self.current_node_state.set_i)
 
         # current_node_state[addr] -> the latest state assigned to node "addr" w.r.t. the cursor self.get_current_i()
 
-        def view_value_func(data):
-            if 'view' not in data:
-                # if view is empty, the logging will omit it 
-                return {}
-            else:
-                return data['view']
-
-        self.current_node_view = logs.CurrentValueTracker(
-            events,
-            filter_func = self.projected_filter(lambda ed: 'view' in ed),
-            value_func = lambda e: (e['address'],
-                                    view_value_func(self.project(e['data']))))
-#            value_func = lambda e: (e['address'],
-#                                    self.project(e['data'])['view']))
 
 
         self.add_cursor_listener(self.current_node_view.set_i)
@@ -378,7 +399,7 @@ class MicaVisMicavis:
             if restrict_netype is not None and restrict_netype != ne_type:
                 continue
 
-            ne_name = e['data']
+            ne_name = e.get('data','')
 
             if restrict_netype is None:
                 key = (ne_type,ne_name)
@@ -558,14 +579,22 @@ class MicaVisMicavis:
     # where igraph is an igraph object with nodes and edges of the comm graph
     # and namemap maps address_string => graph vertex id 
     def create_default_graph(self):
+        if self.options['nolayout']:
+            return None, None
+
         g = igraph.Graph(directed=True)
         ual = logs.query_unique_addresses(self.events)
         self.unique_addresses = ual
         print "Logs report %s unique addresses" % len(ual)
         g.add_vertices(len(ual))
         namemap = dict((n,i) for i,n in enumerate(ual))
-        comm_matrix = logs.build_comm_matrix(ual,self.events)
-        edges = list(logs.matrix_edge_generator(comm_matrix))
+
+        matrix = logs.build_comm_matrix(ual,self.events)
+        if matrix is None:
+            # fall back to initial state view graph
+            matrix = logs.build_final_view_matrix(ual,self.events, self.current_node_view)
+
+        edges = list(logs.matrix_edge_generator(matrix))
         g.add_edges(edges)
         return g, namemap
 
@@ -760,6 +789,21 @@ class MicaVisMicavis:
 
 
 def main(args=sys.argv):
+    options = {}
+    try:
+        args.remove('-nolayout')
+        options['nolayout'] = True
+    except ValueError:
+        options['nolayout'] = False
+
+    pydir = os.path.split(__file__)[0]
+    micadir = os.path.abspath(pydir + "/../..")
+    logdir = micadir + "/mica_log"
+
+    if len(args) == 1:
+        default_loc = logdir
+        args += [default_loc]
+
     try:
         logloc = args[1]
     except:
@@ -769,7 +813,9 @@ def main(args=sys.argv):
     import logs
     events = logs.read_mica_logs(logloc)
     print "Read %s log events" % len(events)
-    micavis = MicaVisMicavis(events)
+
+        
+    micavis = MicaVisMicavis(events, options = options)
     gtk.main()
     
 

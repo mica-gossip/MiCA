@@ -6,6 +6,7 @@ import org.princehouse.mica.base.MalformedViewException;
 import org.princehouse.mica.base.RuntimeErrorCondition;
 import org.princehouse.mica.base.exceptions.AbortRound;
 import org.princehouse.mica.base.exceptions.FatalErrorHalt;
+import org.princehouse.mica.base.model.MiCA;
 import org.princehouse.mica.base.model.Protocol;
 import org.princehouse.mica.base.model.Runtime;
 import org.princehouse.mica.base.model.RuntimeAgent;
@@ -26,7 +27,7 @@ public class SimRuntime<P extends Protocol> extends Runtime<P> {
 
 	@Override
 	public String getLogFilename() {
-		return "sim.log";
+		return String.format("%ssim_%s.log",MiCA.getOptions().logprefix,MiCA.getOptions().expname);
 	}
 	
 	@Override

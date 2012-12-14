@@ -7,6 +7,9 @@ import java.util.ListIterator;
 import java.util.Map;
 import java.util.TimerTask;
 
+import org.princehouse.mica.base.LogFlag;
+import org.princehouse.mica.base.exceptions.AbortRound;
+import org.princehouse.mica.base.exceptions.FatalErrorHalt;
 import org.princehouse.mica.base.exceptions.MicaRuntimeException;
 import org.princehouse.mica.base.model.MiCA;
 import org.princehouse.mica.base.model.Protocol;
@@ -34,6 +37,19 @@ public class Simulator implements RuntimeInterface {
 		return clock;
 	}
 
+	@Override
+	public void reset() {
+		stop();
+		clock = 0;
+		eventQueue.clear();
+		addressBindings.clear();
+		lockHolders.clear();
+		lockWaitQueues.clear();
+		unlockedQueue.clear();
+		running = false;
+	}
+
+	
 	public void setClock(long clock) {
 		this.clock = clock;
 	}
@@ -123,6 +139,7 @@ public class Simulator implements RuntimeInterface {
 	}
 
 	public void scheduleRelative(SimulatorEvent e, long offset) {
+		assert(offset >= 0);
 		e.t = getClock() + offset;
 		schedule(e, eventQueue);
 	}
@@ -212,10 +229,21 @@ public class Simulator implements RuntimeInterface {
 		long round = 0;
 		int roundSize = MiCA.getOptions().roundLength;
 		
+		// write options message to the first runtime
+		Runtime<?> arbitraryRuntime = addressBindings.values().iterator().next();
+		arbitraryRuntime.logJson(LogFlag.init, "mica-options", MiCA.getOptions());
+		
 		while (running) {
 			long curRound = (getClock() / roundSize) + 1;
 			if(curRound != round) {
-				SimRuntime.debug.printf("Round %d\n",curRound);
+				String stopsfx;
+				if(MiCA.getOptions().stopAfter > 0) {
+					stopsfx = String.format(" of %s", MiCA.getOptions().stopAfter);
+				} else {
+					stopsfx = "";
+				}
+				
+				SimRuntime.debug.printf("(%s) round %d%s\n", MiCA.getOptions().expname, curRound, stopsfx);
 				round = curRound;
 			}
 			SimulatorEvent e = getNextEvent();
@@ -233,12 +261,23 @@ public class Simulator implements RuntimeInterface {
 			assert (e.t >= clock);
 			setClock(e.t);
 
-			try {
-				
+			try {		
 				e.execute(this);
+			} catch (AbortRound ex) {
+				if(e instanceof SimRound.RoundEvent){
+					e.abortRound(this);
+				}
+			} catch (FatalErrorHalt ex) {
+				if(e instanceof SimRound.RoundEvent){
+					e.abortRound(this);
+				}
+				Address src = e.getSrc();
+				if(src != null) {
+					killRuntime(getRuntime(src));
+				}
 			} catch (MicaRuntimeException ex) {
-				throw new RuntimeException(ex);
-				// e.handleError(ex, this);
+				// dead code
+				ex.printStackTrace();
 			}
 		}
 		running = false;
@@ -285,7 +324,7 @@ public class Simulator implements RuntimeInterface {
 	}
 
 	@Override
-	public <P extends Protocol> void addRuntime(Address address, P protocol,
+	public <P extends Protocol> Runtime<?> addRuntime(Address address, P protocol,
 			long randomSeed, int roundLength, int startTime, int lockTimeout) {
 		SimRuntime<P> rt = new SimRuntime<P>(address);
 		rt.setProtocolInstance(protocol);
@@ -293,6 +332,7 @@ public class Simulator implements RuntimeInterface {
 		rt.setRoundLength(roundLength);
 		rt.setLockWaitTimeout(lockTimeout);
 		bind(address, rt, startTime);
+		return rt;
 	}
 
 	@Override
@@ -308,6 +348,10 @@ public class Simulator implements RuntimeInterface {
 	@SuppressWarnings("unchecked")
 	@Override
 	public <T extends Protocol> Runtime<T> getRuntime(Protocol p) {
+		if(runtimeSingleNode != null) {
+			return (Runtime<T>) runtimeSingleNode;
+		}
+		
 		Runtime<T> rt = (Runtime<T>) protocolRuntimeContext.get(p);
 		if (rt == null) {
 			throw new RuntimeException(String.format(
@@ -322,8 +366,21 @@ public class Simulator implements RuntimeInterface {
 	private Map<Protocol, SimRuntime<?>> protocolRuntimeContext = Functional
 			.map();
 
+
+	private SimRuntime<?> runtimeSingleNode = null;
+	
+	public void setRuntimeSingleNode(SimRuntime<?> rt) {
+		assert(runtimeSingleNode == null);
+		runtimeSingleNode = rt;
+	}
+	
+	public void clearRuntimeSingleNode() {
+		runtimeSingleNode = null;
+	}
+	
 	@Override
 	public <T extends Protocol> void setRuntime(Runtime<T> rt) {
+		assert(runtimeSingleNode == null);
 		FindReachableObjects<Protocol> reachableProtocolFinder = new FindReachableObjects<Protocol>() {
 			@Override
 			public boolean match(Object obj) {
@@ -347,12 +404,15 @@ public class Simulator implements RuntimeInterface {
 		}
 	}
 
+	/**
+	 * Default node name is options.expname + i
+	 */
 	@Override
 	public F<Integer, Address> getAddressFunc() {
 		return new F<Integer, Address>() {
 			@Override
 			public Address f(Integer i) {
-				return new DummyAddress(String.format("n%d",i));
+				return new DummyAddress(String.format("%s%d",MiCA.getOptions().expname,i));
 			}
 		};
 	}

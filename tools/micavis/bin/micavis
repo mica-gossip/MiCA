@@ -18,10 +18,6 @@ sys.path.insert(0,os.path.abspath(pydir))
 
 args = sys.argv[:]
 
-if len(args) == 1:
-    default_loc = logdir
-    args += [default_loc]
-
 from micavis.gui import main
 
 main(args)

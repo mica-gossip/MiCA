@@ -2,6 +2,7 @@ package org.princehouse.mica.experiment.dilation;
 
 import org.princehouse.mica.base.LogFlag;
 import org.princehouse.mica.base.annotations.GossipUpdate;
+import org.princehouse.mica.base.model.MiCA;
 import org.princehouse.mica.base.model.Protocol;
 import org.princehouse.mica.base.net.model.Address;
 import org.princehouse.mica.example.Dilator;
@@ -37,9 +38,11 @@ public abstract class DilationExperiment extends TestHarness<Protocol> implement
 	public Protocol createProtocolInstance(int nodeId, Address address,
 			Overlay overlay) {
 		
+	
+		String expname = MiCA.getOptions().expname;
 		
-		Protocol p1 = new FindMinChatty(nodeId, overlay, direction, "dilation-1");
-		Protocol p2 = Dilator.dilate(3,new FindMinChatty(nodeId, overlay, direction, "dilation-4"));	
+		Protocol p1 = new FindMinChatty(nodeId, overlay, direction, expname+"-dilation-1");
+		Protocol p2 = Dilator.dilate(3,new FindMinChatty(nodeId, overlay, direction, expname+"-dilation-4"));	
 		return MergeIndependent.merge(p1,p2);
 	}
 
