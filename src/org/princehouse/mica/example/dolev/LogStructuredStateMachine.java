@@ -313,6 +313,7 @@ public abstract class LogStructuredStateMachine extends RoundManager {
 		}
 	}
 
+	@SuppressWarnings("unused")
 	private void purgeExpiredMessages() {
 		final long now = getNow();
 		final int expiration = getMessageLifetimeMS();

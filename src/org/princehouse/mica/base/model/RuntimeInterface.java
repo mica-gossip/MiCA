@@ -18,7 +18,7 @@ public interface RuntimeInterface {
 	 * @param roundLength 
 	 * @param startTime   Delay of initial sleep (in the runtime's units, probably ms)
 	 */
-	public <P extends Protocol> Runtime<?> addRuntime(Address address, P protocol, long randomSeed, int roundLength,int startTime, int lockTimeout);	
+	public Runtime addRuntime(Address address, Protocol protocol, long randomSeed, int roundLength,int startTime, int lockTimeout);	
 	
 	/**
 	 * Start all runtimes and block until they're finished
@@ -35,10 +35,10 @@ public interface RuntimeInterface {
 	public void reset();
 	
 	// get the runtime associated with a protocol instance
-	public <T extends Protocol> Runtime<T> getRuntime(Protocol p);
+	public Runtime getRuntime(Protocol p);
 	
 	// set the current thread's runtime
-	public <T extends Protocol> void setRuntime(Runtime<T> rt);
+	public void setRuntime(Runtime rt);
 
 	/**
 	 * Returns a functionalJava function:

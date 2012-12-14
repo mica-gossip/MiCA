@@ -26,12 +26,11 @@ public abstract class ReachableObjectVisitor {
 	 * 
 	 * @param root
 	 */
-	@SuppressWarnings("unchecked")
 	public void analyze(final Object root) {
 		try {
-			AccessController.doPrivileged(new PrivilegedExceptionAction() {
+			AccessController.doPrivileged(new PrivilegedExceptionAction<ReachableObjectVisitor>() {
 				@Override
-				public Object run() throws Exception {
+				public ReachableObjectVisitor run() throws Exception {
 					analyzeHelper(root);
 					return null;
 				}

@@ -6,7 +6,6 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 
-import org.princehouse.mica.base.model.Protocol;
 import org.princehouse.mica.base.simple.ConflictingSelectAnnotationsException;
 import org.princehouse.mica.base.simple.SelectException;
 import org.princehouse.mica.base.simple.Selector;
@@ -75,7 +74,7 @@ public class AnnotationInspector {
 		// unreachable
 	}
 
-	public static <T extends Protocol> Selector<T> locateSelectMethod(Class<?> klass) throws NotFoundException,
+	public static Selector locateSelectMethod(Class<?> klass) throws NotFoundException,
 			TooManyException, SelectException {
 		/*
 		 * Search through fields and functions looking for syntactic sugar

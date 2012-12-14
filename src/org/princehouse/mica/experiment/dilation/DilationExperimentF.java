@@ -2,7 +2,6 @@ package org.princehouse.mica.experiment.dilation;
 
 import org.princehouse.mica.base.LogFlag;
 import org.princehouse.mica.base.annotations.GossipUpdate;
-import org.princehouse.mica.base.model.MiCA;
 import org.princehouse.mica.base.model.MicaOptions;
 import org.princehouse.mica.base.model.Protocol;
 import org.princehouse.mica.base.net.model.Address;
@@ -19,8 +18,8 @@ import org.princehouse.mica.util.harness.TestHarness.ProtocolInstanceFactory;
  * @author lonnie
  * 
  */
-public class DilationExperimentF extends TestHarness<Protocol> implements
-		ProtocolInstanceFactory<Protocol> {
+public class DilationExperimentF extends TestHarness implements
+		ProtocolInstanceFactory {
 
 	public static void main(String[] args) {
 		for (Protocol.Direction direction : new Protocol.Direction[] {

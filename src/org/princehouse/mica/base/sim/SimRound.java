@@ -60,7 +60,7 @@ public class SimRound {
 			sim.scheduleRelative(new ReleaseDstLock(), releaseLockOffset);
 		}
 		
-		SimRuntime<?> rta = sim.getRuntime(src);
+		SimRuntime rta = sim.getRuntime(src);
 		rta.logJson(LogFlag.user, "notable-event-abort", MiCA.getOptions().expname);
 		sim.setRuntimeSingleNode(rta);
 		double rate = 1.0;
@@ -247,8 +247,8 @@ public class SimRound {
 		public void execute(Simulator simulator) throws MicaRuntimeException {
 			// should have both locks by this point
 
-			SimRuntime<?> rta = simulator.getRuntime(round.src);
-			SimRuntime<?> rtb = simulator.getRuntime(round.dst);
+			SimRuntime rta = simulator.getRuntime(round.src);
+			SimRuntime rtb = simulator.getRuntime(round.dst);
 
 			Protocol a = rta.getProtocolInstance();
 			Protocol b = rtb.getProtocolInstance();
@@ -334,7 +334,7 @@ public class SimRound {
 
 		@Override
 		public void execute(Simulator simulator) throws MicaRuntimeException {
-			SimRuntime<?> rta = simulator.getRuntime(getSrc());
+			SimRuntime rta = simulator.getRuntime(getSrc());
 			simulator.setRuntimeSingleNode(rta);
 
 			stopwatch.reset();

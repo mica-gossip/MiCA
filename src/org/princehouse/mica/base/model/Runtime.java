@@ -37,7 +37,7 @@ import com.google.gson.Gson;
  * 
  * @param <P>
  */
-public abstract class Runtime<P extends Protocol> {
+public abstract class Runtime {
 
 	public Runtime() {
 	}
@@ -229,7 +229,7 @@ public abstract class Runtime<P extends Protocol> {
 		runtimeLoglock.unlock();
 	}
 
-	public abstract <T extends Protocol> RuntimeAgent<T> compile(T pinstance);
+	public abstract RuntimeAgent compile(Protocol pinstance);
 
 	/**
 	 * Start the runtime. If you override this, be sure to call the inherited
@@ -275,14 +275,14 @@ public abstract class Runtime<P extends Protocol> {
 	 * 
 	 * @return Local top-level protocol instance
 	 */
-	public abstract P getProtocolInstance();
+	public abstract Protocol getProtocolInstance();
 
 	/**
 	 * Set local top-level protocol instance
 	 * 
 	 * @param pinstance
 	 */
-	public abstract void setProtocolInstance(P pinstance);
+	public abstract void setProtocolInstance(Protocol pinstance);
 
 	/**
 	 * Stop the local runtime
@@ -301,16 +301,15 @@ public abstract class Runtime<P extends Protocol> {
 		getRuntimeState().setAddress(address);
 	}
 
-	public <T> T punt(Exception e) {
+	public void punt(Exception e) {
 		throw new RuntimeException(e);
 	}
 
-	public <T> T fatal(Exception e) {
+	public void fatal(Exception e) {
 		stop();
 		System.err.printf("Fatal exception happened in runtime %s\n", this);
 		e.printStackTrace();
 		System.exit(1);
-		return null;
 	}
 
 	public void tolerate(Exception e) {
@@ -328,9 +327,6 @@ public abstract class Runtime<P extends Protocol> {
 		debug.printf("[%s select execution exception: %s]\n", getAddress(), e);
 		e.printStackTrace(debug);
 	}
-
-
-	
 
 	public abstract RuntimeState getRuntimeState(Protocol p);
 

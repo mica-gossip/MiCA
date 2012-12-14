@@ -93,5 +93,5 @@ public interface Protocol {
 	 */
 	public Object getLogState();
 	
-	public <T extends Protocol> Runtime<T> getRuntime();
+	public Runtime getRuntime();
 }

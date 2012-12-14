@@ -10,7 +10,7 @@ import org.princehouse.mica.base.net.model.Address;
 import org.princehouse.mica.util.Distribution;
 
 
-class UniformRandomCollectionFieldSelector<Q extends Protocol> extends Selector<Q> {
+class UniformRandomCollectionFieldSelector extends Selector {
 
 	private Field field;
 	
@@ -23,7 +23,7 @@ class UniformRandomCollectionFieldSelector<Q extends Protocol> extends Selector<
 		// FIXME: sanity check should go here
 	}
 	
-	private Collection<Address> getCollection(Q pinstance) {
+	private Collection<Address> getCollection(Protocol pinstance) {
 		Object obj = null;
 		try {
 			obj = field.get(pinstance);
@@ -44,7 +44,7 @@ class UniformRandomCollectionFieldSelector<Q extends Protocol> extends Selector<
 	}
 
 	@Override
-	public Distribution<Address> select(Runtime<?> rt, Q pinstance) {
+	public Distribution<Address> select(Runtime rt, Protocol pinstance) {
 		return Distribution.uniform(getCollection(pinstance));
 	}
 	

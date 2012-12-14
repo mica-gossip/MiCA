@@ -28,7 +28,7 @@ public class RunPulse {
 	 * @param args
 	 */
 	public static void main(String[] args) {
-		final TestHarness<Pulse> harness = new TestHarness<Pulse>();
+		final TestHarness harness = new TestHarness();
 		
 		final MicaOptions options = harness.parseOptions(args);
 		options.graphType = "complete";
@@ -36,7 +36,7 @@ public class RunPulse {
 
 		Randomness.seedRandomness(options.seed);
 		
-		ProtocolInstanceFactory<Pulse> factory = new ProtocolInstanceFactory<Pulse>() {
+		ProtocolInstanceFactory factory = new ProtocolInstanceFactory() {
 			@Override
 			public Pulse createProtocolInstance(int nodeId, Address address,
 					Overlay overlay) {

@@ -18,14 +18,14 @@ import org.princehouse.mica.util.Logging.SelectEvent;
 import org.princehouse.mica.util.NotFoundException;
 import org.princehouse.mica.util.TooManyException;
 
-public class SimRuntimeAgent<P extends Protocol> extends RuntimeAgent<P> {
+public class SimRuntimeAgent extends RuntimeAgent {
 
 	
-	public SimRuntimeAgent(P pinstance) {
+	public SimRuntimeAgent(Protocol pinstance) {
 	}
 
 	@Override
-	public SelectEvent select(Runtime<?> runtime, P pinstance) throws SelectException {
+	public SelectEvent select(Runtime runtime, Protocol pinstance) throws SelectException {
 		SelectEvent rvalue = new SelectEvent();
 		rvalue.view = getView(runtime, pinstance);
 		if (rvalue.view != null && rvalue.view.size() > 0) {
@@ -35,10 +35,10 @@ public class SimRuntimeAgent<P extends Protocol> extends RuntimeAgent<P> {
 	}
 
 	@Override
-	public Distribution<Address> getView(Runtime<?> runtime, P pinstance)
+	public Distribution<Address> getView(Runtime runtime, Protocol pinstance)
 			throws SelectException {
 		try {
-			Selector<P> selector = AnnotationInspector.locateSelectMethod(pinstance.getClass());
+			Selector selector = AnnotationInspector.locateSelectMethod(pinstance.getClass());
 			return selector.select(runtime, pinstance);
 		} catch (NotFoundException e) {
 			throw new RuntimeException(e);			
@@ -52,12 +52,12 @@ public class SimRuntimeAgent<P extends Protocol> extends RuntimeAgent<P> {
 	}
 	
 	@Override
-	public void gossip(Runtime<P> runtime, P pinstance, Connection connection)
+	public void gossip(Runtime runtime, Protocol pinstance, Connection connection)
 			throws AbortRound, FatalErrorHalt {
 		try {
 			Method rmethod = AnnotationInspector.locateUpdateMethod(pinstance.getClass());
 			SimConnection sc = (SimConnection) connection;
-			P remote = getSimulator().<P>getReceiver(sc);
+			Protocol remote = getSimulator().getReceiver(sc);
 			rmethod.invoke(pinstance, remote);
 		} catch (TooManyException e) {
 			throw new RuntimeException(e);			
@@ -81,7 +81,7 @@ public class SimRuntimeAgent<P extends Protocol> extends RuntimeAgent<P> {
 	 * @param precv
 	 *            Receiving instance
 	 */
-	private void runGossipUpdate(Runtime<?> runtime, P pinit, P precv) {
+	private void runGossipUpdate(Runtime runtime, Protocol pinit, Protocol precv) {
 		// imperative update of p1 and p2 states
 		try {			
 			Method umethod = null;
@@ -110,11 +110,11 @@ public class SimRuntimeAgent<P extends Protocol> extends RuntimeAgent<P> {
 			}
 		}
 	}
-	public void executeUpdate(Runtime<?> rt, P p1, P p2) {
+	public void executeUpdate(Runtime rt, Protocol p1, Protocol p2) {
 		runGossipUpdate(rt, p1, p2);
 	}
 	@Override
-	public double getRate(Runtime<?> runtime, P pinstance) {
+	public double getRate(Runtime runtime, Protocol pinstance) {
 		try {
 			Method rmethod = AnnotationInspector.locateFrequencyMethod(pinstance.getClass());
 			Double d = (Double) rmethod.invoke(pinstance);

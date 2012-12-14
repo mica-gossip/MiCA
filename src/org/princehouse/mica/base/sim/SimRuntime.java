@@ -17,9 +17,9 @@ import org.princehouse.mica.base.simple.SelectException;
 import org.princehouse.mica.util.Distribution;
 import org.princehouse.mica.util.Logging.SelectEvent;
 
-public class SimRuntime<P extends Protocol> extends Runtime<P> {
+public class SimRuntime extends Runtime {
 
-	private P protocol = null;
+	private Protocol protocol = null;
 
 	public SimRuntime(Address address) {
 		setAddress(address);
@@ -27,22 +27,22 @@ public class SimRuntime<P extends Protocol> extends Runtime<P> {
 
 	@Override
 	public String getLogFilename() {
-		return String.format("%ssim_%s.log",MiCA.getOptions().logprefix,MiCA.getOptions().expname);
+		return String.format("%ssim_%s.log", MiCA.getOptions().logprefix,
+				MiCA.getOptions().expname);
 	}
-	
+
 	@Override
 	public ReentrantLock getProtocolInstanceLock() {
 		throw new RuntimeException();
 	}
 
 	@Override
-	public <T extends Protocol> RuntimeAgent<T> compile(T pinstance) {
-		return new SimRuntimeAgent<T>(pinstance);
+	public RuntimeAgent compile(Protocol pinstance) {
+		return new SimRuntimeAgent(pinstance);
 	}
 
-
 	@Override
-	public void setProtocolInstance(P pinstance) {
+	public void setProtocolInstance(Protocol pinstance) {
 		protocol = pinstance;
 		Simulator.v().setRuntime(this);
 	}
@@ -60,7 +60,7 @@ public class SimRuntime<P extends Protocol> extends Runtime<P> {
 	@Override
 	public void setAddress(Address address) {
 		getRuntimeState().setAddress(address);
-		
+
 	}
 
 	@Override
@@ -69,7 +69,8 @@ public class SimRuntime<P extends Protocol> extends Runtime<P> {
 	}
 
 	@Override
-	public Distribution<Address> getView(Protocol protocol) throws SelectException {
+	public Distribution<Address> getView(Protocol protocol)
+			throws SelectException {
 		Distribution<Address> view = compile(protocol).getView(this, protocol);
 		if (view != null && view.isEmpty())
 			return null;
@@ -79,7 +80,7 @@ public class SimRuntime<P extends Protocol> extends Runtime<P> {
 		return view;
 	}
 
-	public SelectEvent select() throws FatalErrorHalt, AbortRound  {
+	public SelectEvent select() throws FatalErrorHalt, AbortRound {
 		Protocol p = getProtocolInstance();
 		SelectEvent se = null;
 		try {
@@ -89,7 +90,7 @@ public class SimRuntime<P extends Protocol> extends Runtime<P> {
 		}
 		return se;
 	}
-	
+
 	@Override
 	public long getRuntimeClock() {
 		return getSimulator().getClock();
@@ -119,20 +120,19 @@ public class SimRuntime<P extends Protocol> extends Runtime<P> {
 		}
 		throw new FatalErrorHalt();
 	}
-	
+
 	protected Simulator getSimulator() {
 		return Simulator.v();
 	}
-	
+
 	@Override
 	public void start() {
 		initLog();
 		logState("initial");
 	}
 
-	
 	@Override
-	public P getProtocolInstance() {
+	public Protocol getProtocolInstance() {
 		return protocol;
 	}
 }

@@ -32,10 +32,10 @@ import org.princehouse.mica.util.TooManyException;
  * 
  * @author lonnie
  * 
- * @param <P>
+ * @param 
  *            Top-level Protocol class
  */
-class SimpleRuntimeAgent<P extends Protocol> extends RuntimeAgent<P> {
+class SimpleRuntimeAgent extends RuntimeAgent {
 
 	/**
 	 * Utility class representing the message sent by the gossip initiator to
@@ -44,21 +44,21 @@ class SimpleRuntimeAgent<P extends Protocol> extends RuntimeAgent<P> {
 	 * 
 	 * @author lonnie
 	 * 
-	 * @param <P>
+	 * @param 
 	 *            Top-level protocol class
 	 */
-	protected static class RequestMessage<P extends Protocol> implements
+	protected static class RequestMessage implements
 			Serializable {
 		private static final long serialVersionUID = 1L;
 
-		public RequestMessage(P protocolInstance, RuntimeState runtimeState) {
+		public RequestMessage(Protocol protocolInstance, RuntimeState runtimeState) {
 			this.protocolInstance = protocolInstance;
 			this.runtimeState = runtimeState;
 		}
 
-		private P protocolInstance;
+		private Protocol protocolInstance;
 
-		public P getProtocolInstance() {
+		public Protocol getProtocolInstance() {
 			return protocolInstance;
 		}
 
@@ -76,21 +76,21 @@ class SimpleRuntimeAgent<P extends Protocol> extends RuntimeAgent<P> {
 	 * 
 	 * @author lonnie
 	 * 
-	 * @param <P>
+	 * @param 
 	 *            Top-level Protocol class
 	 */
-	protected static class ResponseMessage<P extends Protocol> implements
+	protected static class ResponseMessage implements
 			Serializable {
 		private static final long serialVersionUID = 1L;
-		private P protocolInstance;
+		private Protocol protocolInstance;
 		private RuntimeState runtimeState;
 
-		public ResponseMessage(P protocolInstance, RuntimeState runtimeState) {
+		public ResponseMessage(Protocol protocolInstance, RuntimeState runtimeState) {
 			this.protocolInstance = protocolInstance;
 			this.runtimeState = runtimeState;
 		}
 
-		public P getProtocolInstance() {
+		public Protocol getProtocolInstance() {
 			return protocolInstance;
 		}
 
@@ -99,9 +99,9 @@ class SimpleRuntimeAgent<P extends Protocol> extends RuntimeAgent<P> {
 		}
 	}
 
-	private Class<P> pclass;
+	private Class<Protocol> pclass;
 
-	private Selector<P> selector = null;
+	private Selector selector = null;
 
 	private Method updateMethod;
 
@@ -115,13 +115,13 @@ class SimpleRuntimeAgent<P extends Protocol> extends RuntimeAgent<P> {
 	 *            Top-level Protocol class
 	 * @throws CompilerException
 	 */
-	public SimpleRuntimeAgent(Class<P> pclass) throws CompilerException {
+	public SimpleRuntimeAgent(Class<Protocol> pclass) throws CompilerException {
 		this.pclass = pclass;
 		process();
 	}
 
 	@Override
-	public SelectEvent select(Runtime<?> rt, P pinstance)
+	public SelectEvent select(Runtime rt, Protocol pinstance)
 			throws SelectException {
 		// Sanity check to prevent self-gossip added by Josh Endries
 		// (and since moved into SimpleRuntimeAgent --- select() can return
@@ -136,12 +136,12 @@ class SimpleRuntimeAgent<P extends Protocol> extends RuntimeAgent<P> {
 	}
 
 	@Override
-	public void gossip(Runtime<P> rt, P pinstance, Connection connection)
+	public void gossip(Runtime rt, Protocol pinstance, Connection connection)
 			throws AbortRound, FatalErrorHalt {
 		// 1. serialize local state, send over connection
 		// 2. receive updated state
 		// prerequisite of this agent: protocols implement serializable
-		RequestMessage<P> msg = new RequestMessage<P>(pinstance,
+		RequestMessage msg = new RequestMessage(pinstance,
 				rt.getRuntimeState());
 
 		try {
@@ -184,8 +184,7 @@ class SimpleRuntimeAgent<P extends Protocol> extends RuntimeAgent<P> {
 		}
 
 		try {
-			@SuppressWarnings("unchecked")
-			ResponseMessage<P> rpm = (ResponseMessage<P>) ois.readObject();
+			ResponseMessage rpm = (ResponseMessage) ois.readObject();
 
 			rt.setProtocolInstance(rpm.protocolInstance);
 
@@ -264,7 +263,7 @@ class SimpleRuntimeAgent<P extends Protocol> extends RuntimeAgent<P> {
 
 	private void locateSelectMethod(Class<?> klass) throws NotFoundException,
 			TooManyException, SelectException {
-		selector = AnnotationInspector.<P>locateSelectMethod(klass);
+		selector = AnnotationInspector.locateSelectMethod(klass);
 	}
 
 	/**
@@ -282,8 +281,7 @@ class SimpleRuntimeAgent<P extends Protocol> extends RuntimeAgent<P> {
 	 * @param connection
 	 * @throws IOException
 	 */
-	@SuppressWarnings("unchecked")
-	public void acceptConnection(Runtime<?> runtime, P receiverState,
+	public void acceptConnection(Runtime runtime, Protocol receiverState,
 			Connection connection) throws IOException {
 
 		MarkingObjectInputStream ois = null; // can distinguish deserialized
@@ -296,12 +294,12 @@ class SimpleRuntimeAgent<P extends Protocol> extends RuntimeAgent<P> {
 			return;
 		}
 		try {
-			RequestMessage<P> rqm = (RequestMessage<P>) ois.readObject();
-			P initiatorState = rqm.protocolInstance;
+			RequestMessage rqm = (RequestMessage) ois.readObject();
+			Protocol initiatorState = rqm.protocolInstance;
 
 			// foreign state is used by the visiting node to access remote
 			// runtime state data
-			SimpleRuntime<?> srt = (SimpleRuntime<?>) runtime;
+			SimpleRuntime srt = (SimpleRuntime) runtime;
 
 			srt.setForeignState(ois.getForeignObjectSet(), rqm.runtimeState);
 			try {
@@ -316,7 +314,7 @@ class SimpleRuntimeAgent<P extends Protocol> extends RuntimeAgent<P> {
 
 			ObjectOutputStream oos = new ObjectOutputStream(
 					connection.getOutputStream());
-			ResponseMessage<P> rpm = new ResponseMessage<P>(initiatorState,
+			ResponseMessage rpm = new ResponseMessage(initiatorState,
 					rqm.runtimeState);
 			oos.writeObject(rpm);
 			oos.close();
@@ -340,7 +338,7 @@ class SimpleRuntimeAgent<P extends Protocol> extends RuntimeAgent<P> {
 	 * @param precv
 	 *            Receiving instance
 	 */
-	private void runGossipUpdate(Runtime<?> runtime, P pinit, P precv) {
+	private void runGossipUpdate(Runtime runtime, Protocol pinit, Protocol precv) {
 		// imperative update of p1 and p2 states
 		try {
 			updateMethod.invoke(pinit, precv);
@@ -361,11 +359,11 @@ class SimpleRuntimeAgent<P extends Protocol> extends RuntimeAgent<P> {
 			}
 		}
 	}
-	public void executeUpdate(Runtime<?> rt, P p1, P p2) {
+	public void executeUpdate(Runtime rt, Protocol p1, Protocol p2) {
 		runGossipUpdate(rt, p1, p2);
 	}
 	@Override
-	public Distribution<Address> getView(Runtime<?> rt, P pinstance)
+	public Distribution<Address> getView(Runtime rt, Protocol pinstance)
 			throws SelectException {
 		return selector.select(rt, pinstance);
 	}
@@ -373,13 +371,13 @@ class SimpleRuntimeAgent<P extends Protocol> extends RuntimeAgent<P> {
 	
 
 	@Override
-	public double getRate(Runtime<?> rt, P pinstance) {
+	public double getRate(Runtime rt, Protocol pinstance) {
 		try {
 			return (Double) frequencyMethod.invoke(pinstance);
 		} catch (IllegalArgumentException e) {
-			return rt.fatal(e);
+			rt.fatal(e);
 		} catch (IllegalAccessException e) {
-			return rt.fatal(e);
+			rt.fatal(e);
 		} catch (InvocationTargetException e) {
 			Throwable tgt = e.getTargetException();
 			if (tgt instanceof RuntimeException)
@@ -392,7 +390,7 @@ class SimpleRuntimeAgent<P extends Protocol> extends RuntimeAgent<P> {
 				// runtimeexception
 			}
 		}
-
+		return 1.0;
 	}
 
 }

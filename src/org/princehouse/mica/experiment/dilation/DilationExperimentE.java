@@ -19,8 +19,8 @@ import org.princehouse.mica.util.harness.TestHarness.ProtocolInstanceFactory;
  * @author lonnie
  * 
  */
-public class DilationExperimentE extends TestHarness<Protocol> implements
-		ProtocolInstanceFactory<Protocol> {
+public class DilationExperimentE extends TestHarness implements
+		ProtocolInstanceFactory {
 	
 	public static void main(String[] args) {
 		for(int dilation = 0 ; dilation < 6; dilation+=2) {

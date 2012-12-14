@@ -20,14 +20,14 @@ import org.princehouse.mica.util.Logging.SelectEvent;
  * 
  * @param <P>
  */
-public abstract class RuntimeAgent<P extends Protocol> {
+public abstract class RuntimeAgent {
 
 	public RuntimeAgent() {
 	}
 
 	// TODO modify to take a Random instance instead of a pre-generated random double
 	/**
-	 * Executes the select function for the specified proto col instance and
+	 * Executes the select function for the specified protocol instance and
 	 * chooses an address from the resulting address distribution.
 	 * 
 	 * @param runtime Current Runtime
@@ -37,7 +37,7 @@ public abstract class RuntimeAgent<P extends Protocol> {
 	 * @return Address of the chosen gossip peer
 	 * @throws SelectException 
 	 */
-	public abstract SelectEvent select(Runtime<?> runtime, P pinstance) throws SelectException;
+	public abstract SelectEvent select(Runtime runtime, Protocol pinstance) throws SelectException;
 
 	// Called on subprotocols as well as the top protocol; Runtime type
 	// parameter doesn't necessarily match pinstance type
@@ -52,8 +52,8 @@ public abstract class RuntimeAgent<P extends Protocol> {
 	 * @return
 	 * @throws SelectException 
 	 */
-	public abstract Distribution<Address> getView(Runtime<?> runtime,
-			P pinstance) throws SelectException;
+	public abstract Distribution<Address> getView(Runtime runtime,
+			Protocol pinstance) throws SelectException;
 
 	/**
 	 * Execute the gossip update with a remote peer.
@@ -62,7 +62,7 @@ public abstract class RuntimeAgent<P extends Protocol> {
 	 * @param pinstance Protocol instance
 	 * @param connection Open connection to the selected gossip peer
 	 */
-	public abstract void gossip(Runtime<P> runtime, P pinstance,
+	public abstract void gossip(Runtime runtime, Protocol pinstance,
 			Connection connection) throws AbortRound, FatalErrorHalt;
 
 	
@@ -74,7 +74,7 @@ public abstract class RuntimeAgent<P extends Protocol> {
 	 * @param pinstance
 	 * @return
 	 */
-	public abstract double getRate(Runtime<?> runtime, P pinstance);
+	public abstract double getRate(Runtime runtime, Protocol pinstance);
 
 	
 }

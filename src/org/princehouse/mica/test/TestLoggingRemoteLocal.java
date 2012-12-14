@@ -61,9 +61,9 @@ public class TestLoggingRemoteLocal extends BaseProtocol {
 		TestHarness.main(args, createNodeFunc);
 	}
 	
-	public static F3<Integer, Address, Overlay, TestLoggingRemoteLocal> createNodeFunc = new F3<Integer, Address, Overlay, TestLoggingRemoteLocal>() {
+	public static F3<Integer, Address, Overlay, Protocol> createNodeFunc = new F3<Integer, Address, Overlay, Protocol>() {
 		@Override
-		public TestLoggingRemoteLocal f(Integer i, Address address,
+		public Protocol f(Integer i, Address address,
 				Overlay neighbors) {
 			// Create a static overlay to bootstrap our set of neighbors
 			return new TestLoggingRemoteLocal(neighbors);

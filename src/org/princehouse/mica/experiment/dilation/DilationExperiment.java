@@ -18,8 +18,8 @@ import org.princehouse.mica.util.harness.TestHarness.ProtocolInstanceFactory;
  * @author lonnie
  * 
  */
-public abstract class DilationExperiment extends TestHarness<Protocol> implements
-		ProtocolInstanceFactory<Protocol> {
+public abstract class DilationExperiment extends TestHarness implements
+		ProtocolInstanceFactory {
 
 	/**
 	 * should set:

@@ -31,7 +31,7 @@ import org.princehouse.mica.util.harness.TestHarness.ProtocolInstanceFactory;
  *   into an orderly cyclical count-down once the leader election has converged and up to k rounds elapse to stabilize 
  *   the token ring.  
  */
-public class DemoTokenRing extends TestHarness<MergeCorrelated> implements ProtocolInstanceFactory<MergeCorrelated> {
+public class DemoTokenRing extends TestHarness implements ProtocolInstanceFactory {
 	
 	/**
 	 *  Called by the test harness to create a protocol instance for each node

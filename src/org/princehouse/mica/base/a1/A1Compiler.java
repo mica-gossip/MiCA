@@ -19,21 +19,21 @@ import org.princehouse.mica.base.model.RuntimeAgent;
 class A1Compiler extends Compiler {
 
 	// one map for all runtimes
-	private static HashMap<Class<?>, A1RuntimeAgent<?>> agentCache = new HashMap<Class<?>,A1RuntimeAgent<?>>();
+	private static HashMap<Class<?>, A1RuntimeAgent> agentCache = new HashMap<Class<?>,A1RuntimeAgent>();
 
 	/**
 	 * Not much going on here; for SimpleCompiler, the SimpleAgent does all the work.
 	 */
 	@SuppressWarnings("unchecked")
 	@Override
-	public <P extends Protocol> RuntimeAgent<P> compile(P pinstance) {	
-		Class<P> pclass = (Class<P>) pinstance.getClass();
+	public RuntimeAgent compile(Protocol pinstance) {	
+		Class<Protocol> pclass = (Class<Protocol>) pinstance.getClass();
 		if(agentCache.containsKey(pclass))
-			return (A1RuntimeAgent<P>) agentCache.get(pclass);
+			return (A1RuntimeAgent) agentCache.get(pclass);
 		else {
-			A1RuntimeAgent<P> agent;
+			A1RuntimeAgent agent;
 			try {
-				agent = new A1RuntimeAgent<P>(pclass);
+				agent = new A1RuntimeAgent(pclass);
 			} catch (CompilerException e) {
 				// TODO do this error handling right
 				throw new RuntimeException(e);

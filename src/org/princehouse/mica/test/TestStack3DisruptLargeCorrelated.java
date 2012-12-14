@@ -5,13 +5,14 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.TimerTask;
 
+import org.princehouse.mica.base.model.Protocol;
 import org.princehouse.mica.base.model.Runtime;
 import org.princehouse.mica.base.net.model.Address;
-import org.princehouse.mica.base.simple.SimpleRuntime;
 import org.princehouse.mica.example.TreeCountNodes;
 import org.princehouse.mica.example.TreeLabelNodes;
 import org.princehouse.mica.lib.MinAddressLeaderElection;
 import org.princehouse.mica.lib.SpanningTreeOverlay;
+import org.princehouse.mica.lib.abstractions.MergeBase;
 import org.princehouse.mica.lib.abstractions.MergeIndependent;
 import org.princehouse.mica.lib.abstractions.Overlay;
 import org.princehouse.mica.util.Randomness;
@@ -24,7 +25,7 @@ import fj.F3;
  * @author lonnie
  *
  */
-public class TestStack3DisruptLargeCorrelated extends TestHarness<MergeIndependent> {
+public class TestStack3DisruptLargeCorrelated extends TestHarness {
 
 	/**
 	 * @param args
@@ -38,9 +39,9 @@ public class TestStack3DisruptLargeCorrelated extends TestHarness<MergeIndepende
 	public static void main(String[] args) {
 
 
-		F3<Integer, Address, Overlay, MergeIndependent> createNodeFunc = new F3<Integer, Address, Overlay, MergeIndependent>() {
+		F3<Integer, Address, Overlay, Protocol> createNodeFunc = new F3<Integer, Address, Overlay, Protocol>() {
 			@Override
-			public MergeIndependent f(Integer i, Address address,
+			public Protocol f(Integer i, Address address,
 					Overlay view) {
 
 				
@@ -80,12 +81,12 @@ public class TestStack3DisruptLargeCorrelated extends TestHarness<MergeIndepende
 				public void run() {
 					Runtime.debug.println("----> Leader sabotage!");
 					List<Address> addresses = new ArrayList<Address>();
-					for(Runtime<MergeIndependent> rt : harness.getRuntimes()) {
+					for(Runtime rt : harness.getRuntimes()) {
 						addresses.add(rt.getAddress());
 					}
-					for(Runtime<MergeIndependent> rt : harness.getRuntimes()) {
-						MergeIndependent temp = (MergeIndependent) rt.getProtocolInstance().getP1();
-						MinAddressLeaderElection leader = (MinAddressLeaderElection) temp.getP1();
+					for(Runtime rt : harness.getRuntimes()) {
+						Protocol temp = ((MergeBase)rt.getProtocolInstance()).getP1();
+						MinAddressLeaderElection leader = (MinAddressLeaderElection) ((MergeBase)temp).getP1();
 						leader.setLeader(Randomness.choose(addresses));
 					}
 				}

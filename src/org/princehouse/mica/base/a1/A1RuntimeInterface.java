@@ -19,9 +19,9 @@ import org.princehouse.mica.util.Functional;
 import fj.F;
 
 public class A1RuntimeInterface implements RuntimeInterface {
-	private List<Runtime<?>> runtimes = Functional.list();
+	private List<Runtime> runtimes = Functional.list();
 
-	private Map<Runtime<?>,Integer> startTimes = Functional.map();
+	private Map<Runtime,Integer> startTimes = Functional.map();
 	
 	@Override
 	public void reset() {
@@ -33,10 +33,10 @@ public class A1RuntimeInterface implements RuntimeInterface {
 
 	
 	@Override
-	public <P extends Protocol> Runtime<?> addRuntime(Address address, P protocol,
+	public  Runtime addRuntime(Address address, Protocol protocol,
 			long randomSeed, int roundLength, int startTime, int lockTimeout) {
 
-		Runtime<P> rt = new A1Runtime<P>(address);
+		Runtime rt = new A1Runtime(address);
 
 		setRuntime(rt); // tell the runtime mechanism that this is
 								// the current runtime when the protocol is
@@ -57,7 +57,7 @@ public class A1RuntimeInterface implements RuntimeInterface {
 	@Override
 	public void run() {
 		
-		Runtime<?> arbitraryRuntime = runtimes.get(0);
+		Runtime arbitraryRuntime = runtimes.get(0);
 		arbitraryRuntime.logJson(LogFlag.init, "mica-options", MiCA.getOptions());
 
 		// wait for interrupt
@@ -65,15 +65,15 @@ public class A1RuntimeInterface implements RuntimeInterface {
 		// start runtimes
 		
 		// sort runtimes by start time, ascending
-		Collections.sort(runtimes, new Comparator<Runtime<?>>() {
+		Collections.sort(runtimes, new Comparator<Runtime>() {
 			@Override
-			public int compare(Runtime<?> r1, Runtime<?> r2) {
+			public int compare(Runtime r1, Runtime r2) {
 				return startTimes.get(r1).compareTo(startTimes.get(r2));
 			} 
 		});
 		
 		int t0 = 0;
-		for(Runtime<?> rt : runtimes) {
+		for(Runtime rt : runtimes) {
 			int t1 = startTimes.get(rt);
 			try {
 				Thread.sleep(t1-t0); 
@@ -104,7 +104,7 @@ public class A1RuntimeInterface implements RuntimeInterface {
 	@Override
 	public void stop() {
 		running = false;
-		for (Runtime<?> rt : runtimes) {
+		for (Runtime rt : runtimes) {
 			rt.stop();
 		}
 	}
@@ -116,12 +116,12 @@ public class A1RuntimeInterface implements RuntimeInterface {
 	}
 	
 	@Override
-	public <T extends Protocol> Runtime<T> getRuntime(Protocol p) {
+	public  Runtime getRuntime(Protocol p) {
 		return ThreadLocalRuntimeMechanism.getRuntime();
 	}
 
 	@Override
-	public <T extends Protocol> void setRuntime(Runtime<T> rt) {
+	public  void setRuntime(Runtime rt) {
 		ThreadLocalRuntimeMechanism.setRuntime(rt);
 	}
 

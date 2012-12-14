@@ -18,7 +18,7 @@ import org.princehouse.mica.util.harness.TestHarness.ProtocolInstanceFactory;
 /*
  * DemoTokenRingPipeline runs a demo of pipelining the token ring protocol along a static ring. 
  */
-public class DemoTokenRingPipeline extends TestHarness<MergeCorrelated> implements ProtocolInstanceFactory<MergeCorrelated> {
+public class DemoTokenRingPipeline extends TestHarness implements ProtocolInstanceFactory {
 	
 	/**
 	 * Called by the test harness to generate a protocol instance (i.e., pipeline + leader election) for each node.

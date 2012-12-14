@@ -18,9 +18,9 @@ import org.princehouse.mica.util.Distribution;
  * 
  * @author lonnie
  *
- * @param <Q>
+ * @param <Protocol>
  */
-class SelectMethodSelector<Q extends Protocol> extends Selector<Q> {
+class SelectMethodSelector extends Selector {
 
 	private Method method;
 	
@@ -34,7 +34,7 @@ class SelectMethodSelector<Q extends Protocol> extends Selector<Q> {
 	}
 	
 	@Override
-	public Distribution<Address> select(Runtime<?> rt, Q pinstance) throws SelectException {
+	public Distribution<Address> select(Runtime rt, Protocol pinstance) throws SelectException {
 		try {
 			Object obj = method.invoke(pinstance);
 			return Selector.asDistribution(obj, rt.getRuntimeState(pinstance));

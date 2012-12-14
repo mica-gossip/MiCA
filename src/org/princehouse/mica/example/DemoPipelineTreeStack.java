@@ -13,7 +13,7 @@ import org.princehouse.mica.util.harness.TestHarness;
 public class DemoPipelineTreeStack {
 
 	public static void main(String[] args) {
-		TestHarness.main(args, new TestHarness.ProtocolInstanceFactory<Pipeline<FourLayerTreeStack>>() {
+		TestHarness.main(args, new TestHarness.ProtocolInstanceFactory() {
 			@Override
 			public Pipeline<FourLayerTreeStack> createProtocolInstance(int i,
 					Address address, Overlay overlay) {

@@ -18,7 +18,7 @@ import fj.F3;
  * @author lonnie
  *
  */
-public class TestStack1 extends TestHarness<MergeIndependent> {
+public class TestStack1 extends TestHarness {
 
 	/**
 	 * @param args
@@ -27,9 +27,9 @@ public class TestStack1 extends TestHarness<MergeIndependent> {
 	public static void main(String[] args) {
 	
 		
-		F3<Integer, Address, Overlay, MergeIndependent> createNodeFunc = new F3<Integer, Address, Overlay, MergeIndependent>() {
+		F3<Integer, Address, Overlay, Protocol> createNodeFunc = new F3<Integer, Address, Overlay, Protocol>() {
 			@Override
-			public MergeIndependent f(Integer i, Address address,
+			public Protocol f(Integer i, Address address,
 					Overlay view) {
 								
 				MinAddressLeaderElection leaderElection = new MinAddressLeaderElection(view);

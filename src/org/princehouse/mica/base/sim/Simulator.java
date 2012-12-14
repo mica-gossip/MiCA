@@ -56,7 +56,7 @@ public class Simulator implements RuntimeInterface {
 
 	private LinkedList<SimulatorEvent> eventQueue = new LinkedList<SimulatorEvent>();
 
-	private Map<Address, SimRuntime<?>> addressBindings = Functional.map();
+	private Map<Address, SimRuntime> addressBindings = Functional.map();
 
 	// maps lock_address -> lock_holder_address
 	// 
@@ -70,14 +70,14 @@ public class Simulator implements RuntimeInterface {
 
 	private List<Address> unlockedQueue = Functional.list();
 
-	public void bind(Address address, SimRuntime<?> rt, int starttime) {
+	public void bind(Address address, SimRuntime rt, int starttime) {
 		addressBindings.put(address, rt);
 		markUnlocked(address);
 		rt.start();
 		new SimRound(address, this, starttime);
 	}
 	
-	public void unbind(SimRuntime<?> rt) {
+	public void unbind(SimRuntime rt) {
 		addressBindings.remove(rt.getAddress());
 		markUnlocked(rt.getAddress());
 	}
@@ -230,7 +230,7 @@ public class Simulator implements RuntimeInterface {
 		int roundSize = MiCA.getOptions().roundLength;
 		
 		// write options message to the first runtime
-		Runtime<?> arbitraryRuntime = addressBindings.values().iterator().next();
+		Runtime arbitraryRuntime = addressBindings.values().iterator().next();
 		arbitraryRuntime.logJson(LogFlag.init, "mica-options", MiCA.getOptions());
 		
 		while (running) {
@@ -251,7 +251,6 @@ public class Simulator implements RuntimeInterface {
 				break;
 			}
 			
-			SimRuntime<?> rt = getRuntime(e.getSrc());
 			long clock = getClock();
 			
 			//String msg = String.format("@%d -> %d execute %s", clock, e.t, e.toString());
@@ -286,7 +285,7 @@ public class Simulator implements RuntimeInterface {
 		SimRuntime.debug.printf("Simulator stopped @%d; speed-up factor of %f\n", getClock(), sfac);
 	}
 
-	protected void stopRuntime(SimRuntime<?> rt) {
+	protected void stopRuntime(SimRuntime rt) {
 		unbind(rt);
 	}
 
@@ -301,8 +300,8 @@ public class Simulator implements RuntimeInterface {
 		return singleton;
 	}
 
-	protected SimRuntime<?> getRuntime(Address a) {
-		SimRuntime<?> rt = addressBindings.get(a);
+	protected SimRuntime getRuntime(Address a) {
+		SimRuntime rt = addressBindings.get(a);
 		return rt;
 	}
 
@@ -310,23 +309,22 @@ public class Simulator implements RuntimeInterface {
 		return getRuntime(p).getRuntimeState();
 	}
 
-	public <P extends Protocol> P getReceiver(SimConnection sc) {
+	public  Protocol getReceiver(SimConnection sc) {
 		throw new UnsupportedOperationException();
 	}
 
-	public void killRuntime(SimRuntime<?> rt) {
+	public void killRuntime(SimRuntime rt) {
 		rt.stop();
 	}
 
-	public <P extends Protocol> P getSender(SimConnection sc) {
-		// TODO Auto-generated method stub
-		return null;
+	public  Protocol getSender(SimConnection sc) {
+		throw new UnsupportedOperationException();
 	}
 
 	@Override
-	public <P extends Protocol> Runtime<?> addRuntime(Address address, P protocol,
+	public  Runtime addRuntime(Address address, Protocol protocol,
 			long randomSeed, int roundLength, int startTime, int lockTimeout) {
-		SimRuntime<P> rt = new SimRuntime<P>(address);
+		SimRuntime rt = new SimRuntime(address);
 		rt.setProtocolInstance(protocol);
 		rt.setRandomSeed(randomSeed);
 		rt.setRoundLength(roundLength);
@@ -345,14 +343,13 @@ public class Simulator implements RuntimeInterface {
 		running = false;
 	}
 
-	@SuppressWarnings("unchecked")
 	@Override
-	public <T extends Protocol> Runtime<T> getRuntime(Protocol p) {
+	public  Runtime getRuntime(Protocol p) {
 		if(runtimeSingleNode != null) {
-			return (Runtime<T>) runtimeSingleNode;
+			return runtimeSingleNode;
 		}
 		
-		Runtime<T> rt = (Runtime<T>) protocolRuntimeContext.get(p);
+		Runtime rt = protocolRuntimeContext.get(p);
 		if (rt == null) {
 			throw new RuntimeException(String.format(
 					"runtime %x is null for %s", p.hashCode(), p.getClass()
@@ -363,13 +360,13 @@ public class Simulator implements RuntimeInterface {
 
 	// Maps protocol -> runtime
 	// for all reachable protocol objects
-	private Map<Protocol, SimRuntime<?>> protocolRuntimeContext = Functional
+	private Map<Protocol, SimRuntime> protocolRuntimeContext = Functional
 			.map();
 
 
-	private SimRuntime<?> runtimeSingleNode = null;
+	private SimRuntime runtimeSingleNode = null;
 	
-	public void setRuntimeSingleNode(SimRuntime<?> rt) {
+	public void setRuntimeSingleNode(SimRuntime rt) {
 		assert(runtimeSingleNode == null);
 		runtimeSingleNode = rt;
 	}
@@ -379,7 +376,7 @@ public class Simulator implements RuntimeInterface {
 	}
 	
 	@Override
-	public <T extends Protocol> void setRuntime(Runtime<T> rt) {
+	public  void setRuntime(Runtime rt) {
 		assert(runtimeSingleNode == null);
 		FindReachableObjects<Protocol> reachableProtocolFinder = new FindReachableObjects<Protocol>() {
 			@Override
@@ -391,7 +388,7 @@ public class Simulator implements RuntimeInterface {
 		for (Protocol p : reachableProtocolFinder
 				.find(rt.getProtocolInstance())) {
 
-			SimRuntime<?> previousEntry = protocolRuntimeContext.get(p);
+			SimRuntime previousEntry = protocolRuntimeContext.get(p);
 
 			if (previousEntry != null && previousEntry != rt) {
 				throw new RuntimeException(
@@ -400,7 +397,7 @@ public class Simulator implements RuntimeInterface {
 								previousEntry.hashCode(), rt.hashCode(),
 								p.hashCode(), p.getClass().getName()));
 			}
-			protocolRuntimeContext.put(p, (SimRuntime<?>) rt);
+			protocolRuntimeContext.put(p, (SimRuntime) rt);
 		}
 	}
 

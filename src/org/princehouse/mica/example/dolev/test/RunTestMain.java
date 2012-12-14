@@ -3,6 +3,7 @@ package org.princehouse.mica.example.dolev.test;
 import java.util.List;
 
 import org.princehouse.mica.base.model.MicaOptions;
+import org.princehouse.mica.base.model.Protocol;
 import org.princehouse.mica.base.net.model.Address;
 import org.princehouse.mica.base.simple.SelectException;
 import org.princehouse.mica.lib.abstractions.Overlay;
@@ -26,16 +27,16 @@ public class RunTestMain {
 	 * @param args
 	 */
 	public static void main(String[] args) {
-		final TestHarness<TestStateMachine> harness = new TestHarness<TestStateMachine>();
+		final TestHarness harness = new TestHarness();
 		
 		MicaOptions options = harness.parseOptions(args);
 		options.graphType = "complete";
 		
 		final int f = options.n / 4;
 				
-		ProtocolInstanceFactory<TestStateMachine> factory = new ProtocolInstanceFactory<TestStateMachine>() {
+		ProtocolInstanceFactory factory = new ProtocolInstanceFactory() {
 			@Override
-			public TestStateMachine createProtocolInstance(int nodeId, Address address,
+			public Protocol createProtocolInstance(int nodeId, Address address,
 					Overlay overlay) {
 			
 						List<Address> neighborList;

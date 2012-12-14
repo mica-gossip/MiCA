@@ -21,9 +21,9 @@ import org.princehouse.mica.util.FunctionalReflection;
 
 import fj.F;
 
-public abstract class Selector<Q extends Protocol> {
+public abstract class Selector {
 
-	public abstract Distribution<Address> select(Runtime<?> rt, Q pinstance) throws SelectException;
+	public abstract Distribution<Address> select(Runtime rt, Protocol pinstance) throws SelectException;
 
 	
 	// Utility methods for selecting from various different data types
@@ -74,7 +74,7 @@ public abstract class Selector<Q extends Protocol> {
 		public Class<? extends Annotation> getAnnotationClass() {
 			return annotationClass;
 		}
-		public abstract <P extends Protocol> Selector<P> getSelector(AnnotatedElement element) throws SelectException;
+		public abstract <P extends Protocol> Selector getSelector(AnnotatedElement element) throws SelectException;
 		
 		// first class function 
 		public F<AnnotatedElement,Boolean> accept1() {
@@ -97,11 +97,11 @@ public abstract class Selector<Q extends Protocol> {
 		public SelectDecider() {
 			super(View.class);
 		}
-		public <P extends Protocol> Selector<P> getSelector(AnnotatedElement element) throws InvalidSelectElement {
+		public <P extends Protocol> Selector getSelector(AnnotatedElement element) throws InvalidSelectElement {
 			if (element instanceof Method) {
-				return new SelectMethodSelector<P>((Method) element);
+				return new SelectMethodSelector((Method) element);
 			} else if (element instanceof Field) {
-				return new SelectFieldSelector<P>((Field) element);
+				return new SelectFieldSelector((Field) element);
 			} else {
 				throw new InvalidSelectElement(getAnnotationClass(), element);
 			}
@@ -113,9 +113,9 @@ public abstract class Selector<Q extends Protocol> {
 		public SelectUniformRandomDecider() {
 			super(ViewUniformRandom.class);
 		}
-		public <P extends Protocol> Selector<P> getSelector(AnnotatedElement element) throws InvalidSelectElement {
+		public <P extends Protocol> Selector getSelector(AnnotatedElement element) throws InvalidSelectElement {
 			if (element instanceof Field) {
-				return new UniformRandomCollectionFieldSelector<P>(
+				return new UniformRandomCollectionFieldSelector(
 						(Field) element);
 			} else {
 				throw new InvalidSelectElement(getAnnotationClass(), element);

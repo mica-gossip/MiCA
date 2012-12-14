@@ -43,7 +43,7 @@ import org.princehouse.mica.util.WeakHashSet;
  * Nothing fancy: It just serializes and exchanges complete node state.
  * 
  */
-public class A1Runtime<P extends Protocol> extends Runtime<P> implements
+public class A1Runtime extends Runtime implements
 		AcceptConnectionHandler {
 
 	public static final boolean DEBUG_NETWORKING = false;
@@ -83,8 +83,8 @@ public class A1Runtime<P extends Protocol> extends Runtime<P> implements
 	 *            Launch thread as a daemon
 	 * @return New Runtime instance
 	 */
-	//public static <T extends Protocol> Runtime<T> launch(Runtime<T> rt,
-	//		final T pinstance, final boolean daemon) {
+	//public static  Runtime launch(Runtime rt,
+	//		final Protocol pinstance, final boolean daemon) {
 	//	return launch(rt, pinstance, daemon, DEFAULT_INTERVAL,
 	//			DEFAULT_RANDOM_SEED);
 	//}
@@ -104,19 +104,19 @@ public class A1Runtime<P extends Protocol> extends Runtime<P> implements
 	 *            Random seed to use for this runtime
 	 * @return New Runtime instance
 	 */
-	public static <T extends Protocol> Runtime<T> launch(final Runtime<T> rt,
-			final T pinstance, final boolean daemon, final int intervalMS,
+	public static  Runtime launch(final Runtime rt,
+			final Protocol pinstance, final boolean daemon, final int intervalMS,
 			final long randomSeed, int lockWaitTimeoutMS) {
 		rt.setProtocolInstance(pinstance);
 		rt.setInterval(intervalMS);
 		rt.setLockWaitTimeout(lockWaitTimeoutMS);
 		rt.setRandom(new Random(randomSeed));
-		((A1Runtime<T>)rt).launchThread(daemon);
+		((A1Runtime)rt).launchThread(daemon);
 		return rt;
 	}
 	
 	public void launchThread(final boolean daemon) {
-		final A1Runtime<?> rt = this;
+		final A1Runtime rt = this;
 		
 		Thread t = new Thread() {
 			public void run() {
@@ -140,9 +140,9 @@ public class A1Runtime<P extends Protocol> extends Runtime<P> implements
 	 * @return
 	 */
 	//@Deprecated
-	//public static <T extends Protocol> Runtime<T> launchDaemon(
-	//		final T pinstance, Address address) {
-	//	Runtime<T> rt = new SimpleRuntime<T>(address);
+	//public static  Runtime launchDaemon(
+	//		final Protocol pinstance, Address address) {
+	//	Runtime rt = new SimpleRuntime(address);
 	//	return launch(rt, pinstance, true);
 	//}
 
@@ -159,8 +159,8 @@ public class A1Runtime<P extends Protocol> extends Runtime<P> implements
 	 *            Local address
 	 * @return New Runtime instance
 	 */
-	//public static <T extends Protocol> Runtime<T> launchDaemon(Runtime<T> rt,
-	//		final T pinstance) {
+	//public static  Runtime launchDaemon(Runtime rt,
+	//		final Protocol pinstance) {
 	//	return launch(rt, pinstance, true);
 	//}
 
@@ -178,13 +178,13 @@ public class A1Runtime<P extends Protocol> extends Runtime<P> implements
 	 *            random seed to be used for this runtime
 	 * @return New Runtime instance
 	 */
-	public static <T extends Protocol> Runtime<T> launchDaemon(
-			A1Runtime<T> rt, final T pinstance, final Address address,
+	public static  Runtime launchDaemon(
+			A1Runtime rt, final Protocol pinstance, final Address address,
 			int intervalMS, long randomSeed, int lockWaitTimeoutMS) {
 		return launch(rt, pinstance, true, intervalMS, randomSeed, lockWaitTimeoutMS);
 	}
 
-	private P pinstance;
+	private Protocol pinstance;
 
 	@Override
 	public void acceptConnection(Address recipient, Connection connection)
@@ -198,7 +198,7 @@ public class A1Runtime<P extends Protocol> extends Runtime<P> implements
 					return;
 				}
 				MiCA.getRuntimeInterface().setRuntime(this);
-				((A1RuntimeAgent<P>) compile(pinstance)).acceptConnection(
+				((A1RuntimeAgent)compile(pinstance)).acceptConnection(
 						this, getProtocolInstance(), connection);
 				MiCA.getRuntimeInterface().setRuntime(null);
 				lock.unlock();
@@ -282,7 +282,7 @@ public class A1Runtime<P extends Protocol> extends Runtime<P> implements
 							lock.unlock();
 							break;
 						}
-						RuntimeAgent<P> agent = compile(getProtocolInstance());
+						RuntimeAgent agent = compile(getProtocolInstance());
 
 						Logging.SelectEvent se = null;
 						try {
@@ -405,12 +405,12 @@ public class A1Runtime<P extends Protocol> extends Runtime<P> implements
 	}
 
 	@Override
-	public P getProtocolInstance() {
+	public Protocol getProtocolInstance() {
 		return pinstance;
 	}
 
 	@Override
-	public void setProtocolInstance(P pinstance) {
+	public void setProtocolInstance(Protocol pinstance) {
 		this.pinstance = pinstance;
 	}
 
@@ -468,7 +468,7 @@ public class A1Runtime<P extends Protocol> extends Runtime<P> implements
 	private Compiler compiler = new A1Compiler();
 
 	@Override
-	public <T extends Protocol> RuntimeAgent<T> compile(T pinstance) {
+	public  RuntimeAgent compile(Protocol pinstance) {
 		return compiler.compile(pinstance);
 	}
 
@@ -483,14 +483,14 @@ public class A1Runtime<P extends Protocol> extends Runtime<P> implements
 	}
 
 	@Deprecated
-	public static <P extends Protocol> Runtime<P> launchDaemon(
-			P node, Address a) {
+	public static  Runtime launchDaemon(
+			Protocol node, Address a) {
 		throw new RuntimeException("deprecated");
 	}
 	
 	@Deprecated
-	public static <P extends Protocol> Runtime<P> launchDaemon(
-			Runtime<P> rt, P node) {
+	public static  Runtime launchDaemon(
+			Runtime rt, Protocol node) {
 		throw new RuntimeException("deprecated");
 	}
 

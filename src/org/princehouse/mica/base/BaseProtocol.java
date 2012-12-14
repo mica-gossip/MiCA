@@ -135,7 +135,7 @@ public abstract class BaseProtocol implements Protocol, Serializable {
 	public void postUpdate() {}
 	
 	@Override
-	public <T extends Protocol> Runtime<T> getRuntime() {
+	public  Runtime getRuntime() {
 		return MiCA.getRuntimeInterface().getRuntime(this);
 	}
 	

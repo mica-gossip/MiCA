@@ -6,6 +6,10 @@ import org.princehouse.mica.base.net.model.Address;
 
 public abstract class MapModule<S> extends Module<S, Map<Address,S>> {
 	
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = 1L;
 	private int n;
 	private int t;
 	

@@ -12,7 +12,7 @@ public class RunCompositeProtocol {
 	 * @param args
 	 */
 	public static void main(String[] args) {
-		TestHarness.main(args, new TestHarness.ProtocolInstanceFactory<FourLayerTreeStack>() {
+		TestHarness.main(args, new TestHarness.ProtocolInstanceFactory() {
 			@Override
 			public FourLayerTreeStack createProtocolInstance(int nodeId,
 					Address address, Overlay overlay) {

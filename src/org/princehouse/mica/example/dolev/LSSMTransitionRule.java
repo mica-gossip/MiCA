@@ -1,9 +1,5 @@
 package org.princehouse.mica.example.dolev;
 
-import java.util.List;
-import java.util.Set;
-
-import org.princehouse.mica.util.Functional;
 
 /**
  * PulseTransition is an abstract class that affects state transitions based on analysis 

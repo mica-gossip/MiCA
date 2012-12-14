@@ -59,7 +59,7 @@ public abstract class SimulatorEvent implements Comparable<SimulatorEvent> {
 	}
 
 	public void fatalErrorHalt(Simulator simulator) {
-		SimRuntime<?> srcRuntime = simulator.getRuntime(src);
+		SimRuntime srcRuntime = simulator.getRuntime(src);
 		simulator.killRuntime(srcRuntime);
 	}
 

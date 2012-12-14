@@ -10,7 +10,7 @@ import org.princehouse.mica.base.net.model.Address;
 import org.princehouse.mica.util.Distribution;
 
 
-public class SingleValueSelectFunctionSelector<Q extends Protocol> extends Selector<Q> {
+public class SingleValueSelectFunctionSelector extends Selector {
 	private Method selectMethod;
 	
 	public SingleValueSelectFunctionSelector(Method selectMethod) {
@@ -23,18 +23,19 @@ public class SingleValueSelectFunctionSelector<Q extends Protocol> extends Selec
 	}
 	
 	@Override
-	public Distribution<Address> select(Runtime<?> rt, Q pinstance) {
+	public Distribution<Address> select(Runtime rt, Protocol pinstance) {
 		try {
 			Object robj = selectMethod.invoke(pinstance);
 			Address addr = (Address) robj;
 			return Distribution.create(addr);
 		} catch (IllegalArgumentException e) {
-			return rt.punt(e);
+			rt.punt(e);
 		} catch (IllegalAccessException e) {
-			return rt.punt(e);
+			rt.punt(e);
 		} catch (InvocationTargetException e) {
-			return rt.punt(e);
-		}		
+			rt.punt(e);
+		}	
+		return null; // unreachable
 	}
 	
 	public String toString() {

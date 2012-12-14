@@ -20,9 +20,9 @@ import org.princehouse.mica.util.Distribution;
  *    
  * @author lonnie
  *
- * @param <Q>
+ * @param 
  */
-public class SelectFieldSelector<Q extends Protocol> extends Selector<Q> {
+public class SelectFieldSelector extends Selector {
 
 	private Field field;
 
@@ -36,7 +36,7 @@ public class SelectFieldSelector<Q extends Protocol> extends Selector<Q> {
 	}
 
 	@Override
-	public Distribution<Address> select(Runtime<?> rt, Q pinstance) throws SelectException  {
+	public Distribution<Address> select(Runtime rt, Protocol pinstance) throws SelectException  {
 		Object obj = null;
 		try {
 			obj = field.get(pinstance);

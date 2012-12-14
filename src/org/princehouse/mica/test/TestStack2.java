@@ -2,6 +2,7 @@ package org.princehouse.mica.test;
 
 import java.net.UnknownHostException;
 
+import org.princehouse.mica.base.model.Protocol;
 import org.princehouse.mica.base.net.model.Address;
 import org.princehouse.mica.example.TreeCountNodes;
 import org.princehouse.mica.lib.MinAddressLeaderElection;
@@ -18,7 +19,7 @@ import fj.F3;
  * @author lonnie
  *
  */
-public class TestStack2 extends TestHarness<MergeIndependent> {
+public class TestStack2 extends TestHarness {
 
 	/**
 	 * @param args
@@ -27,9 +28,9 @@ public class TestStack2 extends TestHarness<MergeIndependent> {
 	public static void main(String[] args) {
 
 
-		F3<Integer, Address, Overlay, MergeIndependent> createNodeFunc = new F3<Integer, Address, Overlay, MergeIndependent>() {
+		F3<Integer, Address, Overlay, Protocol> createNodeFunc = new F3<Integer, Address, Overlay, Protocol>() {
 			@Override
-			public MergeIndependent f(Integer i, Address address,
+			public Protocol f(Integer i, Address address,
 					Overlay view) {
 				MinAddressLeaderElection leaderElection = new MinAddressLeaderElection(view);
 

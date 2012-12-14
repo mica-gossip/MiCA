@@ -39,9 +39,9 @@ import fj.P2;
  * 
  * @author lonnie
  * 
- * @param <Q>
+ * @param 
  */
-public class TestHarness<Q extends Protocol> {
+public class TestHarness {
 
 	private RuntimeInterface runtimeInterface = null;
 	
@@ -83,7 +83,7 @@ public class TestHarness<Q extends Protocol> {
 	}
 	
 	public TimerTask taskStop() {
-		final TestHarness<Q> harness = this;
+		final TestHarness harness = this;
 		return new TimerTask() {
 			@Override
 			public void run() {
@@ -93,10 +93,10 @@ public class TestHarness<Q extends Protocol> {
 		};
 	}
 
-	public void launchProtocol(ProtocolInstanceFactory<Q> factory,
+	public void launchProtocol(ProtocolInstanceFactory factory,
 			TestHarnessGraph g) {
 		
-		//List<Runtime<Q>> runtimes = Functional.list();
+		//List<Runtime> runtimes = Functional.list();
 		//running = true;
 
 		launchTimers(); // TODO lift to runtime interface
@@ -106,7 +106,7 @@ public class TestHarness<Q extends Protocol> {
 		
 		for (Address addr : g.getAddresses()) {
 			Overlay neighbors = g.getOverlay(addr);
-			Q pinstance = factory.createProtocolInstance(i++, addr, neighbors);
+			Protocol pinstance = factory.createProtocolInstance(i++, addr, neighbors);
 			MicaOptions options = getOptions();
 			int stagger = rng.nextInt(options.stagger);
 			int lockTimeout = options.timeout;
@@ -127,19 +127,19 @@ public class TestHarness<Q extends Protocol> {
 	private Random rng;
 
 	public void launchProtocolRandomGraph(int n, int degree,
-			ProtocolInstanceFactory<Q> factory) {
+			ProtocolInstanceFactory factory) {
 		launchProtocol(factory, new RandomGraph(n, defaultAddressFunc,
 				degree, rng));
 	}
 
 	public void launchProtocolCompleteGraph(int n,
-			ProtocolInstanceFactory<Q> factory) {
+			ProtocolInstanceFactory factory) {
 		launchProtocol(factory, new CompleteGraph(n, defaultAddressFunc));
 	}
 
-	private List<Runtime<Q>> runtimes;
+	private List<Runtime> runtimes;
 
-	public List<Runtime<Q>> getRuntimes() {
+	public List<Runtime> getRuntimes() {
 		return runtimes;
 	}
 
@@ -148,7 +148,7 @@ public class TestHarness<Q extends Protocol> {
 		System.out.println("Done");
 	}
 
-	public void runGraph(ProtocolInstanceFactory<Q> factory,
+	public void runGraph(ProtocolInstanceFactory factory,
 			TestHarnessGraph graph) {
 		launchProtocol(factory, graph);
 		run();
@@ -165,19 +165,19 @@ public class TestHarness<Q extends Protocol> {
 	 * 
 	 * @author lonnie
 	 * 
-	 * @param <Q>
+	 * @param 
 	 */
-	public static interface ProtocolInstanceFactory<Q extends Protocol> {
-		public Q createProtocolInstance(int nodeId, Address address,
+	public static interface ProtocolInstanceFactory {
+		public Protocol createProtocolInstance(int nodeId, Address address,
 				Overlay overlay);
 	};
 
 	// backwards compatibility method; do not use
-	public static <R extends Protocol> ProtocolInstanceFactory<R> factoryFromCNF(
-			final F3<Integer, Address, Overlay, R> createNodeFunc) {
-		return new ProtocolInstanceFactory<R>() {
+	public static  ProtocolInstanceFactory factoryFromCNF(
+			final F3<Integer, Address, Overlay, Protocol> createNodeFunc) {
+		return new ProtocolInstanceFactory() {
 			@Override
-			public R createProtocolInstance(int nodeId, Address address,
+			public Protocol createProtocolInstance(int nodeId, Address address,
 					Overlay overlay) {
 				return createNodeFunc.f(nodeId, address, overlay);
 			}
@@ -185,14 +185,14 @@ public class TestHarness<Q extends Protocol> {
 	}
 
 	// backwards compatibility
-	public static <ProtocolClass extends Protocol> void main(String[] argv,
-			F3<Integer, Address, Overlay, ProtocolClass> createNodeFunc) {
+	public static  void main(String[] argv,
+			F3<Integer, Address, Overlay, Protocol> createNodeFunc) {
 		TestHarness.main(argv, TestHarness.factoryFromCNF(createNodeFunc));
 	}
 
-	public static <ProtocolClass extends Protocol> void main(String[] argv,
-			ProtocolInstanceFactory<ProtocolClass> factory) {
-		TestHarness<ProtocolClass> harness = new TestHarness<ProtocolClass>();
+	public static  void main(String[] argv,
+			ProtocolInstanceFactory factory) {
+		TestHarness harness = new TestHarness();
 		harness.runMain(argv, factory);
 	}
 
@@ -206,21 +206,20 @@ public class TestHarness<Q extends Protocol> {
 		return options;
 	}
 
-	public void runMain(String[] argv, ProtocolInstanceFactory<Q> factory) {
+	public void runMain(String[] argv, ProtocolInstanceFactory factory) {
 		MicaOptions options = parseOptions(argv);
 		runMain(options, factory);
 	}
 
 	public void runMain(String[] argv) {
-		@SuppressWarnings("unchecked")
-		// will throw an invalid cast exception of this harness doesn't implement ProtocolInstanceFactory<Q>
-		ProtocolInstanceFactory<Q> factory = (ProtocolInstanceFactory<Q>) this;
+		// will throw an invalid cast exception of this harness doesn't implement ProtocolInstanceFactory
+		ProtocolInstanceFactory factory = (ProtocolInstanceFactory) this;
 		MicaOptions options = parseOptions(argv);
 		runMain(options, factory);
 	}
 
 	public void runMain(String[] argv,
-			F3<Integer, Address, Overlay, Q> createNodeFunc) {
+			F3<Integer, Address, Overlay, Protocol> createNodeFunc) {
 		runMain(argv, TestHarness.factoryFromCNF(createNodeFunc));
 	}
 
@@ -236,7 +235,7 @@ public class TestHarness<Q extends Protocol> {
 	 * @param createNodeFunc
 	 */
 	public void runRandomGraph(long seed, int n, int nodeDegree,
-			ProtocolInstanceFactory<Q> factory) {
+			ProtocolInstanceFactory factory) {
 		rng = new Random(seed);
 		TestHarnessGraph graph = new RandomGraph(n, defaultAddressFunc,
 				nodeDegree, rng);
@@ -339,7 +338,7 @@ public class TestHarness<Q extends Protocol> {
 	}
 
 	public void runMain(MicaOptions options,
-			ProtocolInstanceFactory<Q> factory) {
+			ProtocolInstanceFactory factory) {
 		assert (options != null);
 		setOptions(options);
 		// SimpleRuntime.DEFAULT_INTERVAL = (int) options.roundLength;

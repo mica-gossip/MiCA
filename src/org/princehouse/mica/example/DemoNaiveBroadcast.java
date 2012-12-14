@@ -3,6 +3,7 @@ package org.princehouse.mica.example;
 import java.util.TimerTask;
 
 import org.princehouse.mica.base.LogFlag;
+import org.princehouse.mica.base.model.Protocol;
 import org.princehouse.mica.base.model.Runtime;
 import org.princehouse.mica.base.net.model.Address;
 import org.princehouse.mica.lib.NaiveBroadcast;
@@ -58,14 +59,15 @@ public class DemoNaiveBroadcast{
 	 * @param args
 	 */
 	public static void main(String[] args) {
-		final TestHarness<StringBroadcast> harness = new TestHarness<StringBroadcast>();
+		final TestHarness harness = new TestHarness();
 		
 		harness.addTimerRounds(5, new TimerTask() {
+			@SuppressWarnings("unchecked")
 			@Override
 			public void run() {
-				Runtime<StringBroadcast> rt = harness.getRuntimes().get(0);
+				Runtime rt = harness.getRuntimes().get(0);
 				rt.getProtocolInstanceLock().lock();
-				rt.getProtocolInstance().sendMessage("hello world");
+				((NaiveBroadcast<String>)rt.getProtocolInstance()).sendMessage("hello world");
 				rt.getProtocolInstanceLock().unlock();
 			}
 		});
@@ -82,9 +84,9 @@ public class DemoNaiveBroadcast{
 	 * 
 	 * 
 	 */
-	public static F3<Integer, Address, Overlay, StringBroadcast> createNodeFunc = new F3<Integer, Address, Overlay, StringBroadcast>() {
+	public static F3<Integer, Address, Overlay, Protocol> createNodeFunc = new F3<Integer, Address, Overlay, Protocol>() {
 		@Override
-		public StringBroadcast f(Integer i, Address address,
+		public Protocol f(Integer i, Address address,
 				Overlay neighbors) {
 			// Create a static overlay to bootstrap our set of neighbors
 			StringBroadcast bc = new StringBroadcast(neighbors);
