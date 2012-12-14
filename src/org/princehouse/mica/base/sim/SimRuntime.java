@@ -2,15 +2,11 @@ package org.princehouse.mica.base.sim;
 
 import java.util.concurrent.locks.ReentrantLock;
 
-import org.princehouse.mica.base.RuntimeErrorCondition;
-import org.princehouse.mica.base.exceptions.AbortRound;
-import org.princehouse.mica.base.exceptions.FatalErrorHalt;
 import org.princehouse.mica.base.model.MiCA;
 import org.princehouse.mica.base.model.Protocol;
 import org.princehouse.mica.base.model.Runtime;
 import org.princehouse.mica.base.model.RuntimeAgent;
 import org.princehouse.mica.base.net.model.Address;
-import org.princehouse.mica.base.net.model.NotBoundException;
 
 public class SimRuntime extends Runtime {
 
@@ -89,7 +85,9 @@ public class SimRuntime extends Runtime {
 	@Override
 	public void start() {
 		initLog();
+		MiCA.getRuntimeInterface().getRuntimeContextManager().setNativeRuntime(this);
 		logState("initial");
+		MiCA.getRuntimeInterface().getRuntimeContextManager().clear();
 	}
 
 	@Override

@@ -159,4 +159,19 @@ public class Logging {
 
 	}
 
+	/**
+	 * Returns a "filename:lineno" string for the location in the call stack
+	 * corresponding to framesUp frames above the call site. framesUp == 0
+	 * corresponds with the location invoking getCodeLocation, 1 is the callsite
+	 * of that function, etc.
+	 * 
+	 * @param framesUp
+	 * @return
+	 */
+	public static String getLocation(int framesUp) {
+		StackTraceElement frame = Thread.currentThread().getStackTrace()[2+framesUp];
+		int line =  frame.getLineNumber();
+		String file = frame.getFileName();
+		return String.format("(%s:%s)", file, line);
+	}
 }

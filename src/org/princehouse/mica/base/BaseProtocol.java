@@ -97,10 +97,12 @@ public abstract class BaseProtocol implements Protocol, Serializable {
 	 * Convenience method for logging only an event type
 	 * @param eventType
 	 */
+	@Override
 	public void logJson(Object flags, String eventType) {
 		logJson(flags, eventType, null);
 	}
 	
+	@Override
 	public void logJson(Object flags, String eventType, final Object obj) {
 		MiCA.getRuntimeInterface().logJson(flags, getAddress(), eventType, obj);
 	}

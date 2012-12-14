@@ -126,6 +126,11 @@ class GraphWindow(object):
                 "Notable event timing histogram: %s" % ne_suffix, 
                 lambda widget,sfx=ne_suffix: self.analysis_notable_events_histogram(sfx,widget))
 
+        for ne_suffix in self.micavis.notable_event_labels():
+            self.append_analysis_menuitem(
+                "Notable event timing histogram (normalized): %s" % ne_suffix, 
+                lambda widget,sfx=ne_suffix: self.analysis_notable_events_histogram(sfx,widget,normalize=True))
+
 
         for label, callback in self.micavis.temp_analysis_menus:
             self.append_analysis_menuitem(label, callback)
@@ -192,7 +197,7 @@ class GraphWindow(object):
 
         self.analysis_plot_2d_multiple(xyvals, xlabel, ylabel, legend_labels)
 
-    def analysis_notable_events_histogram(self, ne_suffix, widget):
+    def analysis_notable_events_histogram(self, ne_suffix, widget, normalize=False):
         import matplotlib.pyplot as plt
         import numpy as np
         import analysis
@@ -221,20 +226,23 @@ class GraphWindow(object):
         
         for key,seq in collated.items():
             collated[key] = np.array(seq)
-#            collated[key] = np.log(np.array(seq))
 
         maxval = max([d.max() for d in collated.itervalues()]) 
         minval = min([d.min() for d in collated.itervalues()]) 
 
         rng = maxval - minval
-        #nbins = min(rng+1,100)
+
         nbins = 100
 
         collated = sorted(collated.items())
 
         xlabel =  "Interval length between %s events (rounds)" % ne_suffix
-        ylabel = "Number of intervals"
-        legend_labels = ["%s (%s total)" % (k,len(v)) for k,v in collated]
+        ylabel = "Fraction of intervals"
+
+        if normalize:
+            legend_labels = ["%s" % k for k,v in collated]            
+        else:
+            legend_labels = ["%s (%s total)" % (k,len(v)) for k,v in collated]
 
 
         datasets = [v for k,v in collated]
@@ -245,10 +253,10 @@ class GraphWindow(object):
 
         self.analysis_plot_hist_multiple(datasets, 
                                          xlabel=xlabel, ylabel=ylabel,
-                                         legends=legend_labels, nbins=nbins)
+                                         legends=legend_labels, nbins=nbins, normalize=normalize)
 
     # plot multiple histograms
-    def analysis_plot_hist_multiple(self, datasets, xlabel="value", ylabel = "count", legends=None, nbins=100):
+    def analysis_plot_hist_multiple(self, datasets, xlabel="value", ylabel = "count", legends=None, nbins=100, normalize=False):
         fig = plt.figure()
         ax = fig.add_subplot(111)
 
@@ -258,7 +266,7 @@ class GraphWindow(object):
             legends = [None] * len(datasets)
         assert(len(legends) == len(datasets))
         for data,label in zip(datasets,legends):
-            n,bins,patches = ax.hist(data, nbins, alpha=0.5, histtype='stepfilled',label=label)
+            n,bins,patches = ax.hist(data, nbins, alpha=0.5, histtype='stepfilled',label=label, normed=normalize)
             #artists += [ax.hist(data, nbins, alpha=0.5)]
 
         ax.grid(True)
@@ -579,7 +587,7 @@ class MicaVisMicavis:
     # where igraph is an igraph object with nodes and edges of the comm graph
     # and namemap maps address_string => graph vertex id 
     def create_default_graph(self):
-        if self.options['nolayout']:
+        if self.options['novis']:
             return None, None
 
         g = igraph.Graph(directed=True)
@@ -791,10 +799,10 @@ class MicaVisMicavis:
 def main(args=sys.argv):
     options = {}
     try:
-        args.remove('-nolayout')
-        options['nolayout'] = True
+        args.remove('-novis')
+        options['novis'] = True
     except ValueError:
-        options['nolayout'] = False
+        options['novis'] = False
 
     pydir = os.path.split(__file__)[0]
     micadir = os.path.abspath(pydir + "/../..")

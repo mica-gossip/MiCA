@@ -114,6 +114,7 @@ class SimpleRuntimeAgent extends RuntimeAgent {
 				rt.getRuntimeState());
 
 		try {
+			// send m1 to receiver
 			ObjectOutputStream oos = new ObjectOutputStream(
 					connection.getOutputStream());
 			oos.writeObject(msg);

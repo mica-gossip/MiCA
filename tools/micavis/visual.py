@@ -216,7 +216,7 @@ class IGraphDrawingArea(gtk.DrawingArea):
         disable = False
 
         # self is passed as the vis argument
-        if self.micavis.options['nolayout']:
+        if self.micavis.options['novis']:
             self.display_layers = []
         else:
             self.display_layers = [

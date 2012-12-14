@@ -20,6 +20,7 @@ public interface Protocol {
 	 */
 	public RuntimeState getRuntimeState();
 	
+	
 	/**
 	 * Execute the select function for this Protocol instance and return its address distribution.
 	 * @return Address distribution
@@ -94,5 +95,9 @@ public interface Protocol {
 	 * @return JSON-serializable object representing node state for logging purposes
 	 */
 	public Object getLogState();
+
+	void logJson(Object flags, String eventType);
+
+	void logJson(Object flags, String eventType, Object obj);
 
 }

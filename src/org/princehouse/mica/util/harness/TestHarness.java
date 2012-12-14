@@ -113,7 +113,7 @@ public class TestHarness {
 			MiCA.getRuntimeInterface().getRuntimeContextManager().clear();
 			
 			rt.setProtocolInstance(pinstance);
-		} 
+		}
 	}
 
 

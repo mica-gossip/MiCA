@@ -21,13 +21,13 @@ import org.princehouse.mica.base.RuntimeErrorCondition;
 import org.princehouse.mica.base.exceptions.AbortRound;
 import org.princehouse.mica.base.exceptions.FatalErrorHalt;
 import org.princehouse.mica.base.model.Compiler;
+import org.princehouse.mica.base.model.MiCA;
 import org.princehouse.mica.base.model.Protocol;
 import org.princehouse.mica.base.model.Runtime;
 import org.princehouse.mica.base.model.RuntimeAgent;
 import org.princehouse.mica.base.net.model.AcceptConnectionHandler;
 import org.princehouse.mica.base.net.model.Address;
 import org.princehouse.mica.base.net.model.Connection;
-import org.princehouse.mica.base.net.model.NotBoundException;
 import org.princehouse.mica.util.Logging.SelectEvent;
 
 /**
@@ -168,7 +168,11 @@ public class SimpleRuntime extends Runtime implements AcceptConnectionHandler {
 
 		final Address address = getAddress();
 		super.run();
+		
+		MiCA.getRuntimeInterface().getRuntimeContextManager().setNativeRuntime(this);
 		logState("initial"); // sim-ok
+		MiCA.getRuntimeInterface().getRuntimeContextManager().clear();
+
 
 		try {
 			address.bind(this);
@@ -184,7 +188,24 @@ public class SimpleRuntime extends Runtime implements AcceptConnectionHandler {
 
 		long lastElapsedMS = 0L;
 
-		double rate = getProtocolInstance().getRate();
+		double rate = 1.0;
+
+		MiCA.getRuntimeInterface().getRuntimeContextManager()
+				.setNativeRuntime(this);
+		try {
+			rate = getProtocolInstance().getRate();
+		} catch (Throwable t) {
+			try {
+				handleError(RuntimeErrorCondition.RATE_EXCEPTION, t);
+			} catch (FatalErrorHalt e) {
+				this.stop();
+				return;
+			} catch (AbortRound e) {
+				// ignore
+			}
+		} finally {
+			MiCA.getRuntimeInterface().getRuntimeContextManager().clear();
+		}
 
 		int intervalMS = getInterval();
 
@@ -196,7 +217,11 @@ public class SimpleRuntime extends Runtime implements AcceptConnectionHandler {
 				Address partner = null;
 
 				try {
+					MiCA.getRuntimeInterface().getRuntimeContextManager()
+							.setNativeRuntime(this);
 					logJson(LogFlag.rate, "mica-rate", rate); // sim-ok
+					MiCA.getRuntimeInterface().getRuntimeContextManager()
+							.clear();
 
 					int intervalLength = (int) (((double) intervalMS) / rate);
 					if (intervalLength <= 0) {
@@ -219,11 +244,14 @@ public class SimpleRuntime extends Runtime implements AcceptConnectionHandler {
 							lock.unlock();
 							break;
 						}
+
 						RuntimeAgent agent = compile(getProtocolInstance());
 
 						SelectEvent se = null;
 
 						Protocol p = getProtocolInstance();
+						MiCA.getRuntimeInterface().getRuntimeContextManager()
+								.setNativeRuntime(this);
 						try {
 							se = new SelectEvent();
 							se.selected = p.getView().sample(
@@ -232,13 +260,19 @@ public class SimpleRuntime extends Runtime implements AcceptConnectionHandler {
 								se.selected = null;
 							}
 						} catch (Throwable e) {
-							handleError(RuntimeErrorCondition.SELECT_EXCEPTION, e);
+							handleError(RuntimeErrorCondition.SELECT_EXCEPTION,
+									e);
+						} finally {
+							MiCA.getRuntimeInterface()
+									.getRuntimeContextManager().clear();
 						}
 
 						partner = se.selected;
 
 						logJson(LogFlag.select, "mica-select", se); // sim-ok
 
+						MiCA.getRuntimeInterface().getRuntimeContextManager()
+								.setNativeRuntime(this);
 						try {
 							// preUpdate is called even if partner is
 							// invalid
@@ -246,6 +280,9 @@ public class SimpleRuntime extends Runtime implements AcceptConnectionHandler {
 							getProtocolInstance().preUpdate(partner);
 						} catch (Throwable t) {
 							handleError(PREUDPATE_EXCEPTION, t);
+						} finally {
+							MiCA.getRuntimeInterface()
+									.getRuntimeContextManager().clear();
 						}
 						logState("preupdate"); // sim-ok
 
@@ -264,6 +301,8 @@ public class SimpleRuntime extends Runtime implements AcceptConnectionHandler {
 						}
 
 						try {
+							// no context-setting needed here; the work is done
+							// by the receiver
 							agent.gossip(this, getProtocolInstance(),
 									connection);
 						} catch (AbortRound ar) {
@@ -271,21 +310,49 @@ public class SimpleRuntime extends Runtime implements AcceptConnectionHandler {
 						} catch (FatalErrorHalt feh) {
 							throw feh;
 						} catch (Throwable t) {
-							// May be a serialization problem!
+							// May be a serialization problem
 							handleError(ACTIVE_GOSSIP_EXCEPTION, t);
 						}
 
+						MiCA.getRuntimeInterface().getRuntimeContextManager()
+								.setNativeRuntime(this);
 						logState("gossip-initiator"); // sim-ok
+						MiCA.getRuntimeInterface().getRuntimeContextManager()
+								.clear();
 
+						MiCA.getRuntimeInterface().getRuntimeContextManager()
+								.setNativeRuntime(this);
 						try {
 							getProtocolInstance().postUpdate();
+							logState("postupdate"); // sim-ok
 						} catch (Throwable t) {
 							handleError(POSTUDPATE_EXCEPTION, t);
+						} finally {
+							MiCA.getRuntimeInterface()
+									.getRuntimeContextManager().clear();
 						}
-						logState("postupdate"); // sim-ok
 
 						getRuntimeState().incrementRound();
-						rate = getProtocolInstance().getRate();
+
+						MiCA.getRuntimeInterface().getRuntimeContextManager()
+								.setNativeRuntime(this);
+						try {
+							rate = getProtocolInstance().getRate();
+						} catch (Throwable t) {
+							try {
+								handleError(
+										RuntimeErrorCondition.RATE_EXCEPTION, t);
+							} catch (FatalErrorHalt e) {
+								this.stop();
+								return;
+							} catch (AbortRound e) {
+								// ignore
+							}
+						} finally {
+							MiCA.getRuntimeInterface()
+									.getRuntimeContextManager().clear();
+						}
+						
 						lock.unlock();
 					} else {
 						// failed to acquire lock within time limit; gossip
@@ -310,27 +377,19 @@ public class SimpleRuntime extends Runtime implements AcceptConnectionHandler {
 						partner, sec);
 			}
 		} catch (FatalErrorHalt e) {
+			stop();
 			// fatalErrorHalt should have already shut down everything
 		} // end while(running) loop
 	}
 
-/*
-	@Override
-	protected void fatalErrorHalt(RuntimeErrorCondition condition)
-			throws FatalErrorHalt {
-		stop(); // passively signal that it's time to shut down
-		try {
-			getAddress().unbind();// try to unbind the listener
-		} catch (NotBoundException e1) {
-		}
-		try {
-			lock.unlock();
-		} catch (IllegalMonitorStateException e) {
-		}
-		throw new FatalErrorHalt();
-	}
-*/
-	
+	/*
+	 * @Override protected void fatalErrorHalt(RuntimeErrorCondition condition)
+	 * throws FatalErrorHalt { stop(); // passively signal that it's time to
+	 * shut down try { getAddress().unbind();// try to unbind the listener }
+	 * catch (NotBoundException e1) { } try { lock.unlock(); } catch
+	 * (IllegalMonitorStateException e) { } throw new FatalErrorHalt(); }
+	 */
+
 	@Override
 	public String toString() {
 		return String.format("<rt %s>", getAddress());

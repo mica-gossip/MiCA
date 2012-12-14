@@ -2,7 +2,6 @@ package org.princehouse.mica.base.sim;
 
 import static org.princehouse.mica.base.RuntimeErrorCondition.INITIATOR_LOCK_TIMEOUT;
 
-import org.princehouse.mica.base.BaseProtocol;
 import org.princehouse.mica.base.LogFlag;
 import org.princehouse.mica.base.RuntimeErrorCondition;
 import org.princehouse.mica.base.exceptions.AbortRound;
@@ -10,6 +9,7 @@ import org.princehouse.mica.base.exceptions.FatalErrorHalt;
 import org.princehouse.mica.base.exceptions.MicaRuntimeException;
 import org.princehouse.mica.base.model.MiCA;
 import org.princehouse.mica.base.model.Protocol;
+import org.princehouse.mica.base.model.Runtime;
 import org.princehouse.mica.base.net.model.Address;
 import org.princehouse.mica.util.Logging.SelectEvent;
 
@@ -44,7 +44,7 @@ public class SimRound {
 	}
 
 	private void cancel() {
-	//	System.out.printf("     --------------> cancel round at %s\n", src);
+		// System.out.printf("     --------------> cancel round at %s\n", src);
 		cancelled = true;
 	}
 
@@ -54,17 +54,18 @@ public class SimRound {
 		cancel();
 
 		long clock = sim.getClock();
-		
+
 		if (haveLockSrc) {
 			sim.scheduleRelative(new ReleaseSrcLock(), releaseLockOffset);
 		}
 		if (haveLockDst) {
 			sim.scheduleRelative(new ReleaseDstLock(), releaseLockOffset);
 		}
-		
+
 		SimRuntime rta = sim.getRuntime(src);
-		rta.logJson(LogFlag.user, "notable-event-abort", MiCA.getOptions().expname);
-		
+		rta.logJson(LogFlag.user, "notable-event-abort",
+				MiCA.getOptions().expname);
+
 		sim.getRuntimeContextManager().setNativeRuntime(rta);
 		double rate = 1.0;
 		try {
@@ -75,10 +76,21 @@ public class SimRound {
 		} finally {
 			sim.getRuntimeContextManager().clear();
 		}
-		
+
 		long abortedRoundElapsed = clock - roundStartTime;
-		long interval = (long) (((double)rta.getInterval()) / rate);
-		long sleepTime = Math.max(interval - abortedRoundElapsed, releaseLockOffset+1);
+		long interval = (long) (((double) rta.getInterval()) / rate);
+		
+		long normalTime = interval - abortedRoundElapsed;
+		long lateTime = releaseLockOffset + 1;
+		
+		long sleepTime = normalTime;
+		
+		if(normalTime < lateTime) {
+			rta.logJson(LogFlag.user, "notable-event-late",
+					MiCA.getOptions().expname);
+			sleepTime = lateTime;
+		} 
+		
 		reschedule(sleepTime);
 	}
 
@@ -257,9 +269,9 @@ public class SimRound {
 			Protocol b = rtb.getProtocolInstance();
 
 			simulator.getRuntimeContextManager().setNativeRuntime(rta);
-			simulator.getRuntimeContextManager().setForeignRuntimeState(b, rtb.getRuntimeState());
+			simulator.getRuntimeContextManager().setForeignRuntimeState(b,
+					rtb.getRuntimeState());
 			stopwatch.reset();
-			
 
 			try {
 				a.update(b);
@@ -286,7 +298,6 @@ public class SimRound {
 			} finally {
 				simulator.getRuntimeContextManager().clear();
 			}
-			
 
 			simulator.getRuntimeContextManager().setNativeRuntime(rta);
 			double rate = 0;
@@ -299,8 +310,11 @@ public class SimRound {
 
 			}
 
+			simulator.getRuntimeContextManager().setNativeRuntime(rta);
 			logJson(LogFlag.rate, round.src, "mica-rate", rate);
+			simulator.getRuntimeContextManager().clear();
 
+			
 			int interval = simulator.getRuntime(round.src).getInterval();
 
 			long completionTimeLocal = stopwatch.elapsed();
@@ -309,16 +323,17 @@ public class SimRound {
 
 			long sleepMs = (long) (((double) interval) / rate);
 
-			long adjustedSleepTime = roundStartTime + sleepMs - (sim.getClock() + completionTimeLocal);
-			
+			long adjustedSleepTime = roundStartTime + sleepMs
+					- (sim.getClock() + completionTimeLocal);
+
 			reschedule(Math.max(0, adjustedSleepTime));
 		}
 	}
 
 	protected void logJson(Object flags, Address source, String msgType,
 			Object payload) {
-		((BaseProtocol) sim.getRuntime(source).getProtocolInstance()).logJson(
-				flags, msgType, payload);
+		Runtime rt = sim.getRuntime(source);
+		rt.getProtocolInstance().logJson(flags, msgType, payload);
 	}
 
 	public void reschedule(long sleepMs) {
@@ -330,15 +345,16 @@ public class SimRound {
 		try {
 			se = new SelectEvent();
 			se.selected = p.getView().sample(p.getRuntimeState().getRandom());
-			if(se.selected.equals(p.getAddress())) {
+			if (se.selected.equals(p.getAddress())) {
 				se.selected = null;
 			}
 		} catch (Throwable e) {
-			sim.getRuntimeContextManager().getNativeRuntime().handleError(RuntimeErrorCondition.SELECT_EXCEPTION,e);
+			sim.getRuntimeContextManager().getNativeRuntime()
+					.handleError(RuntimeErrorCondition.SELECT_EXCEPTION, e);
 		}
 		return se;
 	}
-	
+
 	public class SelectPhase extends RoundEvent {
 		public SelectPhase(Address src) {
 			super(src);
@@ -348,7 +364,6 @@ public class SimRound {
 		public void execute(Simulator simulator) throws MicaRuntimeException {
 			SimRuntime rta = simulator.getRuntime(getSrc());
 			simulator.getRuntimeContextManager().setNativeRuntime(rta);
-
 
 			stopwatch.reset();
 			SelectEvent se = null;

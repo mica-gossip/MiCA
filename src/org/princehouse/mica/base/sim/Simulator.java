@@ -1,5 +1,6 @@
 package org.princehouse.mica.base.sim;
 
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -72,7 +73,6 @@ public class Simulator implements RuntimeInterface {
 	public void bind(Address address, SimRuntime rt, int starttime) {
 		addressBindings.put(address, rt);
 		markUnlocked(address);
-		rt.start();
 		new SimRound(address, this, starttime);
 	}
 	
@@ -219,6 +219,10 @@ public class Simulator implements RuntimeInterface {
 	@Override
 	public void run() {
 		// run the simulation
+		for(Runtime rt : getRuntimes()) {
+			rt.start();
+		}
+		
 		running = true;
 		setClock(0L);
 		
@@ -362,5 +366,12 @@ public class Simulator implements RuntimeInterface {
 	public RuntimeContextManager getRuntimeContextManager() {
 		return runtimeContextManager;
 	}
+
+	
+	private Collection<SimRuntime> getRuntimes() {
+		return addressBindings.values();
+	}
+	
+	
 
 }

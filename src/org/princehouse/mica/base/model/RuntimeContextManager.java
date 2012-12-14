@@ -1,16 +1,20 @@
 package org.princehouse.mica.base.model;
 
+import org.princehouse.mica.util.Logging;
 import org.princehouse.mica.util.WeakHashSet;
 import org.princehouse.mica.util.reflection.FindReachableObjects;
 
 public class RuntimeContextManager {
 	// ---- agent execution context utilities ------------
-	private ThreadLocal<WeakHashSet<Object>> foreignObjects = null;
-	private ThreadLocal<RuntimeState> foreignRuntimeState = null;
-	private ThreadLocal<Runtime> nativeRuntime = null;
+	private ThreadLocal<WeakHashSet<Object>> foreignObjects = new ThreadLocal<WeakHashSet<Object>>();
+	private ThreadLocal<RuntimeState> foreignRuntimeState = new ThreadLocal<RuntimeState>();
+	private ThreadLocal<Runtime> nativeRuntime = new ThreadLocal<Runtime>();
 
-
+	// for debugging, remember which piece of code last set the native runtime
+	private ThreadLocal<String> debugLastSetLocation = new ThreadLocal<String>();
+	
 	public void clear() {
+		debugLastSetLocation.remove();
 		foreignObjects.remove();
 		foreignRuntimeState.remove();
 		nativeRuntime.remove();
@@ -25,17 +29,28 @@ public class RuntimeContextManager {
 				return frts;
 			}
 		}
-		return getNativeRuntime().getRuntimeState();
+		
+		Runtime rt = getNativeRuntime();
+		if(rt == null) {
+			throw new RuntimeException("Cannot get runtime state: No native runtime is set");
+		}
+		return rt.getRuntimeState();
 	}
 
-	public void setNativeRuntime(Runtime rt) {
-		assert (nativeRuntime.get() == null);
+	public void setNativeRuntime(Runtime rt) {		
+		String location = Logging.getLocation(1);
+		if(nativeRuntime.get() != null) {
+			throw new RuntimeException(String.format("Attempt to set native runtime without clearing first. Last set at %s\n", debugLastSetLocation.get()));
+		}
+		debugLastSetLocation.set(location);
 		nativeRuntime.set(rt);
 	}
 
 	public Runtime getNativeRuntime() {
 		Runtime rt = nativeRuntime.get();
-		assert (rt != null);
+		if(rt == null) {
+			throw new RuntimeException("You forgot to set the native runtime");
+		}
 		return rt;
 	}
 

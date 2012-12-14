@@ -13,9 +13,11 @@ import org.princehouse.mica.util.Functional;
 import fj.F;
 import fj.P;
 import fj.P2;
+
 /**
  * 
- * Serves as a base class for different merge operators.  Cannot be instantiated by itself.
+ * Serves as a base class for different merge operators. Cannot be instantiated
+ * by itself.
  * 
  * Merge two protocols in such a way that the composite protocol gossips both
  * subprotocols to the same target peer as frequently as possible, while still
@@ -29,15 +31,17 @@ import fj.P2;
 public abstract class MergeBase extends BaseProtocol {
 
 	private Protocol p1;
-	
-	// Note: can't be transient; needed for postUpdate, and a transient value would be erased by serialization
+
+	// Note: can't be transient; needed for postUpdate, and a transient value
+	// would be erased by serialization
 	private MergeSelectionCase subProtocolGossipCase = MergeSelectionCase.NA;
-	
+
 	protected MergeSelectionCase getSubProtocolGossipCase() {
 		return subProtocolGossipCase;
 	}
 
-	protected void setSubProtocolGossipCase(MergeSelectionCase subProtocolGossipCase) {
+	protected void setSubProtocolGossipCase(
+			MergeSelectionCase subProtocolGossipCase) {
 		this.subProtocolGossipCase = subProtocolGossipCase;
 	}
 
@@ -81,8 +85,11 @@ public abstract class MergeBase extends BaseProtocol {
 
 	/**
 	 * Constructor to make composite protocol p1 + p2
-	 * @param p1 First subprotocol
-	 * @param p2 Second subprotocol
+	 * 
+	 * @param p1
+	 *            First subprotocol
+	 * @param p2
+	 *            Second subprotocol
 	 */
 	public MergeBase(Protocol p1, Protocol p2) {
 		setP1(p1);
@@ -93,28 +100,33 @@ public abstract class MergeBase extends BaseProtocol {
 		this(null, null);
 	}
 
-
 	/**
-	 * For logging / debugging only.  Assign a name to P1
+	 * For logging / debugging only. Assign a name to P1
+	 * 
 	 * @return
 	 */
 	public String getP1Name() {
-		if(getP1() == null) return "null";
-		else return getP1().getClass().getSimpleName();
+		if (getP1() == null)
+			return "null";
+		else
+			return getP1().getClass().getSimpleName();
 	}
 
 	/**
-	 * For logging / debugging only.  Assign a name to P2
+	 * For logging / debugging only. Assign a name to P2
+	 * 
 	 * @return
 	 */
 	public String getP2Name() {
-		if(getP2() == null) return "null";
-		else return getP2().getClass().getSimpleName();
+		if (getP2() == null)
+			return "null";
+		else
+			return getP2().getClass().getSimpleName();
 	}
 
 	/**
-	 * Composite update function.
-	 * Run both sub-updates if possible; otherwise run one or the other
+	 * Composite update function. Run both sub-updates if possible; otherwise
+	 * run one or the other
 	 * 
 	 * @param that
 	 */
@@ -123,7 +135,7 @@ public abstract class MergeBase extends BaseProtocol {
 	public void update(Protocol p) {
 		MergeBase that = (MergeBase) p;
 		executeUpdateMerge(that, true);
-		
+
 	}
 
 	/**
@@ -133,16 +145,18 @@ public abstract class MergeBase extends BaseProtocol {
 	 * @param r
 	 */
 	private void executeSubprotocolUpdate(Protocol i, Protocol r) {
-		if(i instanceof MergeBase) {
-			((MergeBase)i).executeUpdateMerge((MergeBase)r, false);
+		if (i instanceof MergeBase) {
+			((MergeBase) i).executeUpdateMerge((MergeBase) r, false);
 		} else {
 			i.update(r);
 		}
 	}
 
 	/**
-	 * Called to execute the update of MergeBase subclasses, including any merged subprotocols that inherit MergeBase
-	 * Includes a parameter for writing to the log.  We only want the top composite protocol to write to the log
+	 * Called to execute the update of MergeBase subclasses, including any
+	 * merged subprotocols that inherit MergeBase Includes a parameter for
+	 * writing to the log. We only want the top composite protocol to write to
+	 * the log
 	 * 
 	 * @param that
 	 * @param writeLog
@@ -168,86 +182,94 @@ public abstract class MergeBase extends BaseProtocol {
 			executeSubprotocolUpdate(getP1(), that.getP1());
 			break;
 		case NA:
-			throw new RuntimeException("Merge error: No selection choice! Did you override preUpdate and forget to call super()?");
+			throw new RuntimeException(
+					"Merge error: No selection choice! Did you override preUpdate and forget to call super()?");
 		case NEITHER:
 			// nobody gossips
 			break;
 		}
-		
-		if(writeLog) {
-			List<P2<String,Boolean>> leaves = collectLeafProtocolStatus();
+
+		if (writeLog) {
+			List<P2<String, Boolean>> leaves = collectLeafProtocolStatus();
 			String outstr = "";
 			int i = 0;
-			for(P2<String,Boolean> temp : leaves) {
-				if(i++ > 0)
+			for (P2<String, Boolean> temp : leaves) {
+				if (i++ > 0)
 					outstr += ",";
-				outstr += String.format("%s:%s", temp._1(), temp._2());				
+				outstr += String.format("%s:%s", temp._1(), temp._2());
 			}
-			
+
 			logJson(LogFlag.merge, "merge-execute-subprotocols", outstr);
 		}
 	}
 
 	/**
 	 * For logging / debugging only
+	 * 
 	 * @return
 	 */
 	@SuppressWarnings("unchecked")
-	private List<P2<String,Boolean>> collectLeafProtocolStatus() {
-		List<P2<String,Boolean>> status = Functional.list();
+	private List<P2<String, Boolean>> collectLeafProtocolStatus() {
+		List<P2<String, Boolean>> status = Functional.list();
 		MergeSelectionCase choice = getSubProtocolGossipCase();
 
-		// given a pair (name:string,status:boolean),  return (name,false)
-		F<P2<String,Boolean>,P2<String,Boolean>> setFalse = new F<P2<String,Boolean>,P2<String,Boolean>>() {
+		// given a pair (name:string,status:boolean), return (name,false)
+		F<P2<String, Boolean>, P2<String, Boolean>> setFalse = new F<P2<String, Boolean>, P2<String, Boolean>>() {
 			@Override
 			public P2<String, Boolean> f(P2<String, Boolean> arg0) {
 				return P.p(arg0._1(), false);
 			}
 		};
-		
+
 		// leaves of p1
-		List<P2<String,Boolean>> temp = collectLeafProtocolStatus(getP1(), getP1Name());
-		if(choice.p1Gossips()) {
+		List<P2<String, Boolean>> temp = collectLeafProtocolStatus(getP1(),
+				getP1Name());
+		if (choice.p1Gossips()) {
 			status = Functional.concatenate(status, temp);
 		} else {
-			status = Functional.concatenate(status, Functional.list(Functional.map(temp, setFalse)));
+			status = Functional.concatenate(status,
+					Functional.list(Functional.map(temp, setFalse)));
 		}
-		
+
 		// leaves of p2
 		temp = collectLeafProtocolStatus(getP2(), getP2Name());
-		if(choice.p2Gossips()) {
+		if (choice.p2Gossips()) {
 			status = Functional.concatenate(status, temp);
 		} else {
-			status = Functional.concatenate(status, Functional.list(Functional.map(temp, setFalse)));
+			status = Functional.concatenate(status,
+					Functional.list(Functional.map(temp, setFalse)));
 		}
-		
+
 		return status;
 	}
-	
+
 	/**
 	 * For logging / debugging only
+	 * 
 	 * @return
 	 */
-	private List<P2<String,Boolean>> collectLeafProtocolStatus(Protocol p, String pname) {
-		if(p == null) {
+	private List<P2<String, Boolean>> collectLeafProtocolStatus(Protocol p,
+			String pname) {
+		if (p == null) {
 			return Functional.list();
-		}
-		else if(p instanceof MergeBase) {
-			return ((MergeBase)p).collectLeafProtocolStatus();
+		} else if (p instanceof MergeBase) {
+			return ((MergeBase) p).collectLeafProtocolStatus();
 		} else {
 			// p is a leaf
-			return Functional.list(P.p(pname,true));
+			return Functional.list(P.p(pname, true));
 		}
 	}
-	
+
 	/**
-	 * Note: If preUpdate is overridden and this super method never called, merge will break
+	 * Note: If preUpdate is overridden and this super method never called,
+	 * merge will break
 	 */
 	@Override
 	public void preUpdate(Address selected) {
-		setSubProtocolGossipCase(decideSelectionCase(selected).sample(getRuntimeState().getRandom()));
-		//logJson("merge-choose-subprotocol",getSubProtocolGossipCase());
-		switch(getSubProtocolGossipCase()) {
+		setSubProtocolGossipCase(decideSelectionCase(selected).sample(
+				getRuntimeState().getRandom()));
+		// logJson("merge-choose-subprotocol",getSubProtocolGossipCase());
+		switch (getSubProtocolGossipCase()) {
 		case P1:
 			getP1().preUpdate(selected);
 			break;
@@ -263,14 +285,15 @@ public abstract class MergeBase extends BaseProtocol {
 			getP2().preUpdate(selected);
 			break;
 		case NA:
-			throw new RuntimeException("subProtocolGossipCase is NA, which should be impossible");
+			throw new RuntimeException(
+					"subProtocolGossipCase is NA, which should be impossible");
 		}
 
 	}
-		
+
 	@Override
 	public void postUpdate() {
-		switch(getSubProtocolGossipCase()) {
+		switch (getSubProtocolGossipCase()) {
 		case P1:
 			getP1().postUpdate();
 			break;
@@ -287,15 +310,17 @@ public abstract class MergeBase extends BaseProtocol {
 			break;
 		}
 	}
-	
+
 	/**
 	 * 
-	 * @param x  Gossip partner chosen by the runtime
-	 * @param rng Random number generator
+	 * @param x
+	 *            Gossip partner chosen by the runtime
+	 * @param rng
+	 *            Random number generator
 	 * @return
 	 */
-	public abstract Distribution<MergeSelectionCase> decideSelectionCase(Address x);
-	
-	
+	public abstract Distribution<MergeSelectionCase> decideSelectionCase(
+			Address x);
+
 	private static final long serialVersionUID = 1L;
 }
