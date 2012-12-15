@@ -1,8 +1,5 @@
 package org.princehouse.mica.base.model;
 
-import org.princehouse.mica.base.exceptions.AbortRound;
-import org.princehouse.mica.base.exceptions.FatalErrorHalt;
-import org.princehouse.mica.base.net.model.Connection;
 
 /**
  * Represents the "compiled" protocol to the MiCA Runtime.
@@ -28,8 +25,8 @@ public abstract class RuntimeAgent {
 	 * @param pinstance Protocol instance
 	 * @param connection Open connection to the selected gossip peer
 	 */
-	public abstract void gossip(Runtime runtime, Protocol pinstance,
-			Connection connection) throws AbortRound, FatalErrorHalt;
+	//public abstract void gossip(Runtime runtime, Protocol pinstance,
+	//		Connection connection) throws AbortRound, FatalErrorHalt;
 
 	
 }

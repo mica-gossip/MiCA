@@ -2,7 +2,7 @@ package org.princehouse.mica.base.exceptions;
 
 import org.princehouse.mica.base.RuntimeErrorCondition;
 
-public class FatalErrorHalt extends MicaRuntimeException {
+public class FatalErrorHalt extends MicaException {
 
 	public FatalErrorHalt(RuntimeErrorCondition condition, Throwable exception) {
 		super(condition, exception);

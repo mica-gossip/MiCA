@@ -8,6 +8,7 @@ import java.util.Timer;
 import java.util.TimerTask;
 
 import org.princehouse.mica.base.LogFlag;
+import org.princehouse.mica.base.model.Compiler;
 import org.princehouse.mica.base.model.MiCA;
 import org.princehouse.mica.base.model.Runtime;
 import org.princehouse.mica.base.model.RuntimeContextManager;
@@ -48,6 +49,11 @@ public class SimpleRuntimeInterface extends RuntimeContextManager implements
 	}
 
 	private boolean running = false;
+
+	@Override
+	public Compiler getDefaultCompiler() {
+		return new SimpleCompiler();
+	}
 
 	@Override
 	public void run() {

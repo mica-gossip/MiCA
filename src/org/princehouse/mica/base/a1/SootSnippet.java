@@ -1,11 +1,5 @@
 package org.princehouse.mica.base.a1;
 
-import org.princehouse.mica.base.exceptions.AbortRound;
-import org.princehouse.mica.base.exceptions.FatalErrorHalt;
-import org.princehouse.mica.base.model.Protocol;
-import org.princehouse.mica.base.model.Runtime;
-import org.princehouse.mica.base.model.RuntimeAgent;
-import org.princehouse.mica.base.net.model.Connection;
 
 /**
  * RuntimeAgent for the simple runtime.
@@ -15,8 +9,7 @@ import org.princehouse.mica.base.net.model.Connection;
  * @param 
  *            Top-level Protocol class
  */
-class A1RuntimeAgent extends RuntimeAgent {
-
+class SootSnippet {
 
 	@SuppressWarnings("unused")
 	private void partitionUpdate() {
@@ -43,12 +36,7 @@ class A1RuntimeAgent extends RuntimeAgent {
  		*/
 	}
 
-	@Override
-	public void gossip(Runtime runtime, Protocol pinstance,
-			Connection connection) throws AbortRound, FatalErrorHalt {
-		// TODO Auto-generated method stub
-		
-	}
+	
 
 	
 }

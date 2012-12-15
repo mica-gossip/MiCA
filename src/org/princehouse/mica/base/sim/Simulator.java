@@ -11,7 +11,8 @@ import java.util.TimerTask;
 import org.princehouse.mica.base.LogFlag;
 import org.princehouse.mica.base.exceptions.AbortRound;
 import org.princehouse.mica.base.exceptions.FatalErrorHalt;
-import org.princehouse.mica.base.exceptions.MicaRuntimeException;
+import org.princehouse.mica.base.exceptions.MicaException;
+import org.princehouse.mica.base.model.Compiler;
 import org.princehouse.mica.base.model.MiCA;
 import org.princehouse.mica.base.model.Protocol;
 import org.princehouse.mica.base.model.Runtime;
@@ -19,6 +20,7 @@ import org.princehouse.mica.base.model.RuntimeContextManager;
 import org.princehouse.mica.base.model.RuntimeInterface;
 import org.princehouse.mica.base.net.dummy.DummyAddress;
 import org.princehouse.mica.base.net.model.Address;
+import org.princehouse.mica.base.simple.SimpleCompiler;
 import org.princehouse.mica.util.Functional;
 
 import fj.F;
@@ -116,6 +118,11 @@ public class Simulator implements RuntimeInterface {
 
 	protected void markUnlocked(Address a) {
 		unlockedQueue.add(a);
+	}
+	
+	@Override
+	public Compiler getDefaultCompiler() {
+		return new FakeCompiler();
 	}
 
 	/*
@@ -277,7 +284,7 @@ public class Simulator implements RuntimeInterface {
 				if(src != null) {
 					killRuntime(getRuntime(src));
 				}
-			} catch (MicaRuntimeException ex) {
+			} catch (MicaException ex) {
 				// dead code
 				ex.printStackTrace();
 			}
@@ -366,7 +373,6 @@ public class Simulator implements RuntimeInterface {
 	public RuntimeContextManager getRuntimeContextManager() {
 		return runtimeContextManager;
 	}
-
 	
 	private Collection<SimRuntime> getRuntimes() {
 		return addressBindings.values();

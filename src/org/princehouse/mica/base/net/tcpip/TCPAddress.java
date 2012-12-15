@@ -83,19 +83,17 @@ public class TCPAddress implements Address, Externalizable {
 			sock = new ServerSocket(port, backlog, address);
 			sock.setReuseAddress(true);
 		} catch(java.net.BindException e) {
-			System.err.printf("In use: %s port %s\n",address, port);
 			throw new RuntimeException(e);
 		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-			throw new RuntimeException("socket binding failed");
+			throw new RuntimeException(e);
 		}
 		AsyncServer.getServer().bind(this);
 	}
 
 	@Override
 	public void unbind() {
-		// TODO not implemented
+		// not implemented.  haven't need it.
+		throw new UnsupportedOperationException();
 	}
 	
 	@Override
@@ -111,7 +109,6 @@ public class TCPAddress implements Address, Externalizable {
 	 * @throws UnknownHostException
 	 */
 	public static TCPAddress valueOf(String addr) throws UnknownHostException {
-		// TODO Auto-generated method stub
 		int port;
 		String host;
 		
@@ -133,14 +130,12 @@ public class TCPAddress implements Address, Externalizable {
 			Connection c = new SocketConnection(clientSocket);
 			receiveCallback.acceptConnection(this,c);
 		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+			throw new RuntimeException(e);
 		}
 	}
 
 	@Override
 	public Connection openConnection() throws IOException {
-		// TODO Auto-generated method stub
 		Socket sock = new Socket(address, port);
 		BaseConnection c = new SocketConnection(sock);
 		return c;

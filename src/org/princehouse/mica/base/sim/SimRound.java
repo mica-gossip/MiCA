@@ -2,11 +2,14 @@ package org.princehouse.mica.base.sim;
 
 import static org.princehouse.mica.base.RuntimeErrorCondition.INITIATOR_LOCK_TIMEOUT;
 
+import java.io.Serializable;
+
 import org.princehouse.mica.base.LogFlag;
 import org.princehouse.mica.base.RuntimeErrorCondition;
 import org.princehouse.mica.base.exceptions.AbortRound;
 import org.princehouse.mica.base.exceptions.FatalErrorHalt;
-import org.princehouse.mica.base.exceptions.MicaRuntimeException;
+import org.princehouse.mica.base.exceptions.MicaException;
+import org.princehouse.mica.base.model.CommunicationPatternAgent;
 import org.princehouse.mica.base.model.MiCA;
 import org.princehouse.mica.base.model.Protocol;
 import org.princehouse.mica.base.model.Runtime;
@@ -106,7 +109,7 @@ public class SimRound {
 		}
 
 		@Override
-		public void execute(Simulator simulator) throws MicaRuntimeException {
+		public void execute(Simulator simulator) throws MicaException {
 			// do nothing here
 		}
 
@@ -133,7 +136,7 @@ public class SimRound {
 		}
 
 		@Override
-		public void onTimeout() throws MicaRuntimeException {
+		public void onTimeout() throws MicaException {
 			sim.getRuntime(getSrc()).handleError(INITIATOR_LOCK_TIMEOUT, null);
 		}
 	}
@@ -154,14 +157,17 @@ public class SimRound {
 			this.timeoutErrorMsg = timeoutErrorMsg;
 		}
 
-		public void onTimeout() throws MicaRuntimeException {
+		public void onTimeout() throws MicaException {
+			sim.getRuntimeContextManager().setNativeRuntime(sim.getRuntime(round.src));
 			logJson(LogFlag.error, getSrc(), timeoutErrorMsg, null);
+			sim.getRuntimeContextManager().clear();
+
 		}
 
 		public abstract void onAcquireLock();
 
 		@Override
-		public void execute(Simulator simulator) throws MicaRuntimeException {
+		public void execute(Simulator simulator) throws MicaException {
 			if (simulator.lock(lock, getSrc())) {
 				if (timeout != null) {
 					timeout.cancel();
@@ -212,7 +218,7 @@ public class SimRound {
 		}
 
 		@Override
-		public void execute(Simulator simulator) throws MicaRuntimeException {
+		public void execute(Simulator simulator) throws MicaException {
 			if (haveLockDst) {
 				simulator.unlock(round.dst, round.src); // getSrc() is actually
 														// round.dst;
@@ -239,7 +245,7 @@ public class SimRound {
 		}
 
 		@Override
-		public void execute(Simulator simulator) throws MicaRuntimeException {
+		public void execute(Simulator simulator) throws MicaException {
 			if (haveLockSrc) {
 				simulator.unlock(round.src, round.src);
 				haveLockSrc = false;
@@ -259,24 +265,29 @@ public class SimRound {
 		}
 
 		@Override
-		public void execute(Simulator simulator) throws MicaRuntimeException {
+		public void execute(Simulator simulator) throws MicaException {
 			// should have both locks by this point
 
 			SimRuntime rta = simulator.getRuntime(round.src);
 			SimRuntime rtb = simulator.getRuntime(round.dst);
 
-			Protocol a = rta.getProtocolInstance();
-			Protocol b = rtb.getProtocolInstance();
-
-			simulator.getRuntimeContextManager().setNativeRuntime(rta);
-			simulator.getRuntimeContextManager().setForeignRuntimeState(b,
-					rtb.getRuntimeState());
 			stopwatch.reset();
 
+			CommunicationPatternAgent pattern = MiCA.getCompiler().compile(rta.getProtocolInstance());
+			
 			try {
-				a.update(b);
+				Serializable m1 = pattern.f1(rta);
+				Serializable m2 = pattern.f2(rtb, m1);
+				pattern.f3(rta, m2);
+				
+				simulator.getRuntimeContextManager().setNativeRuntime(rta);
 				rta.logState("gossip-initiator");
+				simulator.getRuntimeContextManager().clear();
+				
+				simulator.getRuntimeContextManager().setNativeRuntime(rtb);
 				rtb.logState("gossip-receiver");
+				simulator.getRuntimeContextManager().clear();
+				
 			} catch (Throwable t) {
 				rta.handleError(RuntimeErrorCondition.UPDATE_EXCEPTION, t);
 			} finally {
@@ -302,7 +313,7 @@ public class SimRound {
 			simulator.getRuntimeContextManager().setNativeRuntime(rta);
 			double rate = 0;
 			try {
-				rate = a.getRate();
+				rate = rta.getProtocolInstance().getRate();
 			} catch (Throwable t) {
 				rta.handleError(RuntimeErrorCondition.RATE_EXCEPTION, t);
 			} finally {
@@ -361,7 +372,7 @@ public class SimRound {
 		}
 
 		@Override
-		public void execute(Simulator simulator) throws MicaRuntimeException {
+		public void execute(Simulator simulator) throws MicaException {
 			SimRuntime rta = simulator.getRuntime(getSrc());
 			simulator.getRuntimeContextManager().setNativeRuntime(rta);
 
@@ -406,7 +417,7 @@ public class SimRound {
 		}
 
 		@Override
-		public void execute(Simulator simulator) throws MicaRuntimeException {
+		public void execute(Simulator simulator) throws MicaException {
 			round.abortRound(1);
 			if (onTimeoutCallback != null)
 				onTimeoutCallback.onTimeout();

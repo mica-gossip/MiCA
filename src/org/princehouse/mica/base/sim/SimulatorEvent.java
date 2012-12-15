@@ -2,7 +2,7 @@ package org.princehouse.mica.base.sim;
 
 import org.princehouse.mica.base.exceptions.AbortRound;
 import org.princehouse.mica.base.exceptions.FatalErrorHalt;
-import org.princehouse.mica.base.exceptions.MicaRuntimeException;
+import org.princehouse.mica.base.exceptions.MicaException;
 import org.princehouse.mica.base.net.model.Address;
 
 public abstract class SimulatorEvent implements Comparable<SimulatorEvent> {
@@ -44,7 +44,7 @@ public abstract class SimulatorEvent implements Comparable<SimulatorEvent> {
 		cancelled = true;
 	}
 
-	public void handleError(MicaRuntimeException e, Simulator simulator) {
+	public void handleError(MicaException e, Simulator simulator) {
 		// default exception handler
 
 		if (e instanceof AbortRound) {
@@ -79,9 +79,9 @@ public abstract class SimulatorEvent implements Comparable<SimulatorEvent> {
 	 * @return
 	 */
 	public abstract void execute(Simulator simulator)
-			throws MicaRuntimeException;
+			throws MicaException;
 
-	public void lockAcquired(Simulator simulator) throws MicaRuntimeException {
+	public void lockAcquired(Simulator simulator) throws MicaException {
 		// override
 	}
 

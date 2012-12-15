@@ -2,16 +2,16 @@ package org.princehouse.mica.base.model;
 
 import java.io.Serializable;
 
-public interface CommunicationPatternAgent<M1 extends Serializable, M2 extends Serializable> {
+import org.princehouse.mica.base.exceptions.AbortRound;
+import org.princehouse.mica.base.exceptions.FatalErrorHalt;
+import org.princehouse.mica.base.exceptions.MicaException;
+
+public interface CommunicationPatternAgent {
 
 	/*
 	 * The MiCA communication pattern is as follows between two nodes, a and b:
 	 * 
-	 * m1 = f1(a) 
-	 *               ----- m1 ----> 
-	 *                               m2 = f2(b,m1)               
-	 *               <---- m2 ----- 
-	 * f3(a,m2)
+	 * m1 = f1(a) ----- m1 ----> m2 = f2(b,m1) <---- m2 ----- f3(a,m2)
 	 * 
 	 * 
 	 * The actual communication should be left to the runtime, but the messages
@@ -24,7 +24,8 @@ public interface CommunicationPatternAgent<M1 extends Serializable, M2 extends S
 	 * @param a
 	 * @return
 	 */
-	public abstract M1 f1(Protocol a);
+	public abstract Serializable f1(Runtime initiatorRuntime)
+			throws MicaException;
 
 	/**
 	 * Modifies b's state and generates a return message for a
@@ -33,8 +34,10 @@ public interface CommunicationPatternAgent<M1 extends Serializable, M2 extends S
 	 * @param m1
 	 * @return
 	 */
-	public abstract M2 f2(Protocol b, M1 m1);
+	public abstract Serializable f2(Runtime receiverRuntime, Serializable m1)
+			throws FatalErrorHalt, AbortRound;
 
-	public abstract void f3(Protocol a, M2 m2);
+	public abstract void f3(Runtime initiatorRuntime, Serializable m2)
+			throws FatalErrorHalt, AbortRound;
 
 }

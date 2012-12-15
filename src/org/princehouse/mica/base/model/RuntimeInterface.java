@@ -54,4 +54,5 @@ public interface RuntimeInterface {
 
 	public RuntimeContextManager getRuntimeContextManager();
 	
+	public Compiler getDefaultCompiler();
 }

@@ -231,7 +231,6 @@ public abstract class Runtime {
 		runtimeLoglock.unlock();
 	}
 
-	public abstract RuntimeAgent compile(Protocol pinstance);
 
 	/**
 	 * Start the runtime. If you override this, be sure to call the inherited
@@ -346,7 +345,7 @@ public abstract class Runtime {
 		case FATAL_ERROR_HALT:
 			throw new FatalErrorHalt(condition, exception);
 		case IGNORE:
-			return; // do nothing at all!
+			return; // do nothing 
 		case ABORT_ROUND:
 			throw new AbortRound(condition, exception);
 		default:
@@ -357,6 +356,8 @@ public abstract class Runtime {
 
 	public RuntimeErrorResponse getErrorPolicy(RuntimeErrorCondition condition) {
 		switch (condition) {
+		case CLOSE_CONNECTION_EXCEPTION:
+			return RuntimeErrorResponse.IGNORE;
 		case NULL_SELECT:
 		case OPEN_CONNECTION_FAIL:
 		case INITIATOR_LOCK_TIMEOUT:

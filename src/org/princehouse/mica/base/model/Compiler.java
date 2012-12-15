@@ -26,5 +26,5 @@ public abstract class Compiler {
 	 * @return A RuntimeAgent. Static analysis-based agents may be reused for any 
 	 * protocol instance of the given class.
 	 */
-	public abstract RuntimeAgent compile(Protocol pinstance);
+	public abstract CommunicationPatternAgent compile(Protocol pinstance);
 }

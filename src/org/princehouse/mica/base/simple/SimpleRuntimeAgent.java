@@ -1,13 +1,11 @@
 package org.princehouse.mica.base.simple;
 
-import static org.princehouse.mica.base.RuntimeErrorCondition.GOSSIP_IO_ERROR;
 import static org.princehouse.mica.base.RuntimeErrorCondition.MISC_INTERNAL_ERROR;
 
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.Serializable;
-import java.net.SocketException;
 
 import org.princehouse.mica.base.RuntimeErrorCondition;
 import org.princehouse.mica.base.exceptions.AbortRound;
@@ -104,6 +102,7 @@ class SimpleRuntimeAgent extends RuntimeAgent {
 	public SimpleRuntimeAgent(Class<Protocol> pclass) throws CompilerException {
 	}
 
+	/*
 	@Override
 	public void gossip(Runtime rt, Protocol pinstance, Connection connection)
 			throws AbortRound, FatalErrorHalt {
@@ -151,7 +150,7 @@ class SimpleRuntimeAgent extends RuntimeAgent {
 		} catch (IOException e) {
 			rt.handleError(GOSSIP_IO_ERROR, e);
 		}
-	}
+	} */
 
 	/**
 	 * Callback executed when a gossip request arrives. Deserializes a
@@ -201,9 +200,6 @@ class SimpleRuntimeAgent extends RuntimeAgent {
 				runtime.handleError(RuntimeErrorCondition.UPDATE_EXCEPTION, e);
 			}
 			context.clear();
-			
-
-
 			ObjectOutputStream oos = new ObjectOutputStream(
 					connection.getOutputStream());
 			ResponseMessage rpm = new ResponseMessage(initiator,

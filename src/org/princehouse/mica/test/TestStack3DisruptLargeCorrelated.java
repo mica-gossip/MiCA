@@ -22,77 +22,68 @@ import fj.F3;
 
 /**
  * Tests leader election + spanning tree + counting + labeling
+ * 
  * @author lonnie
- *
+ * 
  */
 public class TestStack3DisruptLargeCorrelated extends TestHarness {
 
 	/**
 	 * @param args
-	 * @throws UnknownHostException 
+	 * @throws UnknownHostException
 	 */
-	
+
 	public static long roundsToMs(int rounds, int intervalMS) {
 		return rounds * intervalMS;
 	}
-	
-	public static void main(String[] args) {
 
+	public static void main(String[] args) {
 
 		F3<Integer, Address, Overlay, Protocol> createNodeFunc = new F3<Integer, Address, Overlay, Protocol>() {
 			@Override
-			public Protocol f(Integer i, Address address,
-					Overlay view) {
+			public Protocol f(Integer i, Address address, Overlay view) {
 
-				
-
-				MinAddressLeaderElection leaderElection = new MinAddressLeaderElection(view);
-				
-
-				SpanningTreeOverlay tree = new SpanningTreeOverlay(leaderElection,view);
-
+				MinAddressLeaderElection leaderElection = new MinAddressLeaderElection(
+						view);
+				SpanningTreeOverlay tree = new SpanningTreeOverlay(
+						leaderElection, view);
 				TreeCountNodes counting = new TreeCountNodes(tree);
-			
-				TreeLabelNodes labeling = new TreeLabelNodes(tree,counting);
+				TreeLabelNodes labeling = new TreeLabelNodes(tree, counting);
 
 				return MergeIndependent.merge(
-						MergeIndependent.merge(
-								leaderElection,
-								labeling
-								),
-								MergeIndependent.merge(
-										tree,
-										counting
-										));
+						MergeIndependent.merge(leaderElection, labeling),
+						MergeIndependent.merge(tree, counting));
 			}
 		};
 
-
 		final TestStack3DisruptLargeCorrelated harness = new TestStack3DisruptLargeCorrelated();
-		
-		//SimpleRuntime.DEFAULT_INTERVAL = 3000;
+
+		// SimpleRuntime.DEFAULT_INTERVAL = 3000;
 		int totalRounds = 600;
 		int intervalMS = harness.getOptions().roundLength;
-		harness.addTimer(roundsToMs(totalRounds, intervalMS), harness.taskStop());
+		harness.addTimer(roundsToMs(totalRounds, intervalMS),
+				harness.taskStop());
 
-		for(int i = totalRounds/2; i < totalRounds/2+1; i+=1) {
+		for (int i = totalRounds / 2; i < totalRounds / 2 + 1; i += 1) {
 			TimerTask disrupt = new TimerTask() {
 				@Override
 				public void run() {
 					Runtime.debug.println("----> Leader sabotage!");
 					List<Address> addresses = new ArrayList<Address>();
-					for(Runtime rt : harness.getRuntimes()) {
+					for (Runtime rt : harness.getRuntimes()) {
 						addresses.add(rt.getAddress());
 					}
-					for(Runtime rt : harness.getRuntimes()) {
-						Protocol temp = ((MergeBase)rt.getProtocolInstance()).getP1();
-						MinAddressLeaderElection leader = (MinAddressLeaderElection) ((MergeBase)temp).getP1();
+					for (Runtime rt : harness.getRuntimes()) {
+						Protocol temp = ((MergeBase) rt.getProtocolInstance())
+								.getP1();
+						MinAddressLeaderElection leader = (MinAddressLeaderElection) ((MergeBase) temp)
+								.getP1();
 						leader.setLeader(Randomness.choose(addresses));
 					}
 				}
 			};
 			harness.addTimer(roundsToMs(i, intervalMS), disrupt);
-		}	
+		}
 		harness.runMain(args, createNodeFunc);
 	}
 

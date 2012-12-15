@@ -8,14 +8,17 @@ import java.util.Random;
 import java.util.TimerTask;
 
 import org.princehouse.mica.base.LogFlag;
+import org.princehouse.mica.base.exceptions.InvalidOption;
 import org.princehouse.mica.base.model.MiCA;
+import org.princehouse.mica.base.model.MicaOptions;
 import org.princehouse.mica.base.model.Protocol;
 import org.princehouse.mica.base.model.Runtime;
 import org.princehouse.mica.base.model.RuntimeInterface;
-import org.princehouse.mica.base.model.MicaOptions;
 import org.princehouse.mica.base.net.model.Address;
 import org.princehouse.mica.base.net.tcpip.TCPAddress;
+import org.princehouse.mica.base.sim.FakeCompiler;
 import org.princehouse.mica.base.sim.Simulator;
+import org.princehouse.mica.base.simple.SimpleCompiler;
 import org.princehouse.mica.base.simple.SimpleRuntimeInterface;
 import org.princehouse.mica.lib.abstractions.Overlay;
 import org.princehouse.mica.util.Array;
@@ -38,14 +41,14 @@ import fj.P2;
  * 
  * @author lonnie
  * 
- * @param 
+ * @param
  */
 public class TestHarness {
 
 	private RuntimeInterface runtimeInterface = null;
-	
+
 	public static final String LOG_NAMES = Array.join(", ", LogFlag.values());
-	
+
 	private List<P2<Long, TimerTask>> timers = Functional.list();
 
 	public void addTimer(long time, TimerTask task) {
@@ -74,13 +77,14 @@ public class TestHarness {
 	};
 
 	private Random random = null;
+
 	public Random getRandom() {
-		if(random == null) {
+		if (random == null) {
 			random = new Random(getOptions().seed);
 		}
 		return random;
 	}
-	
+
 	public TimerTask taskStop() {
 		final TestHarness harness = this;
 		return new TimerTask() {
@@ -94,28 +98,29 @@ public class TestHarness {
 
 	public void launchProtocol(ProtocolInstanceFactory factory,
 			TestHarnessGraph g) {
-	
+
 		launchTimers(); // TODO lift to runtime interface
 
-		
 		int i = 0;
-		
+
 		for (Address addr : g.getAddresses()) {
 			Overlay neighbors = g.getOverlay(addr);
 			MicaOptions options = getOptions();
 			int stagger = rng.nextInt(options.stagger);
 			int lockTimeout = options.timeout;
 			long seed = getRandom().nextLong();
-			Runtime rt = runtimeInterface.addRuntime(addr, seed, options.roundLength, stagger, lockTimeout);		
-			
-			MiCA.getRuntimeInterface().getRuntimeContextManager().setNativeRuntime(rt);
-			Protocol pinstance = factory.createProtocolInstance(i++, addr, neighbors);
+			Runtime rt = runtimeInterface.addRuntime(addr, seed,
+					options.roundLength, stagger, lockTimeout);
+
+			MiCA.getRuntimeInterface().getRuntimeContextManager()
+					.setNativeRuntime(rt);
+			Protocol pinstance = factory.createProtocolInstance(i++, addr,
+					neighbors);
 			MiCA.getRuntimeInterface().getRuntimeContextManager().clear();
-			
+
 			rt.setProtocolInstance(pinstance);
 		}
 	}
-
 
 	private void launchTimers() {
 		for (P2<Long, TimerTask> tt : timers) {
@@ -129,8 +134,8 @@ public class TestHarness {
 
 	public void launchProtocolRandomGraph(int n, int degree,
 			ProtocolInstanceFactory factory) {
-		launchProtocol(factory, new RandomGraph(n, defaultAddressFunc,
-				degree, rng));
+		launchProtocol(factory, new RandomGraph(n, defaultAddressFunc, degree,
+				rng));
 	}
 
 	public void launchProtocolCompleteGraph(int n,
@@ -149,12 +154,10 @@ public class TestHarness {
 		System.out.println("Done");
 	}
 
-	public void runGraph(ProtocolInstanceFactory factory,
-			TestHarnessGraph graph) {
+	public void runGraph(ProtocolInstanceFactory factory, TestHarnessGraph graph) {
 		launchProtocol(factory, graph);
 		run();
 	}
-
 
 	public void stop() {
 		runtimeInterface.stop();
@@ -166,7 +169,7 @@ public class TestHarness {
 	 * 
 	 * @author lonnie
 	 * 
-	 * @param 
+	 * @param
 	 */
 	public static interface ProtocolInstanceFactory {
 		public Protocol createProtocolInstance(int nodeId, Address address,
@@ -174,7 +177,7 @@ public class TestHarness {
 	};
 
 	// backwards compatibility method; do not use
-	public static  ProtocolInstanceFactory factoryFromCNF(
+	public static ProtocolInstanceFactory factoryFromCNF(
 			final F3<Integer, Address, Overlay, Protocol> createNodeFunc) {
 		return new ProtocolInstanceFactory() {
 			@Override
@@ -186,13 +189,12 @@ public class TestHarness {
 	}
 
 	// backwards compatibility
-	public static  void main(String[] argv,
+	public static void main(String[] argv,
 			F3<Integer, Address, Overlay, Protocol> createNodeFunc) {
 		TestHarness.main(argv, TestHarness.factoryFromCNF(createNodeFunc));
 	}
 
-	public static  void main(String[] argv,
-			ProtocolInstanceFactory factory) {
+	public static void main(String[] argv, ProtocolInstanceFactory factory) {
 		TestHarness harness = new TestHarness();
 		harness.runMain(argv, factory);
 	}
@@ -213,7 +215,8 @@ public class TestHarness {
 	}
 
 	public void runMain(String[] argv) {
-		// will throw an invalid cast exception of this harness doesn't implement ProtocolInstanceFactory
+		// will throw an invalid cast exception of this harness doesn't
+		// implement ProtocolInstanceFactory
 		ProtocolInstanceFactory factory = (ProtocolInstanceFactory) this;
 		MicaOptions options = parseOptions(argv);
 		runMain(options, factory);
@@ -260,17 +263,30 @@ public class TestHarness {
 	}
 
 	private void setOptions(MicaOptions options) {
-		this.options = options;	
+		this.options = options;
 		// validate options and do option processing...
 		String runtimeName = options.implementation;
-		if(runtimeName.equals("simple")) {
+		if (runtimeName.equals("simple")) {
 			runtimeInterface = new SimpleRuntimeInterface();
-		} else if(runtimeName.equals("sim")) {
+		} else if (runtimeName.equals("sim")) {
 			runtimeInterface = Simulator.v();
-		} else if(runtimeName.equals("a1")) {
+		} else if (runtimeName.equals("a1")) {
 			throw new UnsupportedOperationException();
-			//runtimeInterface = new A1RuntimeInterface();
+			// runtimeInterface = new A1RuntimeInterface();
+		} else {
+			throw new InvalidOption("implementation", options.implementation);
 		}
+
+		if (options.compiler.equals("default")) {
+			MiCA.setCompiler(runtimeInterface.getDefaultCompiler());
+		} else if (options.compiler.equals("simple")) {
+			MiCA.setCompiler(new SimpleCompiler());
+		} else if (options.compiler.equals("fake")) {
+			MiCA.setCompiler(new FakeCompiler());
+		} else {
+			throw new InvalidOption("compiler", options.compiler);
+		}
+
 		runtimeInterface.reset();
 		MiCA.setRuntimeInterface(runtimeInterface);
 		MiCA.setOptions(options);
@@ -280,7 +296,7 @@ public class TestHarness {
 	public void processOptions() {
 		MicaOptions options = getOptions();
 		options.mainClassName = this.getClass().getName();
-		
+
 		if (options.stopAfter > 0) {
 			addTimerRounds(options.stopAfter, taskStop());
 		}
@@ -289,11 +305,11 @@ public class TestHarness {
 		rng = new Random(options.seed);
 
 		F<Integer, Address> addressFunc = runtimeInterface.getAddressFunc();
-				
-		if(addressFunc == null) {
+
+		if (addressFunc == null) {
 			addressFunc = defaultAddressFunc;
 		}
-		
+
 		List<Address> addresses = Functional.list(Functional.map(
 				Functional.range(options.n), addressFunc));
 
@@ -310,11 +326,12 @@ public class TestHarness {
 		if (options.clearLogdir) {
 			clearLogdir();
 		}
-		
-		// logging options
-		LogFlag.setCurrentLogMask(LogFlag.set(LogFlag.getCurrentLogMask(), (List) options.logsEnable));
-		LogFlag.setCurrentLogMask(LogFlag.unset(LogFlag.getCurrentLogMask(), (List) options.logsDisable));
 
+		// logging options
+		LogFlag.setCurrentLogMask(LogFlag.set(LogFlag.getCurrentLogMask(),
+				(List) options.logsEnable));
+		LogFlag.setCurrentLogMask(LogFlag.unset(LogFlag.getCurrentLogMask(),
+				(List) options.logsDisable));
 	}
 
 	/**
@@ -339,8 +356,7 @@ public class TestHarness {
 		}
 	}
 
-	public void runMain(MicaOptions options,
-			ProtocolInstanceFactory factory) {
+	public void runMain(MicaOptions options, ProtocolInstanceFactory factory) {
 		assert (options != null);
 		setOptions(options);
 		// SimpleRuntime.DEFAULT_INTERVAL = (int) options.roundLength;

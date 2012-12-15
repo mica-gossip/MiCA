@@ -5,7 +5,6 @@ import java.util.concurrent.locks.ReentrantLock;
 import org.princehouse.mica.base.model.MiCA;
 import org.princehouse.mica.base.model.Protocol;
 import org.princehouse.mica.base.model.Runtime;
-import org.princehouse.mica.base.model.RuntimeAgent;
 import org.princehouse.mica.base.net.model.Address;
 
 public class SimRuntime extends Runtime {
@@ -28,11 +27,6 @@ public class SimRuntime extends Runtime {
 	}
 
 	@Override
-	public RuntimeAgent compile(Protocol pinstance) {
-		return new SimRuntimeAgent(pinstance);
-	}
-
-	@Override
 	public void setProtocolInstance(Protocol pinstance) {
 		protocol = pinstance;
 	}
@@ -50,33 +44,12 @@ public class SimRuntime extends Runtime {
 	@Override
 	public void setAddress(Address address) {
 		getRuntimeState().setAddress(address);
-
 	}
 
 	@Override
 	public long getRuntimeClock() {
 		return getSimulator().getClock();
 	}
-
-/*
-	protected void tolerateError() throws AbortRound {
-		throw new AbortRound(null, null);
-	}
-
-	protected void fatalErrorHalt(RuntimeErrorCondition condition)
-			throws FatalErrorHalt {
-		stop(); // passively signal that it's time to shut down
-		try {
-			getAddress().unbind();// try to unbind the listener
-		} catch (NotBoundException e1) {
-		}
-		try {
-			getProtocolInstanceLock().unlock();
-		} catch (IllegalMonitorStateException e) {
-		}
-		throw new FatalErrorHalt();
-	}
-	*/
 
 	protected Simulator getSimulator() {
 		return Simulator.v();

@@ -12,38 +12,31 @@ import org.princehouse.mica.util.harness.TestHarness;
 
 import fj.F3;
 
-
 /**
  * Tests leader election + spanning tree
+ * 
  * @author lonnie
- *
  */
 public class TestStack1 extends TestHarness {
 
 	/**
 	 * @param args
-	 * @throws UnknownHostException 
+	 * @throws UnknownHostException
 	 */
 	public static void main(String[] args) {
-	
-		
+
 		F3<Integer, Address, Overlay, Protocol> createNodeFunc = new F3<Integer, Address, Overlay, Protocol>() {
 			@Override
-			public Protocol f(Integer i, Address address,
-					Overlay view) {
-								
-				MinAddressLeaderElection leaderElection = new MinAddressLeaderElection(view);
-				
-				Protocol tree = new SpanningTreeOverlay(leaderElection,view);
-				
-				return new MergeIndependent(
-						leaderElection,
-						tree);
+			public Protocol f(Integer i, Address address, Overlay view) {
+				MinAddressLeaderElection leaderElection = new MinAddressLeaderElection(
+						view);
+				Protocol tree = new SpanningTreeOverlay(leaderElection, view);
+				return new MergeIndependent(leaderElection, tree);
 			}
 		};
 
 		new TestStack1().runMain(args, createNodeFunc);
-		
+
 	}
 
 }

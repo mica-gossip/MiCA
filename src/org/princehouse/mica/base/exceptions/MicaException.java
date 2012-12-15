@@ -2,7 +2,7 @@ package org.princehouse.mica.base.exceptions;
 
 import org.princehouse.mica.base.RuntimeErrorCondition;
 
-public class MicaRuntimeException extends Exception {
+public class MicaException extends Exception {
 
 	/**
 	 * 
@@ -11,7 +11,7 @@ public class MicaRuntimeException extends Exception {
 	
 	private RuntimeErrorCondition condition = null;
 	
-	public MicaRuntimeException(RuntimeErrorCondition condition, Throwable exception) {
+	public MicaException(RuntimeErrorCondition condition, Throwable exception) {
 		super(exception);
 		this.condition = condition;
 	}

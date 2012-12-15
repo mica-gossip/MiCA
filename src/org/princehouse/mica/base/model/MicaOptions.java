@@ -6,7 +6,7 @@ import org.princehouse.mica.util.Functional;
 
 import com.beust.jcommander.Parameter;
 
-public class MicaOptions  {
+public class MicaOptions {
 
 	@Parameter(names = "-stagger", description = "amount of time (ms) to stagger starting runtimes")
 	public int stagger = 10000;
@@ -53,14 +53,17 @@ public class MicaOptions  {
 	@Parameter(names = "-implementation", description = "Runtime implementation name. Valid options: simple, sim, a1")
 	public String implementation = "simple";
 
+	@Parameter(names = "-compiler", description="Analysis implementation. Options: default, simple, fake")
+	public String compiler = "default";
+	
 	@Parameter(names = "-timeout", description = "Lock waiting timeout (ms)")
 	public int timeout = 5000;
-	
-	@Parameter(names = "-ldisable", variableArity=true, description = "Log types to disable (space separated log names). See LogFlags enum for log names.")
+
+	@Parameter(names = "-ldisable", variableArity = true, description = "Log types to disable (space separated log names). See LogFlags enum for log names.")
 	public List<String> logsDisable = Functional.list();
 
-	@Parameter(names = "-lenable", variableArity=true, description = "Log types to enable (space separated log names). See LogFlags enum for log names.")
+	@Parameter(names = "-lenable", variableArity = true, description = "Log types to enable (space separated log names). See LogFlags enum for log names.")
 	public List<String> logsEnable = Functional.list();
-	
+
 	public String mainClassName = null;
 }

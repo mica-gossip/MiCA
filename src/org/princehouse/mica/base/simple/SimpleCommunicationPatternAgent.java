@@ -2,13 +2,17 @@ package org.princehouse.mica.base.simple;
 
 import java.io.Serializable;
 
+import org.princehouse.mica.base.RuntimeErrorCondition;
+import org.princehouse.mica.base.exceptions.AbortRound;
+import org.princehouse.mica.base.exceptions.FatalErrorHalt;
 import org.princehouse.mica.base.model.CommunicationPatternAgent;
+import org.princehouse.mica.base.model.MiCA;
 import org.princehouse.mica.base.model.Protocol;
+import org.princehouse.mica.base.model.Runtime;
 import org.princehouse.mica.base.model.RuntimeState;
-import org.princehouse.mica.base.simple.SimpleCommunicationPatternAgent.SimpleM;
 
 public class SimpleCommunicationPatternAgent implements
-		CommunicationPatternAgent<SimpleM, SimpleM> {
+		CommunicationPatternAgent {
 
 	@SuppressWarnings("serial")
 	protected static class SimpleM implements Serializable {
@@ -16,32 +20,56 @@ public class SimpleCommunicationPatternAgent implements
 			this.p = p;
 			this.runtimeState = runtimeState;
 		}
+
 		private Protocol p;
+
 		public Protocol getP() {
 			return p;
 		}
+
 		public RuntimeState getRuntimeState() {
 			return runtimeState;
 		}
+
 		private RuntimeState runtimeState;
 	}
 
-
 	@Override
-	public SimpleM f1(Protocol a) {
-		return new SimpleM(a, a.getRuntimeState());
+	public Serializable f1(Runtime initiatorRuntime) {
+		try {
+			return new SimpleM(initiatorRuntime.getProtocolInstance(),
+					initiatorRuntime.getRuntimeState());
+		} finally {
+			MiCA.getRuntimeInterface().getRuntimeContextManager().clear();
+		}
 	}
 
 	@Override
-	public SimpleM f2(Protocol b, SimpleM m1) {
-		// TODO Auto-generated method stub
-		return null;
+	public Serializable f2(Runtime receiverRuntime, Serializable o)
+			throws FatalErrorHalt, AbortRound {
+		SimpleM m1 = (SimpleM) o;
+		MiCA.getRuntimeInterface().getRuntimeContextManager()
+				.setNativeRuntime(receiverRuntime);
+		try {
+			MiCA.getRuntimeInterface().getRuntimeContextManager()
+					.setForeignRuntimeState(m1.p, m1.runtimeState);
+			try {
+				m1.p.update(receiverRuntime.getProtocolInstance());
+			} catch (Throwable t) {
+				receiverRuntime.handleError(
+						RuntimeErrorCondition.UPDATE_EXCEPTION, t);
+			}
+			return m1;
+		} finally {
+			MiCA.getRuntimeInterface().getRuntimeContextManager().clear();
+		}
 	}
 
 	@Override
-	public void f3(Protocol a, SimpleM m2) {
-		// TODO Auto-generated method stub
-		
+	public void f3(Runtime initiatorRuntime, Serializable o) {
+		SimpleM m2 = (SimpleM) o;
+		initiatorRuntime.setProtocolInstance(m2.p);
+		initiatorRuntime.setRuntimeState(m2.runtimeState);
 	}
 
 }

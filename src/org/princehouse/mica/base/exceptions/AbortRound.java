@@ -2,7 +2,7 @@ package org.princehouse.mica.base.exceptions;
 
 import org.princehouse.mica.base.RuntimeErrorCondition;
 
-public class AbortRound extends MicaRuntimeException {
+public class AbortRound extends MicaException {
 
 	public AbortRound() {
 		super(null,null);

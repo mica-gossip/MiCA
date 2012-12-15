@@ -1,6 +1,6 @@
 package org.princehouse.mica.base.sim;
 
-import org.princehouse.mica.base.exceptions.MicaRuntimeException;
+import org.princehouse.mica.base.exceptions.MicaException;
 import org.princehouse.mica.base.net.model.Address;
 
 public class TimerEvent extends SimulatorEvent {
@@ -13,7 +13,7 @@ public class TimerEvent extends SimulatorEvent {
 	}
 	
 	@Override
-	public void execute(Simulator simulator) throws MicaRuntimeException {
+	public void execute(Simulator simulator) throws MicaException {
 		task.run();
 	}
 
