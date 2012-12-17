@@ -48,7 +48,7 @@ public class TestStack3DisruptLargeCorrelated extends TestHarness {
 				SpanningTreeOverlay tree = new SpanningTreeOverlay(
 						leaderElection, view);
 				TreeCountNodes counting = new TreeCountNodes(tree);
-				TreeLabelNodes labeling = new TreeLabelNodes(tree, counting);
+				TreeLabelNodes labeling = new TreeLabelNodes(counting);
 
 				return MergeIndependent.merge(
 						MergeIndependent.merge(leaderElection, labeling),

@@ -106,10 +106,11 @@ public abstract class MergeBase extends BaseProtocol {
 	 * @return
 	 */
 	public String getP1Name() {
-		if (getP1() == null)
-			return "null";
-		else
-			return getP1().getClass().getSimpleName();
+		return "p1";
+		//if (getP1() == null)
+		//	return "null";
+		//else
+		//	return getP1().getClass().getSimpleName();
 	}
 
 	/**
@@ -118,10 +119,11 @@ public abstract class MergeBase extends BaseProtocol {
 	 * @return
 	 */
 	public String getP2Name() {
-		if (getP2() == null)
-			return "null";
-		else
-			return getP2().getClass().getSimpleName();
+		return "p2";
+//		if (getP2() == null)
+//			return "null";
+//		else
+//			return getP2().getClass().getSimpleName();
 	}
 
 	/**

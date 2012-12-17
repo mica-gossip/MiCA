@@ -14,7 +14,7 @@ def deltas(sequence):
     except StopIteration:
         pass
 
-def compute_changes_per_round(micavis, bucket_size_ms = None):
+def compute_changes_per_round(micavis, **frequency_count_keywords):
     
     def node_state_change_timestamp_generator():
         values = {}
@@ -30,7 +30,7 @@ def compute_changes_per_round(micavis, bucket_size_ms = None):
 
     return frequency_count(micavis, 
                            node_state_change_timestamp_generator(), 
-                           bucket_size_ms = bucket_size_ms)
+                           **frequency_count_keywords)
 
 
 # timestamp_generator is an iterable of timestamps, OR an iterable of (timestamp,key) pairs,
@@ -63,11 +63,12 @@ def frequency_count(micavis, timestamp_generator, bucket_size_ms = None, bucket_
         try:
             t,key = t
             b = bucket(t)
+#            print str((key,b,keys.get(key,-1),keys.get(key,-1)==b, buckets[b]))
             if key is not None:
-                if key.get(key) != b:
+                if keys.get(key,-1) != b:
                     keys[key] = b
                     buckets[b] += 1            
-        except:
+        except TypeError, e:  # t is a scalar
             b = bucket(t)
             buckets[b] += 1           
 

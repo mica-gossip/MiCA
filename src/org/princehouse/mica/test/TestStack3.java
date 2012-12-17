@@ -34,14 +34,13 @@ public class TestStack3 extends TestHarness {
 			public Protocol f(Integer i, Address address,
 					Overlay view) {
 
-
 				MinAddressLeaderElection leaderElection = new MinAddressLeaderElection(view);
 
 				SpanningTreeOverlay tree = new SpanningTreeOverlay(leaderElection,view);
 
 				TreeCountNodes counting = new TreeCountNodes(tree);
 
-				TreeLabelNodes labeling = new TreeLabelNodes(tree,counting);
+				TreeLabelNodes labeling = new TreeLabelNodes(counting);
 
 				return MergeIndependent.merge(
 						MergeIndependent.merge(

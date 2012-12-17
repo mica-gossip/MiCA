@@ -1,5 +1,7 @@
 package org.princehouse.mica.base.model;
 
+import java.util.WeakHashMap;
+
 import org.princehouse.mica.util.Logging;
 import org.princehouse.mica.util.WeakHashSet;
 import org.princehouse.mica.util.reflection.FindReachableObjects;
@@ -12,7 +14,7 @@ public class RuntimeContextManager {
 
 	// for debugging, remember which piece of code last set the native runtime
 	private ThreadLocal<String> debugLastSetLocation = new ThreadLocal<String>();
-	
+
 	public void clear() {
 		debugLastSetLocation.remove();
 		foreignObjects.remove();
@@ -29,18 +31,22 @@ public class RuntimeContextManager {
 				return frts;
 			}
 		}
-		
+
 		Runtime rt = getNativeRuntime();
-		if(rt == null) {
-			throw new RuntimeException("Cannot get runtime state: No native runtime is set");
+		if (rt == null) {
+			throw new RuntimeException(
+					"Cannot get runtime state: No native runtime is set");
 		}
 		return rt.getRuntimeState();
 	}
 
-	public void setNativeRuntime(Runtime rt) {		
+	public void setNativeRuntime(Runtime rt) {
 		String location = Logging.getLocation(1);
-		if(nativeRuntime.get() != null) {
-			throw new RuntimeException(String.format("Attempt to set native runtime without clearing first. Last set at %s\n", debugLastSetLocation.get()));
+		if (nativeRuntime.get() != null) {
+			throw new RuntimeException(
+					String.format(
+							"Attempt to set native runtime without clearing first. Last set at %s\n",
+							debugLastSetLocation.get()));
 		}
 		debugLastSetLocation.set(location);
 		nativeRuntime.set(rt);
@@ -48,15 +54,30 @@ public class RuntimeContextManager {
 
 	public Runtime getNativeRuntime() {
 		Runtime rt = nativeRuntime.get();
-		if(rt == null) {
+		if (rt == null) {
 			throw new RuntimeException("You forgot to set the native runtime");
 		}
 		return rt;
 	}
 
+	private WeakHashMap<Protocol, WeakHashSet<Object>> foreignObjectCache = new WeakHashMap<Protocol, WeakHashSet<Object>>();
+
 	public void setForeignRuntimeState(Protocol rootProtocol, RuntimeState rts) {
-		assert(foreignObjects.get() == null);
-		assert(foreignRuntimeState.get() == null);
+		assert (foreignObjects.get() == null);
+		assert (foreignRuntimeState.get() == null);
+		foreignObjects.set(getForeignObjects(rootProtocol));
+		foreignRuntimeState.set(rts);
+	}
+
+	// caching refelection results can be dangerous; it will cause incorrect execution if any protocol is created dynamically after
+	// its parent has already been analyzed
+	private WeakHashSet<Object> getForeignObjects(Protocol rootProtocol) {
+		if (MiCA.getOptions().reflectionCache) {
+			WeakHashSet<Object> temp = foreignObjectCache.get(rootProtocol);
+			if (temp != null) {
+				return temp;
+			}
+		}
 
 		final WeakHashSet<Object> whs = new WeakHashSet<Object>();
 
@@ -70,12 +91,15 @@ public class RuntimeContextManager {
 			public void add(Object obj) {
 				whs.add(obj);
 			}
-			
+
 		};
 		reachableObjectFinder.analyze(rootProtocol);
 		
-		foreignObjects.set(whs);
-		foreignRuntimeState.set(rts);
+		if(MiCA.getOptions().reflectionCache) {
+			foreignObjectCache.put(rootProtocol, whs);
+		}
+		
+		return whs;
 	}
 
 	/**

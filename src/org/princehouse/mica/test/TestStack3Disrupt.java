@@ -43,7 +43,7 @@ public class TestStack3Disrupt extends TestHarness {
 				MinAddressLeaderElection leaderElection = new MinAddressLeaderElection(view);
 				SpanningTreeOverlay tree = new SpanningTreeOverlay(leaderElection,view);
 				TreeCountNodes counting = new TreeCountNodes(tree);
-				TreeLabelNodes labeling = new TreeLabelNodes(tree,counting);
+				TreeLabelNodes labeling = new TreeLabelNodes(counting);
 
 				return MergeIndependent.merge(
 						MergeIndependent.merge(

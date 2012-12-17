@@ -54,7 +54,7 @@ public class FourLayerTreeStack extends MergeCorrelated {
 
 		counting = new TreeCountNodes(tree);
 		
-		labeling = new TreeLabelNodes(tree, counting);
+		labeling = new TreeLabelNodes(counting);
 		
 
 		// The Merge operator merges two protocols, in order to accomodate four we merge pairs into 

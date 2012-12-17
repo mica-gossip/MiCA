@@ -2,7 +2,7 @@ package org.princehouse.mica.lib.abstractions;
 
 import java.util.Map;
 
-import org.princehouse.mica.base.ExternalSelectProtocol;
+import org.princehouse.mica.base.BaseProtocol;
 import org.princehouse.mica.base.model.Protocol;
 import org.princehouse.mica.base.net.model.Address;
 import org.princehouse.mica.base.sugar.annotations.GossipUpdate;
@@ -27,42 +27,39 @@ import org.princehouse.mica.util.Functional;
  * @param <Summary>
  * @param <Aggregate>
  */
-public abstract class Aggregator<AgClass extends ExternalSelectProtocol, Summary, Aggregate>
-		extends ExternalSelectProtocol {
-
+public abstract class Aggregator<Summary, Aggregate> extends BaseProtocol {
 	private static final long serialVersionUID = 1L;
 
 	private Map<Address, Summary> summaries = null;
 	private Protocol.Direction direction;
 
-	private Aggregate aggregate = null;
-
 	/**
-	 * Aggregate constructor. The direction of aggregation is given by constants from Protocol.Direction.
-	 *   PUSH : Push summary of initiating gossip node to recipient; compute new remote aggregate
-	 *   PULL : Pull summary of recipient to initiator; compute new local aggregate
-	 *   PUSHPULL: Both
-	 *   
-	 * @param overlay The overlay to gossip along.
-	 * @param direction PUSH, PULL, or PUSHPULL
-	 * @param defaultAggregateValue
+	 * Aggregate constructor. The direction of aggregation is given by constants
+	 * from Protocol.Direction. PUSH : Push summary of initiating gossip node to
+	 * recipient; compute new remote aggregate PULL : Pull summary of recipient
+	 * to initiator; compute new local aggregate PUSHPULL: Both
+	 * 
+	 * @param overlay
+	 *            The overlay to gossip along.
+	 * @param direction
+	 *            PUSH, PULL, or PUSHPULL
+	 * @param initialAggregateValue
 	 */
-	public Aggregator(Overlay overlay, Protocol.Direction direction, Aggregate defaultAggregateValue) {
-		super(overlay);
+	public Aggregator(Protocol.Direction direction) {
 		initializeSummaries();
 		this.direction = direction;
-		this.aggregate = defaultAggregateValue;
 	}
 
 	/**
 	 * Creates a PUSHPULL aggregate with a null initial value.
 	 * 
-	 * @param overlay The overlay to gossip along.
+	 * @param overlay
+	 *            The overlay to gossip along.
 	 */
-	public Aggregator(Overlay overlay) {
-		this(overlay, Protocol.Direction.PUSHPULL, null);
-	}
-	
+	// public Aggregator(Overlay overlay) {
+	// this(overlay, Protocol.Direction.PUSHPULL, null);
+	// }
+
 	/**
 	 * Initialize the summary map
 	 */
@@ -72,18 +69,14 @@ public abstract class Aggregator<AgClass extends ExternalSelectProtocol, Summary
 
 	/**
 	 * Return the current aggregate value
+	 * 
 	 * @return
 	 */
-	public Aggregate getAggregate() {
-		return aggregate;
-	}
+	public abstract Aggregate getAggregate();
 
-	/** 
-	 * Set the current aggregate value
-	 * @param a
-	 */
-	public void setAggregate(Aggregate a) {
-		this.aggregate = a;
+	@Override
+	public void preUpdate(Address selected) {
+		filterSummaries();
 	}
 
 	/**
@@ -95,39 +88,22 @@ public abstract class Aggregator<AgClass extends ExternalSelectProtocol, Summary
 	@Override
 	public void update(Protocol that) {
 		@SuppressWarnings("unchecked")
-		AgClass neighbor = (AgClass) that;
-		if (direction == Protocol.Direction.PULL
-				|| direction == Protocol.Direction.PUSHPULL) {
+		Aggregator<Summary, Aggregate> neighbor = (Aggregator<Summary, Aggregate>) that;
+		if (direction.pull()) {
 			updatePull(neighbor);
 		}
-		if (direction == Protocol.Direction.PUSH
-				|| direction == Protocol.Direction.PUSHPULL) {
+		if (direction.push()) {
 			updatePush(neighbor);
 		}
 	}
 
-	public void updatePull(AgClass neighbor) {
-		summaries.put(neighbor.getAddress(), computeSummary(neighbor));
-		filterSummaries();
-		setAggregate(computeAggregate(getSummaries()));
+	public void updatePull(Aggregator<Summary, Aggregate> neighbor) {
+		summaries.put(neighbor.getAddress(), neighbor.getSummary());
 	}
 
-	public void updatePush(AgClass neighbor) {
-		// ugly casting :(
-		@SuppressWarnings("unchecked")
-		AgClass temp = (AgClass) this;
-		@SuppressWarnings("unchecked")
-		Aggregator<AgClass, Summary, Aggregate> neighbortemp = (Aggregator<AgClass, Summary, Aggregate>) neighbor;
-		neighbortemp.updatePull(temp);
+	public void updatePush(Aggregator<Summary, Aggregate> neighbor) {
+		neighbor.updatePull(this);
 	}
-
-	/**
-	 * Compute an aggregate value from retained summaries
-	 * 
-	 * @param summaries
-	 * @return
-	 */
-	public abstract Aggregate computeAggregate(Map<Address, Summary> summaries);
 
 	/**
 	 * 
@@ -140,30 +116,7 @@ public abstract class Aggregator<AgClass extends ExternalSelectProtocol, Summary
 	 * @return
 	 */
 	public boolean summaryFilterKeep(Address addr, Summary s) {
-		return true;
-	}
-
-	/**
-	 * Get the current summary for a given address
-	 * @param addr Address
-	 * @return Current summary for address, or getDefaultSummary(addr) if none known
-	 */
-	public Summary getSummary(Address addr) {
-		if (summaries.containsKey(addr)) {
-			return summaries.get(addr);
-		} else {
-			return getDefaultSummary(addr);
-		}
-	}
-
-	/**
-	 * Default summary: Used if the summary requested for an address is not cached.
-	 * 
-	 * @param addr
-	 * @return
-	 */
-	public Summary getDefaultSummary(Address addr) {
-		return null;
+		return getView().get(addr) > 0;
 	}
 
 	/**
@@ -175,7 +128,7 @@ public abstract class Aggregator<AgClass extends ExternalSelectProtocol, Summary
 		return summaries;
 	}
 
-	private void filterSummaries() {
+	public void filterSummaries() {
 		for (Address addr : Functional.list(summaries.keySet())) {
 			Summary value = summaries.get(addr);
 			if (!summaryFilterKeep(addr, value))
@@ -185,9 +138,9 @@ public abstract class Aggregator<AgClass extends ExternalSelectProtocol, Summary
 
 	/**
 	 * Compute the local summary
-	 *  
+	 * 
 	 * @return
 	 */
-	public abstract Summary computeSummary(AgClass neighbor);
+	public abstract Summary getSummary();
 
 }

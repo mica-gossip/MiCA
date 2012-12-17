@@ -82,18 +82,18 @@ public class SimRound {
 
 		long abortedRoundElapsed = clock - roundStartTime;
 		long interval = (long) (((double) rta.getInterval()) / rate);
-		
+
 		long normalTime = interval - abortedRoundElapsed;
 		long lateTime = releaseLockOffset + 1;
-		
+
 		long sleepTime = normalTime;
-		
-		if(normalTime < lateTime) {
+
+		if (normalTime < lateTime) {
 			rta.logJson(LogFlag.user, "notable-event-late",
 					MiCA.getOptions().expname);
 			sleepTime = lateTime;
-		} 
-		
+		}
+
 		reschedule(sleepTime);
 	}
 
@@ -158,7 +158,8 @@ public class SimRound {
 		}
 
 		public void onTimeout() throws MicaException {
-			sim.getRuntimeContextManager().setNativeRuntime(sim.getRuntime(round.src));
+			sim.getRuntimeContextManager().setNativeRuntime(
+					sim.getRuntime(round.src));
 			logJson(LogFlag.error, getSrc(), timeoutErrorMsg, null);
 			sim.getRuntimeContextManager().clear();
 
@@ -273,28 +274,30 @@ public class SimRound {
 
 			stopwatch.reset();
 
-			CommunicationPatternAgent pattern = MiCA.getCompiler().compile(rta.getProtocolInstance());
-			
+			CommunicationPatternAgent pattern = MiCA.getCompiler().compile(
+					rta.getProtocolInstance());
+
 			try {
 				Serializable m1 = pattern.f1(rta);
 				Serializable m2 = pattern.f2(rtb, m1);
 				pattern.f3(rta, m2);
-				
+
 				simulator.getRuntimeContextManager().setNativeRuntime(rta);
 				rta.logState("gossip-initiator");
 				simulator.getRuntimeContextManager().clear();
-				
+
 				simulator.getRuntimeContextManager().setNativeRuntime(rtb);
 				rtb.logState("gossip-receiver");
 				simulator.getRuntimeContextManager().clear();
-				
+
 			} catch (Throwable t) {
 				rta.handleError(RuntimeErrorCondition.UPDATE_EXCEPTION, t);
 			} finally {
 				sim.getRuntimeContextManager().clear();
 			}
 
-			long completionTimeRemote = stopwatch.elapsed();
+			long completionTimeRemote = (MiCA.getOptions().simUpdateDuration < 0 ? stopwatch
+					.elapsed() : MiCA.getOptions().simUpdateDuration);
 
 			simulator.scheduleRelative(new ReleaseDstLock(),
 					completionTimeRemote);
@@ -325,7 +328,6 @@ public class SimRound {
 			logJson(LogFlag.rate, round.src, "mica-rate", rate);
 			simulator.getRuntimeContextManager().clear();
 
-			
 			int interval = simulator.getRuntime(round.src).getInterval();
 
 			long completionTimeLocal = stopwatch.elapsed();

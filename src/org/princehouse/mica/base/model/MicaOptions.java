@@ -50,8 +50,8 @@ public class MicaOptions {
 	@Parameter(names = "-graphType", description = "Type of communication graph to use. Valid options: random, complete, singlering")
 	public String graphType = "random";
 
-	@Parameter(names = "-implementation", description = "Runtime implementation name. Valid options: simple, sim, a1")
-	public String implementation = "simple";
+	@Parameter(names = "-implementation", description = "Runtime implementation name. Valid options: simple, sim.  Default: sim")
+	public String implementation = "sim";
 
 	@Parameter(names = "-compiler", description="Analysis implementation. Options: default, simple, fake")
 	public String compiler = "default";
@@ -65,5 +65,11 @@ public class MicaOptions {
 	@Parameter(names = "-lenable", variableArity = true, description = "Log types to enable (space separated log names). See LogFlags enum for log names.")
 	public List<String> logsEnable = Functional.list();
 
+	@Parameter(names = "-cacheReflection", description = "(Expert) Cache foreign objects analysis. This will cause incorrect behavior if new sub-protocols created dynamically after initialization of the parent protocol.")
+	public Boolean reflectionCache = false;
+	
+	@Parameter(names = "-simUpdateDuration", description = "Simulator only. Duration (ms) of simuated update function execution.  -1 indicates real wall clock time (default).")
+	public int simUpdateDuration = -1;
+	
 	public String mainClassName = null;
 }

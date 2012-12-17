@@ -20,7 +20,6 @@ import org.princehouse.mica.base.model.RuntimeContextManager;
 import org.princehouse.mica.base.model.RuntimeInterface;
 import org.princehouse.mica.base.net.dummy.DummyAddress;
 import org.princehouse.mica.base.net.model.Address;
-import org.princehouse.mica.base.simple.SimpleCompiler;
 import org.princehouse.mica.util.Functional;
 
 import fj.F;
@@ -169,35 +168,29 @@ public class Simulator implements RuntimeInterface {
 	}
 
 	public void schedule(SimulatorEvent e, List<SimulatorEvent> queue) {
-		assert (e != null);
-
+		assert(e != null);
 		assert(e.t >= getClock());
 		
-		//if (queue == eventQueue) {
-		//	SimRuntime.debug.printf("    schedule @ %d: %s\n", e.t, e.toString());
-		//}
-		boolean added = false;
-
+		// this is a very common case --- insert an event that happens immediately
+		if(queue.size() == 0 || queue.get(0).t >= e.t) {
+			queue.add(0,e);
+			return;
+		}
+		
+		// backwards O(n) linked list insert, running on the assumption that the inserted event will likely be scheduled 
+		// later than existing events
 		for (ListIterator<SimulatorEvent> it = queue.listIterator(queue.size()); it
 				.hasPrevious();) {
 			if (it.previous().t <= e.t) {
 				it.next();
 				it.add(e);
-				added = true;
 				break;
 			}
 		}
-
-		// sanity check
-		//assert(queueIsCorrectlySorted(queue));
-		
-		if (!added) {
-			// all events in queue have timestamps greater than e.t
-			queue.add(0, e);
-		}
-
 	}
 
+	
+	
 	@SuppressWarnings("unused")
 	private boolean queueIsCorrectlySorted(List<SimulatorEvent> queue) {
 		// sanity check --- O(n), use sparingly

@@ -39,6 +39,7 @@ public class DilationExperimentB extends TestHarness implements
 		MicaOptions options = super.defaultOptions();
 		options.n = 1000;
 		options.implementation = "sim";
+		options.simUpdateDuration = 0;
 		options.graphType = "complete";
 		options.timeout = 10000;
 		// set very high to prevent high dilation from timing out and aborting
@@ -48,6 +49,7 @@ public class DilationExperimentB extends TestHarness implements
 		options.logsDisable = Functional.list(new String[]{
 				"state","rate","select","merge","error"
 		});
+		options.reflectionCache = true;
 		return options;
 	}
 

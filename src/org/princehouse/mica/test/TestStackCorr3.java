@@ -39,7 +39,7 @@ public class TestStackCorr3 extends TestHarness {
 
 				TreeCountNodes counting = new TreeCountNodes(tree);
 
-				TreeLabelNodes labeling = new TreeLabelNodes(tree,counting);
+				TreeLabelNodes labeling = new TreeLabelNodes(counting);
 
 				return MergeCorrelated.merge(
 						MergeCorrelated.merge(

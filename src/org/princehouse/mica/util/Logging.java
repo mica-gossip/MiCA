@@ -159,6 +159,8 @@ public class Logging {
 
 	}
 
+	private static final boolean ENABLE_LOCATION = false;
+
 	/**
 	 * Returns a "filename:lineno" string for the location in the call stack
 	 * corresponding to framesUp frames above the call site. framesUp == 0
@@ -169,9 +171,15 @@ public class Logging {
 	 * @return
 	 */
 	public static String getLocation(int framesUp) {
-		StackTraceElement frame = Thread.currentThread().getStackTrace()[2+framesUp];
-		int line =  frame.getLineNumber();
-		String file = frame.getFileName();
-		return String.format("(%s:%s)", file, line);
+		if (ENABLE_LOCATION) {
+			// this is actually really expensive.  disabled by default
+			StackTraceElement frame = Thread.currentThread().getStackTrace()[2 + framesUp];
+			int line = frame.getLineNumber();
+			String file = frame.getFileName();
+			return String.format("(%s:%s)", file, line);
+		} else {
+			return "(Logging.ENABLE_LOCATION disabled)";
+		}
 	}
+
 }

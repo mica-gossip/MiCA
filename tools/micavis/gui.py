@@ -15,6 +15,7 @@ import custom
 from visual import *
 import matplotlib.pyplot as plt
 import numpy as np
+import micavis.ipython as ipython
 
 from event_tree_model import *
 
@@ -36,8 +37,8 @@ class GraphWindow(object):
         self.micavis.adj = gtk.Adjustment(value = 0, 
                              lower = 0,
                              upper = len(self.micavis.events)-1, 
-                             step_incr = 1, 
-                             page_incr = 1, 
+                             step_incr = 1,
+                             page_incr = 1,
                              page_size = 0)
 
         self.micavis.adj.connect("value_changed", self.micavis.event_slider_changed)
@@ -54,7 +55,6 @@ class GraphWindow(object):
         
     def set_graph(self, graph):
         self.window.set_graph(graph)
-
 
     def create_menu_item(self, menu, label, callback):
         item = gtk.MenuItem(label)
@@ -106,55 +106,69 @@ class GraphWindow(object):
         analysis = gtk.MenuItem("Analysis")
         menu = gtk.Menu()
         menu.show()
-        self.analysis_menu = menu
+        analysis_menu = menu
+        self.analysis_menu = analysis_menu
         analysis.set_submenu(menu)
         analysis.show()
         bar.append(analysis)
-        self.append_analysis_menuitem(
+
+        def append_analysis_menuitem(label, callback):
+            self.create_menu_item(analysis_menu, label, callback)
+
+        append_analysis_menuitem(
             "State change graph", self.analysis_state_change_graph)
 
-        self.append_analysis_menuitem(
+        append_analysis_menuitem(
             "State change graph (leaves)", self.analysis_state_change_graph_leaves)
 
         for ne_suffix in self.micavis.notable_event_labels():
-            self.append_analysis_menuitem(
+            append_analysis_menuitem(
                 "Notable events: %s" % ne_suffix, 
                 lambda widget,sfx=ne_suffix: self.analysis_notable_events(sfx,widget))
 
         for ne_suffix in self.micavis.notable_event_labels():
-            self.append_analysis_menuitem(
+            append_analysis_menuitem(
                 "Notable event timing histogram: %s" % ne_suffix, 
                 lambda widget,sfx=ne_suffix: self.analysis_notable_events_histogram(sfx,widget))
 
         for ne_suffix in self.micavis.notable_event_labels():
-            self.append_analysis_menuitem(
+            append_analysis_menuitem(
                 "Notable event timing histogram (normalized): %s" % ne_suffix, 
                 lambda widget,sfx=ne_suffix: self.analysis_notable_events_histogram(sfx,widget,normalize=True))
 
 
         for label, callback in self.micavis.temp_analysis_menus:
-            self.append_analysis_menuitem(label, callback)
+            append_analysis_menuitem(label, callback)
+
+        layout = gtk.MenuItem("Layout")
+        menu = gtk.Menu()
+        menu.show()
+        self.layout_menu = menu
+        layout.set_submenu(menu)
+        layout.show()
+        self.create_menu_item(self.layout_menu, 
+                              "Recompute layout from current view", 
+                              self.recompute_layout_from_view)
+        bar.append(layout)
+
 
         return bar
 
-    def append_analysis_menuitem(self, label, callback):
-        self.create_menu_item(self.analysis_menu, label, callback)
 
-
-
-    # not used, just kept around for reference
-    def demo_matplotlib_graph(self, widget):
-        x,y = np.random.randn(2,100)
-        fig = plt.figure()
-        ax1 = fig.add_subplot(211)
-        ax1.xcorr(x, y, usevlines=True, maxlags=50, normed=True, lw=2)
-        ax1.grid(True)
-        ax1.axhline(0, color='black', lw=2)
-        ax2 = fig.add_subplot(212, sharex=ax1)
-        ax2.acorr(x, usevlines=True, normed=True, maxlags=50, lw=2)
-        ax2.grid(True)
-        ax2.axhline(0, color='black', lw=2)
-        plt.show()
+    def recompute_layout_from_view(self, widget):
+        ual = self.micavis.unique_addresses
+        namemap = dict((n,i) for i,n in enumerate(ual))
+        graph = igraph.Graph(directed=True)
+        n = len(ual)
+        graph.add_vertices(n)
+        matrix = [ [0] * n for i in xrange(n) ]
+        for addr in ual:
+            view = self.micavis.current_node_view[addr]
+            for peer, weight in view.iteritems():
+                matrix[namemap[addr]][namemap[peer]] = weight
+        edges = list(logs.matrix_edge_generator(matrix))
+        graph.add_edges(edges)
+        self.micavis.set_layout(graph, namemap)
 
     def analysis_state_change_graph(self, widget):
         import matplotlib.pyplot as plt
@@ -173,11 +187,6 @@ class GraphWindow(object):
 
         ne_categories = {}  # key -> sequence
 
-#        ms_per_round = self.micavis.runtime_info.round_ms
-#        def round(ms):
-#            return float(ms)/ms_per_round
-
-
         for key, timestamp, address in self.micavis.notable_events(ne_suffix):
             if key not in ne_categories:
                 ne_categories[key] = []
@@ -195,7 +204,7 @@ class GraphWindow(object):
             xy = analysis.frequency_count(self.micavis, sequence, subdivisions=5)
             xyvals += [xy]
 
-        self.analysis_plot_2d_multiple(xyvals, xlabel, ylabel, legend_labels)
+        ipython.analysis_plot_2d_multiple(xyvals, xlabel, ylabel, legend_labels)
 
     def analysis_notable_events_histogram(self, ne_suffix, widget, normalize=False):
         import matplotlib.pyplot as plt
@@ -251,31 +260,10 @@ class GraphWindow(object):
         binsize = (maxval-minval) / float(nbins)
         nbins = [minval + i*binsize for i in xrange(nbins+1)]
 
-        self.analysis_plot_hist_multiple(datasets, 
+        ipython.analysis_plot_hist_multiple(datasets, 
                                          xlabel=xlabel, ylabel=ylabel,
                                          legends=legend_labels, nbins=nbins, normalize=normalize)
 
-    # plot multiple histograms
-    def analysis_plot_hist_multiple(self, datasets, xlabel="value", ylabel = "count", legends=None, nbins=100, normalize=False):
-        fig = plt.figure()
-        ax = fig.add_subplot(111)
-
-        artists = []
-
-        if legends is None:
-            legends = [None] * len(datasets)
-        assert(len(legends) == len(datasets))
-        for data,label in zip(datasets,legends):
-            n,bins,patches = ax.hist(data, nbins, alpha=0.5, histtype='stepfilled',label=label, normed=normalize)
-            #artists += [ax.hist(data, nbins, alpha=0.5)]
-
-        ax.grid(True)
-        #ax.axhline(0, color='black', lw=2)
-        ax.set_ylabel(ylabel)
-        ax.set_xlabel(xlabel)
-        if legends and legends[0] != None:
-            ax.legend()
-        plt.show()
 
 
     def analysis_state_change_graph_leaves(self, widget):
@@ -285,35 +273,23 @@ class GraphWindow(object):
 
         saved_projection = self.micavis.get_projection()
 
+        n = len(self.micavis.unique_addresses)
         xyvals = []
         for leaf_projection in self.micavis.leaf_projections:
             self.micavis.set_projection(leaf_projection)
-            xyvals += [analysis.compute_changes_per_round(self.micavis)]
+            xyvals += [analysis.compute_changes_per_round(self.micavis, subdivisions=1, bucket_scalar = 1./n)]
 
         # restore previous projection
         self.micavis.set_projection(saved_projection)
         xlabel =  "MiCA Rounds (%s ms)" % self.micavis.runtime_info.round_ms
-        ylabel = "State changes per round"
+        ylabel = "Fraction of nodes changed state"
         legend_labels = self.micavis.leaf_projections
-        self.analysis_plot_2d_multiple(xyvals, xlabel, ylabel, legend_labels)
+        ipython.analysis_plot_2d_multiple(xyvals, xlabel, ylabel, legend_labels)
+
 
     def analysis_plot_2d(self, x, y, xlabel="x", ylabel = "y"):
-        self.analysis_plot_2d_multiple([(x,y)], xlabel, ylabel, )
+        ipython.analysis_plot_2d_multiple([(x,y)], xlabel, ylabel, )
 
-    # plot multiple curves
-    def analysis_plot_2d_multiple(self, xy_pairs, xlabel="x", ylabel = "y", legends=None):
-        fig = plt.figure()
-        ax = fig.add_subplot(111)
-        artists = []
-        for x,y in xy_pairs:
-            artists += ax.plot(x,y)
-        ax.grid(True)
-        ax.axhline(0, color='black', lw=2)
-        ax.set_ylabel(ylabel)
-        ax.set_xlabel(xlabel)
-        if legends:
-            ax.legend(artists, legends)
-        plt.show()
 
 
 class MicaVisMicavis:
@@ -506,7 +482,7 @@ class MicaVisMicavis:
  #                   print 'not prefix!'
  #               else:
  #                   print 'is prefix!'
-            print 'leaves:', lv
+#            print 'leaves:', lv
             return lv
                 
         self.leaf_projections = compute_leaves(self.projections)
@@ -587,12 +563,13 @@ class MicaVisMicavis:
     # where igraph is an igraph object with nodes and edges of the comm graph
     # and namemap maps address_string => graph vertex id 
     def create_default_graph(self):
+        ual = logs.query_unique_addresses(self.events)
+        self.unique_addresses = ual
         if self.options['novis']:
             return None, None
 
         g = igraph.Graph(directed=True)
-        ual = logs.query_unique_addresses(self.events)
-        self.unique_addresses = ual
+
         print "Logs report %s unique addresses" % len(ual)
         g.add_vertices(len(ual))
         namemap = dict((n,i) for i,n in enumerate(ual))
@@ -613,6 +590,12 @@ class MicaVisMicavis:
 
     def create_layers_window(self):
         self.layers_window = create_layers_window()
+
+    # graph is an igraph instance
+    # name_map is an igraph Layout
+    def set_layout(self, graph, name_map):
+        self.graph_window.igraph_drawing_area.set_graph(graph, name_map)
+        self.graph_window.refresh_graph()
 
     def create_event_window(self):
         # Create a new window

@@ -1,79 +1,82 @@
 package org.princehouse.mica.example;
 
-
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 
 import org.princehouse.mica.base.BaseProtocol;
 import org.princehouse.mica.base.model.Protocol;
 import org.princehouse.mica.base.net.model.Address;
 import org.princehouse.mica.base.sugar.annotations.GossipUpdate;
-import org.princehouse.mica.base.sugar.annotations.View;
-import org.princehouse.mica.lib.abstractions.RootedTree;
 import org.princehouse.mica.util.Distribution;
 import org.princehouse.mica.util.Functional;
 
-
 /**
- * Use the subtree node count protocol to assign unique numbers to every node in DFS order.
+ * Use the subtree node count protocol to assign unique numbers to every node in
+ * DFS order.
  * 
  * @author lonnie
- *
+ * 
  */
 public class TreeLabelNodes extends BaseProtocol {
 
 	private static final long serialVersionUID = 1L;
-	
-	private RootedTree tree;
+
 	private TreeCountNodes count;
+
+	public Distribution<Address> getView() {
+		return count.getView();
+	}
 
 	private int label = 1;
 
-	public TreeLabelNodes(RootedTree t, TreeCountNodes count) {
-		this.tree = t;
+	public TreeLabelNodes(TreeCountNodes count) {
 		this.count = count;
 	}
 
 	public int getLabel() {
 		return label;
 	}
-	
-	public List<Address> getChildren() {
-		// sorted by address
-		List<Address> temp = Functional.extend(Functional.<Address>list(),tree.getChildren());
-		Collections.sort(temp);
-		return temp;
+
+	private Map<Address, Integer> getChildLabelMap() {
+		Map<Address, Integer> mp = Functional.map();
+		List<Address> children = new ArrayList<Address>(mp.keySet());
+		Collections.sort(children);
+		Map<Address, Integer> subtreeSizes = count.getSummaries();
+		int i = label + 1;
+		for (Address child : children) {
+			Integer childSubtreeSize = subtreeSizes.get(child);
+			if (childSubtreeSize == null) {
+				childSubtreeSize = 1;
+			}
+			mp.put(child, i);
+			i += childSubtreeSize;
+		}
+		return mp;
 	}
-	
-	@View
-	public Distribution<Address> select() {
-		return Distribution.uniform(getChildren());
-	}
-	
+
 	public void setLabel(int label) {
 		this.label = label;
 	}
-	
-	@GossipUpdate 
+
+	@Override
+	public void preUpdate(Address selected) {
+		super.preUpdate(selected);
+		if (count.getTree().isRoot()) {
+			label = 1;
+		}
+	}
+
+	@GossipUpdate
 	@Override
 	public void update(Protocol that) {
 		TreeLabelNodes child = (TreeLabelNodes) that;
-		if(tree.isRoot()) {
-			label = 1;
+		Integer childLabel = getChildLabelMap().get(child);
+		if (childLabel == null) {
+			childLabel = label + 1;
 		}
+		child.setLabel(childLabel);
+	}
 
-		List<Address> children = getChildren(); // sorted in a total order
-			
-		int clabel = label + 1;	
-		for(Address c : children) {
-			if(c.equals(child.getAddress())) {
-				child.setLabel(clabel);
-				return;
-			} else {
-				clabel += count.getChildSubtreeSize(child.getAddress());
-			}
-		}
-	} 
-
-	
 }
