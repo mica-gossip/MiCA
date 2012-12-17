@@ -1,16 +1,16 @@
 package org.princehouse.mica.base.simple;
 
-import org.princehouse.mica.base.model.Runtime;
+import org.princehouse.mica.base.model.MicaRuntime;
 
 public class ThreadLocalRuntimeMechanism {
 
-	public static  Runtime getRuntime() {
-		Runtime rt = runtimeSingleton.get();
+	public static  MicaRuntime getRuntime() {
+		MicaRuntime rt = runtimeSingleton.get();
 		if (rt == null)
 			throw new RuntimeException(String.format(
 					"Failed attempt to get null runtime for thread %d", Thread
 							.currentThread().getId()));
-		return (Runtime) rt;
+		return (MicaRuntime) rt;
 	}
 
 	//public static void clearRuntime(Runtime rt) {
@@ -21,7 +21,7 @@ public class ThreadLocalRuntimeMechanism {
 	//	setRuntime(null);
 	//}
 	
-	public static void setRuntime(Runtime rt) {
+	public static void setRuntime(MicaRuntime rt) {
 		// System.err.printf("[set %s for thread %d]\n", rt,
 		// Thread.currentThread().getId());
 		if (runtimeSingleton.get() != null && rt != null
@@ -34,6 +34,6 @@ public class ThreadLocalRuntimeMechanism {
 		runtimeSingleton.set(rt);
 	}
 
-	private static ThreadLocal<Runtime> runtimeSingleton = new ThreadLocal<Runtime>();
+	private static ThreadLocal<MicaRuntime> runtimeSingleton = new ThreadLocal<MicaRuntime>();
 
 }

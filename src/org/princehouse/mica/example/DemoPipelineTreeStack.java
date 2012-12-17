@@ -7,13 +7,14 @@ import org.princehouse.mica.lib.Pipeline.ProtocolFactory;
 import org.princehouse.mica.lib.abstractions.Overlay;
 import org.princehouse.mica.lib.abstractions.RoundRobinOverlay;
 import org.princehouse.mica.util.Functional;
+import org.princehouse.mica.util.harness.ProtocolInstanceFactory;
 import org.princehouse.mica.util.harness.TestHarness;
 
 
 public class DemoPipelineTreeStack {
 
 	public static void main(String[] args) {
-		TestHarness.main(args, new TestHarness.ProtocolInstanceFactory() {
+		TestHarness.main(args, new ProtocolInstanceFactory() {
 			@Override
 			public Pipeline<FourLayerTreeStack> createProtocolInstance(int i,
 					Address address, Overlay overlay) {

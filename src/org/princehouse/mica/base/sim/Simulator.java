@@ -14,8 +14,8 @@ import org.princehouse.mica.base.exceptions.FatalErrorHalt;
 import org.princehouse.mica.base.exceptions.MicaException;
 import org.princehouse.mica.base.model.Compiler;
 import org.princehouse.mica.base.model.MiCA;
+import org.princehouse.mica.base.model.MicaRuntime;
 import org.princehouse.mica.base.model.Protocol;
-import org.princehouse.mica.base.model.Runtime;
 import org.princehouse.mica.base.model.RuntimeContextManager;
 import org.princehouse.mica.base.model.RuntimeInterface;
 import org.princehouse.mica.base.net.dummy.DummyAddress;
@@ -50,7 +50,6 @@ public class Simulator implements RuntimeInterface {
 		running = false;
 	}
 
-	
 	public void setClock(long clock) {
 		this.clock = clock;
 	}
@@ -60,11 +59,12 @@ public class Simulator implements RuntimeInterface {
 	private Map<Address, SimRuntime> addressBindings = Functional.map();
 
 	// maps lock_address -> lock_holder_address
-	// 
+	//
 	// lock_holder will never be none (keys will just be removed)
-	// yes, we could track this with a set, but this lets us sanity-check the property
+	// yes, we could track this with a set, but this lets us sanity-check the
+	// property
 	// that only a lock-holder should be able to release a lock
-	private Map<Address,Address> lockHolders = new HashMap<Address,Address>();
+	private Map<Address, Address> lockHolders = new HashMap<Address, Address>();
 
 	private Map<Address, List<SimulatorEvent>> lockWaitQueues = Functional
 			.map();
@@ -76,12 +76,25 @@ public class Simulator implements RuntimeInterface {
 		markUnlocked(address);
 		new SimRound(address, this, starttime);
 	}
-	
+
 	public void unbind(SimRuntime rt) {
 		addressBindings.remove(rt.getAddress());
-		markUnlocked(rt.getAddress());
+		Address a = rt.getAddress();
+
+		// if anyone is holding our lock, clear the entry so that other waiters
+		// will get cleared up
+		if (lockHolders.containsKey(a)) {
+			unlock(a, lockHolders.get(a));
+		}
+
+		// if we're holding any locks, release them
+		for (Map.Entry<Address, Address> me : lockHolders.entrySet()) {
+			if (me.getValue().equals(a)) {
+				unlock(me.getKey(),a);
+			}
+		}
 	}
-	
+
 	/**
 	 * Returns false if lock failed, true if successful otherwise Fails if lock
 	 * already held by someone else, or if the address is not bound
@@ -89,6 +102,8 @@ public class Simulator implements RuntimeInterface {
 	 * @param lock
 	 * @return
 	 */
+	public static boolean SPAM = false;
+	
 	protected boolean lock(Address lock, Address requestor) {
 		if (!addressBindings.containsKey(lock)) {
 			return false;
@@ -97,28 +112,33 @@ public class Simulator implements RuntimeInterface {
 			return false;
 		} else {
 			lockHolders.put(lock, requestor);
+			if(SPAM) System.err.printf("%s lock(%s)\n", requestor, lock);
 			return true;
 		}
 	}
 
 	// lock is being released at time t
 	protected void unlock(Address lock, Address requestor) {
+		if(SPAM) System.err.printf("%s unlock(%s)\n", requestor, lock);
+
 		if (lockHolders.containsKey(lock)) {
 			Address holder = lockHolders.get(lock);
-			if(!requestor.equals(holder)) {
-				throw new RuntimeException("tried to unlock an address locked by someone else");
+			if (!requestor.equals(holder)) {
+				throw new RuntimeException(
+						"tried to unlock an address locked by someone else");
 			}
 			lockHolders.remove(lock);
 			markUnlocked(lock);
 		} else {
-			throw new RuntimeException("tried to unlock an already-unlocked address");
+			throw new RuntimeException(
+					"tried to unlock an already-unlocked address");
 		}
 	}
 
 	protected void markUnlocked(Address a) {
 		unlockedQueue.add(a);
 	}
-	
+
 	@Override
 	public Compiler getDefaultCompiler() {
 		return new FakeCompiler();
@@ -144,7 +164,7 @@ public class Simulator implements RuntimeInterface {
 	}
 
 	public void scheduleRelative(SimulatorEvent e, long offset) {
-		assert(offset >= 0);
+		assert (offset >= 0);
 		e.t = getClock() + offset;
 		schedule(e, eventQueue);
 	}
@@ -157,8 +177,8 @@ public class Simulator implements RuntimeInterface {
 		while (queue.size() > 0) {
 			SimulatorEvent e = queue.remove(0);
 			if (e.isCancelled()) {
-//				SimRuntime.debug.printf("   (cancelled)@%d   %s\n", e.t,
-//						e.toString());
+				// SimRuntime.debug.printf("   (cancelled)@%d   %s\n", e.t,
+				// e.toString());
 				continue;
 			} else {
 				return e;
@@ -168,16 +188,18 @@ public class Simulator implements RuntimeInterface {
 	}
 
 	public void schedule(SimulatorEvent e, List<SimulatorEvent> queue) {
-		assert(e != null);
-		assert(e.t >= getClock());
-		
-		// this is a very common case --- insert an event that happens immediately
-		if(queue.size() == 0 || queue.get(0).t >= e.t) {
-			queue.add(0,e);
+		assert (e != null);
+		assert (e.t >= getClock());
+
+		// this is a very common case --- insert an event that happens
+		// immediately
+		if (queue.size() == 0 || queue.get(0).t >= e.t) {
+			queue.add(0, e);
 			return;
 		}
-		
-		// backwards O(n) linked list insert, running on the assumption that the inserted event will likely be scheduled 
+
+		// backwards O(n) linked list insert, running on the assumption that the
+		// inserted event will likely be scheduled
 		// later than existing events
 		for (ListIterator<SimulatorEvent> it = queue.listIterator(queue.size()); it
 				.hasPrevious();) {
@@ -189,19 +211,18 @@ public class Simulator implements RuntimeInterface {
 		}
 	}
 
-	
-	
 	@SuppressWarnings("unused")
 	private boolean queueIsCorrectlySorted(List<SimulatorEvent> queue) {
 		// sanity check --- O(n), use sparingly
 		long t = 0;
-		for(SimulatorEvent e : queue) {
-			if(e.t < t) return false;
+		for (SimulatorEvent e : queue) {
+			if (e.t < t)
+				return false;
 			t = e.t;
 		}
 		return true;
 	}
-	
+
 	private boolean running = false;
 
 	private SimulatorEvent getNextEvent() {
@@ -219,62 +240,75 @@ public class Simulator implements RuntimeInterface {
 	@Override
 	public void run() {
 		// run the simulation
-		for(Runtime rt : getRuntimes()) {
+		for (MicaRuntime rt : getRuntimesSim()) {
 			rt.start();
 		}
-		
+
 		running = true;
 		setClock(0L);
-		
+
 		StopWatch simtimer = new StopWatch();
 		simtimer.reset();
-		
+
 		long round = 0;
 		int roundSize = MiCA.getOptions().roundLength;
-		
+
 		// write options message to the first runtime
-		Runtime arbitraryRuntime = addressBindings.values().iterator().next();
-		arbitraryRuntime.logJson(LogFlag.init, "mica-options", MiCA.getOptions());
-		
+		MicaRuntime arbitraryRuntime = addressBindings.values().iterator()
+				.next();
+		arbitraryRuntime.logJson(LogFlag.init, "mica-options",
+				MiCA.getOptions());
+
 		while (running) {
 			long curRound = (getClock() / roundSize) + 1;
-			if(curRound != round) {
+			if (curRound != round) {
 				String stopsfx;
-				if(MiCA.getOptions().stopAfter > 0) {
-					stopsfx = String.format(" of %s", MiCA.getOptions().stopAfter);
+				if (MiCA.getOptions().stopAfter > 0) {
+					stopsfx = String.format(" of %s",
+							(int) MiCA.getOptions().stopAfter);
 				} else {
 					stopsfx = "";
 				}
-				
-				SimRuntime.debug.printf("(%s) round %d%s\n", MiCA.getOptions().expname, curRound, stopsfx);
+
+				SimRuntime.debug.printf("(%s) round %d%s\n",
+						MiCA.getOptions().expname, curRound, stopsfx);
 				round = curRound;
 			}
 			SimulatorEvent e = getNextEvent();
 			if (e == null) {
 				break;
 			}
-			
+
 			long clock = getClock();
-			
-			//String msg = String.format("@%d -> %d execute %s", clock, e.t, e.toString());
-			//rt.logJson("debug-event", msg);
-			//SimRuntime.debug.println(msg);
+
+			// String msg = String.format("@%d -> %d execute %s", clock, e.t,
+			// e.toString());
+			// rt.logJson("debug-event", msg);
+			// SimRuntime.debug.println(msg);
 
 			assert (e.t >= clock);
 			setClock(e.t);
 
-			try {		
+			Address src = e.getSrc();
+			if (src != null) {
+				SimRuntime rt = getRuntime(src);
+				if (rt == null) {
+					// ignore event; runtime is dead
+					continue;
+				}
+			}
+
+			try {
 				e.execute(this);
 			} catch (AbortRound ex) {
-				if(e instanceof SimRound.RoundEvent){
+				if (e instanceof SimRound.RoundEvent) {
 					e.abortRound(this);
 				}
 			} catch (FatalErrorHalt ex) {
-				if(e instanceof SimRound.RoundEvent){
+				if (e instanceof SimRound.RoundEvent) {
 					e.abortRound(this);
 				}
-				Address src = e.getSrc();
-				if(src != null) {
+				if (src != null) {
 					killRuntime(getRuntime(src));
 				}
 			} catch (MicaException ex) {
@@ -283,15 +317,16 @@ public class Simulator implements RuntimeInterface {
 			}
 		}
 		running = false;
-		
-		double sfac = ((double)getClock())/((double)simtimer.elapsed()+1);
-		SimRuntime.debug.printf("Simulator stopped @%d; speed-up factor of %f\n", getClock(), sfac);
+
+		double sfac = ((double) getClock()) / ((double) simtimer.elapsed() + 1);
+		SimRuntime.debug.printf(
+				"Simulator stopped @%d; speed-up factor of %f\n", getClock(),
+				sfac);
 	}
 
 	protected void stopRuntime(SimRuntime rt) {
 		unbind(rt);
 	}
-
 
 	// Simulator is a singleton...
 	private static Simulator singleton = null;
@@ -308,7 +343,7 @@ public class Simulator implements RuntimeInterface {
 		return rt;
 	}
 
-	public  Protocol getReceiver(SimConnection sc) {
+	public Protocol getReceiver(SimConnection sc) {
 		throw new UnsupportedOperationException();
 	}
 
@@ -316,19 +351,23 @@ public class Simulator implements RuntimeInterface {
 		rt.stop();
 	}
 
-	public  Protocol getSender(SimConnection sc) {
+	public Protocol getSender(SimConnection sc) {
 		throw new UnsupportedOperationException();
 	}
 
 	@Override
-	public  Runtime addRuntime(Address address, 
-			long randomSeed, int roundLength, int startTime, int lockTimeout) {
+	public MicaRuntime addRuntime(Address address, long randomSeed,
+			int roundLength, int startTime, int lockTimeout) {
 		SimRuntime rt = new SimRuntime(address);
 		rt.setRandomSeed(randomSeed);
 		rt.setRoundLength(roundLength);
 		rt.setLockWaitTimeout(lockTimeout);
 		bind(address, rt, startTime);
 		return rt;
+	}
+
+	public void restart(SimRuntime rt) {
+		bind(rt.getAddress(), rt, 0);
 	}
 
 	@Override
@@ -349,28 +388,46 @@ public class Simulator implements RuntimeInterface {
 		return new F<Integer, Address>() {
 			@Override
 			public Address f(Integer i) {
-				return new DummyAddress(String.format("%s%d",MiCA.getOptions().expname,i));
+				return new DummyAddress(String.format("%s%d",
+						MiCA.getOptions().expname, i));
 			}
 		};
 	}
 
 	@Override
-	public void logJson(Object flags, Address origin,
-			String eventType, Object obj) {
-		getRuntimeContextManager().getNativeRuntime().logJson(flags, origin, eventType, obj);
+	public void logJson(Object flags, Address origin, String eventType,
+			Object obj) {
+		getRuntimeContextManager().getNativeRuntime().logJson(flags, origin,
+				eventType, obj);
 	}
 
 	private RuntimeContextManager runtimeContextManager = new RuntimeContextManager();
-	
+
 	@Override
 	public RuntimeContextManager getRuntimeContextManager() {
 		return runtimeContextManager;
 	}
-	
-	private Collection<SimRuntime> getRuntimes() {
+
+	private Collection<SimRuntime> getRuntimesSim() {
 		return addressBindings.values();
 	}
-	
-	
+
+	@Override
+	public List<MicaRuntime> getRuntimes() {
+		List<MicaRuntime> temp = Functional.list();
+		for (MicaRuntime rt : getRuntimesSim()) {
+			temp.add(rt);
+		}
+		return temp;
+	}
+
+	/**
+	 * Who currently has the lock?   Returns null if no lock holder
+	 * @param lock
+	 * @return
+	 */
+	public Address getLockHolder(Address lock) {
+		return lockHolders.get(lock);
+	}
 
 }

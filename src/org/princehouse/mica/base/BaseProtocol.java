@@ -129,4 +129,12 @@ public abstract class BaseProtocol implements Protocol, Serializable {
 	@Override
 	public void postUpdate() {}
 	
+	@Override 
+	public void unreachable(Address peer) {
+	}
+	
+	@Override 
+	public void busy(Address peer) {
+	}
+
 }

@@ -14,6 +14,44 @@ def deltas(sequence):
     except StopIteration:
         pass
 
+
+# returns a list of tuple-lists, where events have the form:
+#  (timestamp, src, dst)    
+#
+# one list is returned for each leaf projection
+def gossip_events(events):
+    buckets = {}
+
+    gossip_total = 0
+    leaves_per_gossip = 0.
+
+    leaf_sequences = []
+    
+    dval = {'true':True,'false':False}
+    
+    def value(leafstatus):
+        return dval[leafstatus.split(':')[1]]
+
+    for e in events:
+        if e['event_type'] == 'merge-execute-subprotocols':
+            buckets[e['address']] = [value(x) for x in e['data'].split(',')]
+        if e['event_type'] == 'mica-gossip':
+            bk = buckets.get(e['address'],[True])
+            src, dst = e['data']
+            tupl = (e['timestamp'], src, dst)
+            gossip_total += 1
+            if len(leaf_sequences) < len(bk):
+                leaf_sequences += [[] for i in xrange(len(bk) - len(leaf_sequences))]
+            for i,relevant in enumerate(bk):
+                if relevant:
+                    leaves_per_gossip += 1
+                    leaf_sequences[i].append(tupl)
+
+    leaves_per_gossip /= gossip_total
+    print "Gossip statistics: %s top-level gossips, %s leaves per gossip, total gossip activity %s" % (gossip_total, leaves_per_gossip, leaves_per_gossip * gossip_total)
+    return leaf_sequences
+
+
 def compute_changes_per_round(micavis, **frequency_count_keywords):
     
     def node_state_change_timestamp_generator():

@@ -4,7 +4,7 @@ import java.util.TimerTask;
 
 import org.princehouse.mica.base.LogFlag;
 import org.princehouse.mica.base.model.Protocol;
-import org.princehouse.mica.base.model.Runtime;
+import org.princehouse.mica.base.model.MicaRuntime;
 import org.princehouse.mica.base.net.model.Address;
 import org.princehouse.mica.lib.NaiveBroadcast;
 import org.princehouse.mica.lib.abstractions.Overlay;
@@ -65,7 +65,7 @@ public class DemoNaiveBroadcast{
 			@SuppressWarnings("unchecked")
 			@Override
 			public void run() {
-				Runtime rt = harness.getRuntimes().get(0);
+				MicaRuntime rt = harness.getRuntimes().get(0);
 				rt.getProtocolInstanceLock().lock();
 				((NaiveBroadcast<String>)rt.getProtocolInstance()).sendMessage("hello world");
 				rt.getProtocolInstanceLock().unlock();

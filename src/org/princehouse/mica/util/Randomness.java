@@ -25,16 +25,20 @@ public class Randomness {
 		random = new Random(rseed);
 	}
 	
-	public static <T> T choose(Collection<T> c) {
+	public static <T> T choose(Collection<T> c, Random rng) {
 		if(c.size() == 0)
 			throw new EmptyCollection();
-		int choice = random.nextInt(c.size());
+		int choice = rng.nextInt(c.size());
 		int i = 0;
 		for(T obj : c) {
 			if(i++ == choice)
 				return obj;
 		}
 		throw new RuntimeException("should not be reachable");
+	}
+	
+	public static <T> T choose(Collection<T> c) {
+		return choose(c, random);
 	}
 	
 	public static <E extends Enum<?>> E choose(Class<E> enumClass) {

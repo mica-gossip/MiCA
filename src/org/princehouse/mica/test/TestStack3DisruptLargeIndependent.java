@@ -6,13 +6,13 @@ import java.util.List;
 import java.util.TimerTask;
 
 import org.princehouse.mica.base.model.Protocol;
-import org.princehouse.mica.base.model.Runtime;
+import org.princehouse.mica.base.model.MicaRuntime;
 import org.princehouse.mica.base.net.model.Address;
 import org.princehouse.mica.example.TreeCountNodes;
 import org.princehouse.mica.example.TreeLabelNodes;
 import org.princehouse.mica.lib.MinAddressLeaderElection;
 import org.princehouse.mica.lib.SpanningTreeOverlay;
-import org.princehouse.mica.lib.abstractions.MergeBase;
+import org.princehouse.mica.lib.abstractions.Merge;
 import org.princehouse.mica.lib.abstractions.MergeCorrelated;
 import org.princehouse.mica.lib.abstractions.Overlay;
 import org.princehouse.mica.util.Randomness;
@@ -75,13 +75,13 @@ public class TestStack3DisruptLargeIndependent extends TestHarness {
 			TimerTask disrupt = new TimerTask() {
 				@Override
 				public void run() {
-					Runtime.debug.println("----> Leader sabotage!");
+					MicaRuntime.debug.println("----> Leader sabotage!");
 					List<Address> addresses = new ArrayList<Address>();
-					for(Runtime rt : harness.getRuntimes()) {
+					for(MicaRuntime rt : harness.getRuntimes()) {
 						addresses.add(rt.getAddress());
 					}
-					for(Runtime rt : harness.getRuntimes()) {
-						MergeCorrelated temp = (MergeCorrelated) ((MergeBase)rt.getProtocolInstance()).getP1();
+					for(MicaRuntime rt : harness.getRuntimes()) {
+						MergeCorrelated temp = (MergeCorrelated) ((Merge)rt.getProtocolInstance()).getP1();
 						MinAddressLeaderElection leader = (MinAddressLeaderElection) temp.getP1();
 						leader.setLeader(Randomness.choose(addresses));
 					}

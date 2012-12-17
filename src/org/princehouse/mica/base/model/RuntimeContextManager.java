@@ -10,7 +10,7 @@ public class RuntimeContextManager {
 	// ---- agent execution context utilities ------------
 	private ThreadLocal<WeakHashSet<Object>> foreignObjects = new ThreadLocal<WeakHashSet<Object>>();
 	private ThreadLocal<RuntimeState> foreignRuntimeState = new ThreadLocal<RuntimeState>();
-	private ThreadLocal<Runtime> nativeRuntime = new ThreadLocal<Runtime>();
+	private ThreadLocal<MicaRuntime> nativeRuntime = new ThreadLocal<MicaRuntime>();
 
 	// for debugging, remember which piece of code last set the native runtime
 	private ThreadLocal<String> debugLastSetLocation = new ThreadLocal<String>();
@@ -32,7 +32,7 @@ public class RuntimeContextManager {
 			}
 		}
 
-		Runtime rt = getNativeRuntime();
+		MicaRuntime rt = getNativeRuntime();
 		if (rt == null) {
 			throw new RuntimeException(
 					"Cannot get runtime state: No native runtime is set");
@@ -40,7 +40,7 @@ public class RuntimeContextManager {
 		return rt.getRuntimeState();
 	}
 
-	public void setNativeRuntime(Runtime rt) {
+	public void setNativeRuntime(MicaRuntime rt) {
 		String location = Logging.getLocation(1);
 		if (nativeRuntime.get() != null) {
 			throw new RuntimeException(
@@ -52,8 +52,8 @@ public class RuntimeContextManager {
 		nativeRuntime.set(rt);
 	}
 
-	public Runtime getNativeRuntime() {
-		Runtime rt = nativeRuntime.get();
+	public MicaRuntime getNativeRuntime() {
+		MicaRuntime rt = nativeRuntime.get();
 		if (rt == null) {
 			throw new RuntimeException("You forgot to set the native runtime");
 		}

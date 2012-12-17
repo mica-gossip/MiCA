@@ -27,7 +27,7 @@ import org.princehouse.mica.base.exceptions.FatalErrorHalt;
 import org.princehouse.mica.base.model.CommunicationPatternAgent;
 import org.princehouse.mica.base.model.MiCA;
 import org.princehouse.mica.base.model.Protocol;
-import org.princehouse.mica.base.model.Runtime;
+import org.princehouse.mica.base.model.MicaRuntime;
 import org.princehouse.mica.base.net.model.AcceptConnectionHandler;
 import org.princehouse.mica.base.net.model.Address;
 import org.princehouse.mica.base.net.model.Connection;
@@ -40,7 +40,7 @@ import org.princehouse.mica.util.Logging.SelectEvent;
  * Nothing fancy: It just serializes and exchanges complete node state.
  * 
  */
-public class SimpleRuntime extends Runtime implements AcceptConnectionHandler {
+public class SimpleRuntime extends MicaRuntime implements AcceptConnectionHandler {
 
 	public static final boolean DEBUG_NETWORKING = false;
 
@@ -77,7 +77,7 @@ public class SimpleRuntime extends Runtime implements AcceptConnectionHandler {
 	 *            Random seed to use for this runtime
 	 * @return New Runtime instance
 	 */
-	public static Runtime launch(final Runtime rt, final Protocol pinstance,
+	public static MicaRuntime launch(final MicaRuntime rt, final Protocol pinstance,
 			final boolean daemon, final int intervalMS, final long randomSeed,
 			int lockWaitTimeoutMS) {
 		rt.setProtocolInstance(pinstance);
@@ -118,7 +118,7 @@ public class SimpleRuntime extends Runtime implements AcceptConnectionHandler {
 	 *            random seed to be used for this runtime
 	 * @return New Runtime instance
 	 */
-	public static Runtime launchDaemon(SimpleRuntime rt,
+	public static MicaRuntime launchDaemon(SimpleRuntime rt,
 			final Protocol pinstance, final Address address, int intervalMS,
 			long randomSeed, int lockWaitTimeoutMS) {
 		return launch(rt, pinstance, true, intervalMS, randomSeed,
@@ -412,7 +412,7 @@ public class SimpleRuntime extends Runtime implements AcceptConnectionHandler {
 					}
 
 					double sec = ((double) stopwatch.elapsed()) / 1000.0;
-					Runtime.debug.printf("%s -> %s, elapsed time %g s\n", this,
+					MicaRuntime.debug.printf("%s -> %s, elapsed time %g s\n", this,
 							partner, sec);
 				} catch (AbortRound ar) {
 					// ... do nothing, and on to the next round...

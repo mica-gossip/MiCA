@@ -2,7 +2,7 @@ package org.princehouse.mica.lib.abstractions;
 
 import java.util.Map;
 
-import org.princehouse.mica.base.BaseProtocol;
+import org.princehouse.mica.base.FailureDetector;
 import org.princehouse.mica.base.model.Protocol;
 import org.princehouse.mica.base.net.model.Address;
 import org.princehouse.mica.base.sugar.annotations.GossipUpdate;
@@ -27,7 +27,7 @@ import org.princehouse.mica.util.Functional;
  * @param <Summary>
  * @param <Aggregate>
  */
-public abstract class Aggregator<Summary, Aggregate> extends BaseProtocol {
+public abstract class Aggregator<Summary, Aggregate> extends FailureDetector {
 	private static final long serialVersionUID = 1L;
 
 	private Map<Address, Summary> summaries = null;
@@ -50,6 +50,13 @@ public abstract class Aggregator<Summary, Aggregate> extends BaseProtocol {
 		this.direction = direction;
 	}
 
+	@Override
+	public void failureDetected(Address peer) {
+		if(getSummaries().containsKey(peer)) {
+			getSummaries().remove(peer);
+		}
+	}
+	
 	/**
 	 * Creates a PUSHPULL aggregate with a null initial value.
 	 * 
@@ -76,6 +83,7 @@ public abstract class Aggregator<Summary, Aggregate> extends BaseProtocol {
 
 	@Override
 	public void preUpdate(Address selected) {
+		super.preUpdate(selected);
 		filterSummaries();
 	}
 
@@ -87,6 +95,7 @@ public abstract class Aggregator<Summary, Aggregate> extends BaseProtocol {
 	@GossipUpdate
 	@Override
 	public void update(Protocol that) {
+		super.update(that);
 		@SuppressWarnings("unchecked")
 		Aggregator<Summary, Aggregate> neighbor = (Aggregator<Summary, Aggregate>) that;
 		if (direction.pull()) {

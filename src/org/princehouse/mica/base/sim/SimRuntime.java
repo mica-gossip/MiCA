@@ -4,10 +4,10 @@ import java.util.concurrent.locks.ReentrantLock;
 
 import org.princehouse.mica.base.model.MiCA;
 import org.princehouse.mica.base.model.Protocol;
-import org.princehouse.mica.base.model.Runtime;
+import org.princehouse.mica.base.model.MicaRuntime;
 import org.princehouse.mica.base.net.model.Address;
 
-public class SimRuntime extends Runtime {
+public class SimRuntime extends MicaRuntime {
 
 	private Protocol protocol = null;
 

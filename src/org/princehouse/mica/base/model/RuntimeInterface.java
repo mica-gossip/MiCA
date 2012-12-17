@@ -1,5 +1,6 @@
 package org.princehouse.mica.base.model;
 
+import java.util.List;
 import java.util.TimerTask;
 
 import org.princehouse.mica.base.net.model.Address;
@@ -21,7 +22,7 @@ public interface RuntimeInterface {
 	 * @param startTime
 	 *            Delay of initial sleep (in the runtime's units, probably ms)
 	 */
-	public Runtime addRuntime(Address address,
+	public MicaRuntime addRuntime(Address address,
 			long randomSeed, int roundLength, int startTime, int lockTimeout);
 
 	/**
@@ -55,4 +56,6 @@ public interface RuntimeInterface {
 	public RuntimeContextManager getRuntimeContextManager();
 	
 	public Compiler getDefaultCompiler();
+
+	public List<MicaRuntime> getRuntimes();
 }

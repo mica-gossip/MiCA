@@ -12,7 +12,7 @@ import org.princehouse.mica.base.exceptions.InvalidOption;
 import org.princehouse.mica.base.model.MiCA;
 import org.princehouse.mica.base.model.MicaOptions;
 import org.princehouse.mica.base.model.Protocol;
-import org.princehouse.mica.base.model.Runtime;
+import org.princehouse.mica.base.model.MicaRuntime;
 import org.princehouse.mica.base.model.RuntimeInterface;
 import org.princehouse.mica.base.net.model.Address;
 import org.princehouse.mica.base.net.tcpip.TCPAddress;
@@ -43,14 +43,12 @@ import fj.P2;
  * 
  * @param
  */
-public class TestHarness {
+public class TestHarness implements ProtocolInstanceFactory {
 
 	private RuntimeInterface runtimeInterface = null;
-
 	public static final String LOG_NAMES = Array.join(", ", LogFlag.values());
-
 	private List<P2<Long, TimerTask>> timers = Functional.list();
-
+	
 	public void addTimer(long time, TimerTask task) {
 		timers.add(P.p(time, task));
 	}
@@ -62,14 +60,13 @@ public class TestHarness {
 	public void addTimerRounds(double rounds, TimerTask task) {
 		addTimer((long) (rounds * getRoundMS()), task);
 	}
-
-	private static int BASE_ADDRESS = 8000;
-
-	public static F<Integer, Address> defaultAddressFunc = new F<Integer, Address>() {
+	
+	public static int BASE_PORT = 8000;
+	public static F<Integer, Address> defaultAddressFunc = new F<Integer, Address>() {		
 		public Address f(Integer i) {
 			try {
 				return TCPAddress.valueOf(String.format("localhost:%d",
-						BASE_ADDRESS + i));
+						BASE_PORT + i));
 			} catch (UnknownHostException e) {
 				throw new RuntimeException(e);
 			}
@@ -91,14 +88,14 @@ public class TestHarness {
 			@Override
 			public void run() {
 				harness.stop();
-				Runtime.debug.println("End timer!");
+				MicaRuntime.debug.println("End timer!");
 			}
 		};
 	}
 
-	public void launchProtocol(ProtocolInstanceFactory factory,
-			TestHarnessGraph g) {
+	public void launchProtocol() {
 
+		TestHarnessGraph g = getGraph();
 		launchTimers(); // TODO lift to runtime interface
 
 		int i = 0;
@@ -109,15 +106,14 @@ public class TestHarness {
 			int stagger = rng.nextInt(options.stagger);
 			int lockTimeout = options.timeout;
 			long seed = getRandom().nextLong();
-			Runtime rt = runtimeInterface.addRuntime(addr, seed,
+			MicaRuntime rt = runtimeInterface.addRuntime(addr, seed,
 					options.roundLength, stagger, lockTimeout);
 
 			MiCA.getRuntimeInterface().getRuntimeContextManager()
 					.setNativeRuntime(rt);
-			Protocol pinstance = factory.createProtocolInstance(i++, addr,
+			Protocol pinstance = createProtocolInstance(i++, addr,
 					neighbors);
 			MiCA.getRuntimeInterface().getRuntimeContextManager().clear();
-
 			rt.setProtocolInstance(pinstance);
 		}
 	}
@@ -132,21 +128,21 @@ public class TestHarness {
 
 	private Random rng;
 
+	/*
 	public void launchProtocolRandomGraph(int n, int degree,
 			ProtocolInstanceFactory factory) {
 		launchProtocol(factory, new RandomGraph(n, defaultAddressFunc, degree,
 				rng));
-	}
-
+	} */
+	
+	/*
 	public void launchProtocolCompleteGraph(int n,
 			ProtocolInstanceFactory factory) {
 		launchProtocol(factory, new CompleteGraph(n, defaultAddressFunc));
-	}
+	} */
 
-	private List<Runtime> runtimes;
-
-	public List<Runtime> getRuntimes() {
-		return runtimes;
+	public List<MicaRuntime> getRuntimes() {
+		return MiCA.getRuntimeInterface().getRuntimes();
 	}
 
 	private void run() {
@@ -154,27 +150,14 @@ public class TestHarness {
 		System.out.println("Done");
 	}
 
-	public void runGraph(ProtocolInstanceFactory factory, TestHarnessGraph graph) {
-		launchProtocol(factory, graph);
+	public void runGraph() {
+		launchProtocol(); //getFactory(), getGraph());
 		run();
 	}
 
 	public void stop() {
 		runtimeInterface.stop();
 	}
-
-	/**
-	 * Implementations of this interface create protocol instances for the
-	 * TestHarness
-	 * 
-	 * @author lonnie
-	 * 
-	 * @param
-	 */
-	public static interface ProtocolInstanceFactory {
-		public Protocol createProtocolInstance(int nodeId, Address address,
-				Overlay overlay);
-	};
 
 	// backwards compatibility method; do not use
 	public static ProtocolInstanceFactory factoryFromCNF(
@@ -209,6 +192,7 @@ public class TestHarness {
 		return options;
 	}
 
+	
 	public void runMain(String[] argv, ProtocolInstanceFactory factory) {
 		MicaOptions options = parseOptions(argv);
 		runMain(options, factory);
@@ -217,7 +201,7 @@ public class TestHarness {
 	public void runMain(String[] argv) {
 		// will throw an invalid cast exception of this harness doesn't
 		// implement ProtocolInstanceFactory
-		ProtocolInstanceFactory factory = (ProtocolInstanceFactory) this;
+		ProtocolInstanceFactory factory = this;
 		MicaOptions options = parseOptions(argv);
 		runMain(options, factory);
 	}
@@ -238,13 +222,14 @@ public class TestHarness {
 	 * @param nodeDegree
 	 * @param createNodeFunc
 	 */
+	/*
 	public void runRandomGraph(long seed, int n, int nodeDegree,
 			ProtocolInstanceFactory factory) {
 		rng = new Random(seed);
 		TestHarnessGraph graph = new RandomGraph(n, defaultAddressFunc,
 				nodeDegree, rng);
 		runGraph(factory, graph);
-	}
+	} */
 
 	private TestHarnessGraph graph = null;
 
@@ -332,6 +317,13 @@ public class TestHarness {
 				(List) options.logsEnable));
 		LogFlag.setCurrentLogMask(LogFlag.unset(LogFlag.getCurrentLogMask(),
 				(List) options.logsDisable));
+		
+		TestHarness.BASE_PORT = options.port;
+		
+		if (getGraph() == null) {
+			throw new RuntimeException(
+					"Invalid graph.  graphType options \"complete\" and \"random\"");
+		}
 	}
 
 	/**
@@ -359,17 +351,38 @@ public class TestHarness {
 	public void runMain(MicaOptions options, ProtocolInstanceFactory factory) {
 		assert (options != null);
 		setOptions(options);
-		// SimpleRuntime.DEFAULT_INTERVAL = (int) options.roundLength;
-		TestHarness.BASE_ADDRESS = options.port;
-
+		setFactory(factory);
 		processOptions();
 
-		if (graph == null) {
-			throw new RuntimeException(
-					"Invalid graph.  graphType options \"complete\" and \"random\"");
-		}
+		configure();
+		
+		runGraph();
+	}
+	
+	
+	/**
+	 * Perform experiment-specific setup after options are processed but before execution
+	 */
+	public void configure() {}
+	
+	public void runMain(MicaOptions options) {
+		runMain(options,this);
+	}
 
-		runGraph(factory, graph);
+	private ProtocolInstanceFactory factory = null;
+	
+	public ProtocolInstanceFactory getFactory() {
+		return factory;
+	}
+
+	public void setFactory(ProtocolInstanceFactory factory) {
+		this.factory = factory;
+	}
+
+	@Override
+	public Protocol createProtocolInstance(int nodeId, Address address,
+			Overlay overlay) {
+		return factory.createProtocolInstance(nodeId, address, overlay);
 	}
 
 }

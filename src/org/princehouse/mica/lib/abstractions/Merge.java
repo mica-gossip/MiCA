@@ -4,6 +4,7 @@ import java.util.List;
 
 import org.princehouse.mica.base.BaseProtocol;
 import org.princehouse.mica.base.LogFlag;
+import org.princehouse.mica.base.model.MiCA;
 import org.princehouse.mica.base.model.Protocol;
 import org.princehouse.mica.base.net.model.Address;
 import org.princehouse.mica.base.sugar.annotations.GossipUpdate;
@@ -28,7 +29,7 @@ import fj.P2;
  * @author lonnie
  * 
  */
-public abstract class MergeBase extends BaseProtocol {
+public abstract class Merge extends BaseProtocol {
 
 	private Protocol p1;
 
@@ -40,6 +41,20 @@ public abstract class MergeBase extends BaseProtocol {
 		return subProtocolGossipCase;
 	}
 
+	@Override
+	public void unreachable(Address peer) {
+		// FIXME should this get called even for subprotocols that didn't gossip to peer??
+		if(getP1() != null) getP1().unreachable(peer);
+		if(getP2() != null) getP2().unreachable(peer);
+	}
+	
+	@Override 
+	public void busy(Address peer) {
+		// FIXME should this get called even for subprotocols that didn't gossip to peer??
+		if(getP1() != null) getP1().busy(peer);
+		if(getP2() != null) getP2().busy(peer);
+	}
+	
 	protected void setSubProtocolGossipCase(
 			MergeSelectionCase subProtocolGossipCase) {
 		this.subProtocolGossipCase = subProtocolGossipCase;
@@ -91,12 +106,12 @@ public abstract class MergeBase extends BaseProtocol {
 	 * @param p2
 	 *            Second subprotocol
 	 */
-	public MergeBase(Protocol p1, Protocol p2) {
+	public Merge(Protocol p1, Protocol p2) {
 		setP1(p1);
 		setP2(p2);
 	}
 
-	public MergeBase() {
+	public Merge() {
 		this(null, null);
 	}
 
@@ -135,7 +150,7 @@ public abstract class MergeBase extends BaseProtocol {
 	@GossipUpdate
 	@Override
 	public void update(Protocol p) {
-		MergeBase that = (MergeBase) p;
+		Merge that = (Merge) p;
 		executeUpdateMerge(that, true);
 
 	}
@@ -147,8 +162,8 @@ public abstract class MergeBase extends BaseProtocol {
 	 * @param r
 	 */
 	private void executeSubprotocolUpdate(Protocol i, Protocol r) {
-		if (i instanceof MergeBase) {
-			((MergeBase) i).executeUpdateMerge((MergeBase) r, false);
+		if (i instanceof Merge) {
+			((Merge) i).executeUpdateMerge((Merge) r, false);
 		} else {
 			i.update(r);
 		}
@@ -163,7 +178,7 @@ public abstract class MergeBase extends BaseProtocol {
 	 * @param that
 	 * @param writeLog
 	 */
-	private void executeUpdateMerge(MergeBase that, boolean writeLog) {
+	private void executeUpdateMerge(Merge that, boolean writeLog) {
 		switch (getSubProtocolGossipCase()) {
 		case P1:
 			// only protocol 1 gossips
@@ -191,7 +206,7 @@ public abstract class MergeBase extends BaseProtocol {
 			break;
 		}
 
-		if (writeLog) {
+		if (writeLog && LogFlag.merge.test()) {
 			List<P2<String, Boolean>> leaves = collectLeafProtocolStatus();
 			String outstr = "";
 			int i = 0;
@@ -254,8 +269,8 @@ public abstract class MergeBase extends BaseProtocol {
 			String pname) {
 		if (p == null) {
 			return Functional.list();
-		} else if (p instanceof MergeBase) {
-			return ((MergeBase) p).collectLeafProtocolStatus();
+		} else if (p instanceof Merge) {
+			return ((Merge) p).collectLeafProtocolStatus();
 		} else {
 			// p is a leaf
 			return Functional.list(P.p(pname, true));

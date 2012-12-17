@@ -11,8 +11,8 @@ import org.princehouse.mica.base.exceptions.FatalErrorHalt;
 import org.princehouse.mica.base.exceptions.MicaException;
 import org.princehouse.mica.base.model.CommunicationPatternAgent;
 import org.princehouse.mica.base.model.MiCA;
+import org.princehouse.mica.base.model.MicaRuntime;
 import org.princehouse.mica.base.model.Protocol;
-import org.princehouse.mica.base.model.Runtime;
 import org.princehouse.mica.base.net.model.Address;
 import org.princehouse.mica.util.Logging.SelectEvent;
 
@@ -64,6 +64,8 @@ public class SimRound {
 		if (haveLockDst) {
 			sim.scheduleRelative(new ReleaseDstLock(), releaseLockOffset);
 		}
+
+		// System.err.printf("  abort round %s\n", src);
 
 		SimRuntime rta = sim.getRuntime(src);
 		rta.logJson(LogFlag.user, "notable-event-abort",
@@ -161,8 +163,15 @@ public class SimRound {
 			sim.getRuntimeContextManager().setNativeRuntime(
 					sim.getRuntime(round.src));
 			logJson(LogFlag.error, getSrc(), timeoutErrorMsg, null);
+			sim.getRuntime(getSrc()).getProtocolInstance().unreachable(lock);
 			sim.getRuntimeContextManager().clear();
-
+			
+			/*
+			sim.SPAM = true;
+			System.err.printf("unreachable: %s %s.lock(%s)    [holder=%s]\n",
+					getClass().getSimpleName(), getSrc(), lock,
+					sim.getLockHolder(lock));
+					*/
 		}
 
 		public abstract void onAcquireLock();
@@ -170,14 +179,16 @@ public class SimRound {
 		@Override
 		public void execute(Simulator simulator) throws MicaException {
 			if (simulator.lock(lock, getSrc())) {
+				// got the lock!
 				if (timeout != null) {
 					timeout.cancel();
 				}
-				// got the lock!
 				onAcquireLock();
 				simulator.scheduleRelative(continuation, 0);
 			} else {
-				// failed to get lock
+				// failed to get lock... wait for it by adding ourselves to the
+				// wait queue and scheduling a timeout event that will be
+				// triggered if we don't get the lock within the allotted time
 				simulator.addLockWaiter(lock, this);
 
 				assert (timeout == null); // weirdness is happening if timeout
@@ -283,6 +294,7 @@ public class SimRound {
 				pattern.f3(rta, m2);
 
 				simulator.getRuntimeContextManager().setNativeRuntime(rta);
+				rta.logJson(LogFlag.gossip,"mica-gossip", new Address[]{round.src,round.dst});
 				rta.logState("gossip-initiator");
 				simulator.getRuntimeContextManager().clear();
 
@@ -345,7 +357,7 @@ public class SimRound {
 
 	protected void logJson(Object flags, Address source, String msgType,
 			Object payload) {
-		Runtime rt = sim.getRuntime(source);
+		MicaRuntime rt = sim.getRuntime(source);
 		rt.getProtocolInstance().logJson(flags, msgType, payload);
 	}
 

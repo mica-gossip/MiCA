@@ -17,6 +17,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 import micavis.ipython as ipython
 
+import micavis.analysis as analysis
+
 from event_tree_model import *
 
 class GraphWindow(object):
@@ -121,6 +123,9 @@ class GraphWindow(object):
         append_analysis_menuitem(
             "State change graph (leaves)", self.analysis_state_change_graph_leaves)
 
+        append_analysis_menuitem(
+            "Gossip rate (leaves)", self.analysis_gossip_rate)
+
         for ne_suffix in self.micavis.notable_event_labels():
             append_analysis_menuitem(
                 "Notable events: %s" % ne_suffix, 
@@ -136,7 +141,7 @@ class GraphWindow(object):
                 "Notable event timing histogram (normalized): %s" % ne_suffix, 
                 lambda widget,sfx=ne_suffix: self.analysis_notable_events_histogram(sfx,widget,normalize=True))
 
-
+            
         for label, callback in self.micavis.temp_analysis_menus:
             append_analysis_menuitem(label, callback)
 
@@ -178,12 +183,31 @@ class GraphWindow(object):
         x,y = analysis.compute_changes_per_round(self.micavis)
         xlabel =  "Round"
         ylabel = "State changes per node per round"
+
+
         self.analysis_plot_2d(x,y, xlabel, ylabel)
 
+    def analysis_gossip_rate(self, widget):
+        sequences = analysis.gossip_events(self.micavis.events)
+        for i in xrange(len(sequences)):
+            # don't want to bucket by address
+            sequences[i] = [t for t,src,dst in sequences[i]]
+
+        legend = self.micavis.leaf_projections
+        
+        scalar = 1./len(self.micavis.unique_addresses)
+        xyvals = [analysis.frequency_count(self.micavis, sequence, subdivisions=5, bucket_scalar = scalar)  
+                  for sequence in sequences]
+
+        ylabel = "Fraction of nodes initiating gossip"
+        xlabel = "Time (rounds)"
+        ipython.analysis_plot_2d_multiple(xyvals, xlabel, ylabel, legend)
+        
+        
+        
     def analysis_notable_events(self, ne_suffix, widget):
         import matplotlib.pyplot as plt
         import numpy as np
-        import analysis
 
         ne_categories = {}  # key -> sequence
 

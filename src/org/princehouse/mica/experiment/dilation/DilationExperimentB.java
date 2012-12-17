@@ -10,8 +10,8 @@ import org.princehouse.mica.example.Dilator;
 import org.princehouse.mica.example.FindMin;
 import org.princehouse.mica.lib.abstractions.Overlay;
 import org.princehouse.mica.util.Functional;
+import org.princehouse.mica.util.harness.ProtocolInstanceFactory;
 import org.princehouse.mica.util.harness.TestHarness;
-import org.princehouse.mica.util.harness.TestHarness.ProtocolInstanceFactory;
 
 /**
  * Test of dilation of findmin protocol on a complete graph

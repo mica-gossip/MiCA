@@ -33,9 +33,9 @@ import com.google.gson.Gson;
  * 
  * @param <P>
  */
-public abstract class Runtime {
+public abstract class MicaRuntime {
 
-	public Runtime() {
+	public MicaRuntime() {
 	}
 
 	/**
@@ -162,7 +162,7 @@ public abstract class Runtime {
 	public void logJson(Object logMask, final Address origin,
 			final String eventType, final Object theEvent) {
 
-		if (!Runtime.LOGGING_JSON)
+		if (!MicaRuntime.LOGGING_JSON)
 			return;
 
 		if (!LogFlag.testConjunctive(logMask))

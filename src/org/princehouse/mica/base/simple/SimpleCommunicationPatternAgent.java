@@ -8,7 +8,7 @@ import org.princehouse.mica.base.exceptions.FatalErrorHalt;
 import org.princehouse.mica.base.model.CommunicationPatternAgent;
 import org.princehouse.mica.base.model.MiCA;
 import org.princehouse.mica.base.model.Protocol;
-import org.princehouse.mica.base.model.Runtime;
+import org.princehouse.mica.base.model.MicaRuntime;
 import org.princehouse.mica.base.model.RuntimeState;
 
 public class SimpleCommunicationPatternAgent implements
@@ -35,7 +35,7 @@ public class SimpleCommunicationPatternAgent implements
 	}
 
 	@Override
-	public Serializable f1(Runtime initiatorRuntime) {
+	public Serializable f1(MicaRuntime initiatorRuntime) {
 		try {
 			return new SimpleM(initiatorRuntime.getProtocolInstance(),
 					initiatorRuntime.getRuntimeState());
@@ -45,7 +45,7 @@ public class SimpleCommunicationPatternAgent implements
 	}
 
 	@Override
-	public Serializable f2(Runtime receiverRuntime, Serializable o)
+	public Serializable f2(MicaRuntime receiverRuntime, Serializable o)
 			throws FatalErrorHalt, AbortRound {
 		SimpleM m1 = (SimpleM) o;
 		MiCA.getRuntimeInterface().getRuntimeContextManager()
@@ -66,7 +66,7 @@ public class SimpleCommunicationPatternAgent implements
 	}
 
 	@Override
-	public void f3(Runtime initiatorRuntime, Serializable o) {
+	public void f3(MicaRuntime initiatorRuntime, Serializable o) {
 		SimpleM m2 = (SimpleM) o;
 		initiatorRuntime.setProtocolInstance(m2.p);
 		initiatorRuntime.setRuntimeState(m2.runtimeState);

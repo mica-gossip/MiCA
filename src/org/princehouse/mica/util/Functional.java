@@ -41,7 +41,7 @@ public class Functional {
 	 * @param lists
 	 * @return
 	 */
-	public static <T> List<T> concatenate(@SuppressWarnings("unchecked") List<T>... lists) {
+	public static <T> List<T> concatenate(List<T>... lists) {
 		List<T> temp = list();
 		for (List<T> l : lists) {
 			temp = extend(temp, l);

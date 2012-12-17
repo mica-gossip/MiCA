@@ -11,8 +11,8 @@ import org.princehouse.mica.lib.abstractions.MergeCorrelated;
 import org.princehouse.mica.lib.abstractions.NetworkSizeCounter;
 import org.princehouse.mica.lib.abstractions.Overlay;
 import org.princehouse.mica.lib.abstractions.SinglyLinkedRingOverlay;
+import org.princehouse.mica.util.harness.ProtocolInstanceFactory;
 import org.princehouse.mica.util.harness.TestHarness;
-import org.princehouse.mica.util.harness.TestHarness.ProtocolInstanceFactory;
 
 
 /*

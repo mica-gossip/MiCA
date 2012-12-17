@@ -10,7 +10,7 @@ import java.util.TimerTask;
 import org.princehouse.mica.base.LogFlag;
 import org.princehouse.mica.base.model.Compiler;
 import org.princehouse.mica.base.model.MiCA;
-import org.princehouse.mica.base.model.Runtime;
+import org.princehouse.mica.base.model.MicaRuntime;
 import org.princehouse.mica.base.model.RuntimeContextManager;
 import org.princehouse.mica.base.model.RuntimeInterface;
 import org.princehouse.mica.base.net.model.Address;
@@ -20,9 +20,9 @@ import fj.F;
 
 public class SimpleRuntimeInterface extends RuntimeContextManager implements
 		RuntimeInterface {
-	private List<Runtime> runtimes = Functional.list();
+	private List<MicaRuntime> runtimes = Functional.list();
 
-	private Map<Runtime, Integer> startTimes = Functional.map();
+	private Map<MicaRuntime, Integer> startTimes = Functional.map();
 
 	@Override
 	public void reset() {
@@ -33,13 +33,13 @@ public class SimpleRuntimeInterface extends RuntimeContextManager implements
 	}
 
 	@Override
-	public Runtime addRuntime(Address address,
+	public MicaRuntime addRuntime(Address address,
 			long randomSeed, int roundLength, int startTime, int lockTimeout) {
 
 		// fixme this pattern gives no way for Native Runtime to be set when protocol is initialized
 		// (protocol constructor executes before this runtime exists!)
 		// FIXME: rewrite to call setProtocolInstance after the call to addRuntime returns a runtime
-		Runtime rt = new SimpleRuntime(address);
+		MicaRuntime rt = new SimpleRuntime(address);
 		startTimes.put(rt, startTime);
 		rt.setRandomSeed(randomSeed);
 		rt.setRoundLength(roundLength);
@@ -57,7 +57,7 @@ public class SimpleRuntimeInterface extends RuntimeContextManager implements
 
 	@Override
 	public void run() {
-		Runtime arbitraryRuntime = runtimes.get(0);
+		MicaRuntime arbitraryRuntime = runtimes.get(0);
 		arbitraryRuntime.logJson(LogFlag.init, "mica-options",
 				MiCA.getOptions());
 
@@ -66,15 +66,15 @@ public class SimpleRuntimeInterface extends RuntimeContextManager implements
 		// start runtimes
 
 		// sort runtimes by start time, ascending
-		Collections.sort(runtimes, new Comparator<Runtime>() {
+		Collections.sort(runtimes, new Comparator<MicaRuntime>() {
 			@Override
-			public int compare(Runtime r1, Runtime r2) {
+			public int compare(MicaRuntime r1, MicaRuntime r2) {
 				return startTimes.get(r1).compareTo(startTimes.get(r2));
 			}
 		});
 
 		int t0 = 0;
-		for (Runtime rt : runtimes) {
+		for (MicaRuntime rt : runtimes) {
 			int t1 = startTimes.get(rt);
 			try {
 				Thread.sleep(t1 - t0);
@@ -106,7 +106,7 @@ public class SimpleRuntimeInterface extends RuntimeContextManager implements
 	@Override
 	public void stop() {
 		running = false;
-		for (Runtime rt : runtimes) {
+		for (MicaRuntime rt : runtimes) {
 			rt.stop();
 		}
 	}
@@ -134,6 +134,11 @@ public class SimpleRuntimeInterface extends RuntimeContextManager implements
 	@Override
 	public RuntimeContextManager getRuntimeContextManager() {
 		return runtimeContextManager;
+	}
+
+	@Override
+	public List<MicaRuntime> getRuntimes() {
+		return runtimes;
 	}
 
 

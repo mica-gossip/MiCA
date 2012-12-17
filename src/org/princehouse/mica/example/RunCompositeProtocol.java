@@ -2,6 +2,7 @@ package org.princehouse.mica.example;
 
 import org.princehouse.mica.base.net.model.Address;
 import org.princehouse.mica.lib.abstractions.Overlay;
+import org.princehouse.mica.util.harness.ProtocolInstanceFactory;
 import org.princehouse.mica.util.harness.TestHarness;
 
 
@@ -12,7 +13,7 @@ public class RunCompositeProtocol {
 	 * @param args
 	 */
 	public static void main(String[] args) {
-		TestHarness.main(args, new TestHarness.ProtocolInstanceFactory() {
+		TestHarness.main(args, new ProtocolInstanceFactory() {
 			@Override
 			public FourLayerTreeStack createProtocolInstance(int nodeId,
 					Address address, Overlay overlay) {

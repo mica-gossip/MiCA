@@ -19,7 +19,7 @@ import org.princehouse.mica.util.Distribution;
  * @author lonnie
  * 
  */
-public class MergeShuffle extends MergeBase {
+public class MergeShuffle extends Merge {
 
 	/**
 	 * Constructor to make composite protocol p1 + p2
@@ -171,7 +171,7 @@ public class MergeShuffle extends MergeBase {
 	
 	public static MergeOperator operator = new MergeOperator() {
 		@Override
-		public MergeBase merge(BaseProtocol p1, BaseProtocol p2) {
+		public Merge merge(BaseProtocol p1, BaseProtocol p2) {
 			return new MergeShuffle(p1,p2);
 		}
 	};

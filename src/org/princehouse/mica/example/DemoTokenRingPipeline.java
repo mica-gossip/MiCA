@@ -12,8 +12,8 @@ import org.princehouse.mica.lib.abstractions.MergeCorrelated;
 import org.princehouse.mica.lib.abstractions.NetworkSizeCounter;
 import org.princehouse.mica.lib.abstractions.Overlay;
 import org.princehouse.mica.lib.abstractions.SinglyLinkedRingOverlay;
+import org.princehouse.mica.util.harness.ProtocolInstanceFactory;
 import org.princehouse.mica.util.harness.TestHarness;
-import org.princehouse.mica.util.harness.TestHarness.ProtocolInstanceFactory;
 
 /*
  * DemoTokenRingPipeline runs a demo of pipelining the token ring protocol along a static ring. 

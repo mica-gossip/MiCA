@@ -13,7 +13,7 @@ import org.princehouse.mica.base.exceptions.FatalErrorHalt;
 import org.princehouse.mica.base.model.CompilerException;
 import org.princehouse.mica.base.model.MiCA;
 import org.princehouse.mica.base.model.Protocol;
-import org.princehouse.mica.base.model.Runtime;
+import org.princehouse.mica.base.model.MicaRuntime;
 import org.princehouse.mica.base.model.RuntimeAgent;
 import org.princehouse.mica.base.model.RuntimeContextManager;
 import org.princehouse.mica.base.model.RuntimeState;
@@ -169,7 +169,7 @@ class SimpleRuntimeAgent extends RuntimeAgent {
 	 * @throws AbortRound 
 	 * @throws FatalErrorHalt 
 	 */
-	public void acceptConnection(Runtime runtime, Protocol receiver,
+	public void acceptConnection(MicaRuntime runtime, Protocol receiver,
 			Connection connection) throws IOException, FatalErrorHalt, AbortRound {
 
 		ObjectInputStream ois = null; 
@@ -226,12 +226,12 @@ class SimpleRuntimeAgent extends RuntimeAgent {
 	 * @param precv
 	 *            Receiving instance
 	 */
-	private void runGossipUpdate(Runtime runtime, Protocol pinit, Protocol precv) {
+	private void runGossipUpdate(MicaRuntime runtime, Protocol pinit, Protocol precv) {
 		// imperative update of p1 and p2 states
 		
 	}
 	
-	public void executeUpdate(Runtime rt, Protocol p1, Protocol p2) {
+	public void executeUpdate(MicaRuntime rt, Protocol p1, Protocol p2) {
 		runGossipUpdate(rt, p1, p2);
 	}
 

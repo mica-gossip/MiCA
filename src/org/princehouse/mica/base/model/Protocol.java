@@ -70,6 +70,18 @@ public interface Protocol {
 
 
 	/**
+	 * Called when we fail to establish a connection with a peer for unknown reasons 
+	 * @param selected
+	 */
+	public void unreachable(Address selected);
+	
+	/**
+	 * Called when we establish a connection, but the peer we reach replies that it is too busy
+	 * @param selected
+	 */
+	public void busy(Address selected);
+	
+	/**
 	 * Called by the runtime on the gossip initiator immediately after the update is executed 
 	 * This is called even if the update method terminated with an exception or connection failure. I
 	 * t can be thought of as a "finally" block for update

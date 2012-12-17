@@ -15,7 +15,7 @@ import org.princehouse.mica.util.Distribution;
  * @author lonnie
  *
  */
-public class MergeIndependent extends MergeBase {
+public class MergeIndependent extends Merge {
 
 
 	/**
@@ -159,7 +159,7 @@ public class MergeIndependent extends MergeBase {
 	
 	public static MergeOperator operator = new MergeOperator() {
 		@Override
-		public MergeBase merge(BaseProtocol p1, BaseProtocol p2) {
+		public Merge merge(BaseProtocol p1, BaseProtocol p2) {
 			return new MergeIndependent(p1,p2);
 		}
 	};

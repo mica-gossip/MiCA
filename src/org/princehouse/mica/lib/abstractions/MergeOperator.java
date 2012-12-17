@@ -7,7 +7,7 @@ import org.princehouse.mica.util.Functional;
 
 public abstract class MergeOperator {
 
-	public abstract MergeBase merge(BaseProtocol p1, BaseProtocol p2);
+	public abstract Merge merge(BaseProtocol p1, BaseProtocol p2);
 
 	public BaseProtocol merge(List<BaseProtocol> plist) {
 		// build a balanced tree of merges

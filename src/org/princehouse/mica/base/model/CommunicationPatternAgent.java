@@ -24,7 +24,7 @@ public interface CommunicationPatternAgent {
 	 * @param a
 	 * @return
 	 */
-	public abstract Serializable f1(Runtime initiatorRuntime)
+	public abstract Serializable f1(MicaRuntime initiatorRuntime)
 			throws MicaException;
 
 	/**
@@ -34,10 +34,10 @@ public interface CommunicationPatternAgent {
 	 * @param m1
 	 * @return
 	 */
-	public abstract Serializable f2(Runtime receiverRuntime, Serializable m1)
+	public abstract Serializable f2(MicaRuntime receiverRuntime, Serializable m1)
 			throws FatalErrorHalt, AbortRound;
 
-	public abstract void f3(Runtime initiatorRuntime, Serializable m2)
+	public abstract void f3(MicaRuntime initiatorRuntime, Serializable m2)
 			throws FatalErrorHalt, AbortRound;
 
 }

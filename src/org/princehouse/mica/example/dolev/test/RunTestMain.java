@@ -10,8 +10,8 @@ import org.princehouse.mica.lib.abstractions.Overlay;
 import org.princehouse.mica.lib.abstractions.RoundRobinOverlay;
 import org.princehouse.mica.util.Functional;
 import org.princehouse.mica.util.Randomness;
+import org.princehouse.mica.util.harness.ProtocolInstanceFactory;
 import org.princehouse.mica.util.harness.TestHarness;
-import org.princehouse.mica.util.harness.TestHarness.ProtocolInstanceFactory;
 
 /**
  * Test the pulse protocol

@@ -10,7 +10,7 @@ import org.princehouse.mica.base.model.CommunicationPatternAgent;
 import org.princehouse.mica.base.model.Compiler;
 import org.princehouse.mica.base.model.MiCA;
 import org.princehouse.mica.base.model.Protocol;
-import org.princehouse.mica.base.model.Runtime;
+import org.princehouse.mica.base.model.MicaRuntime;
 
 public class FakeCompiler extends Compiler {
 
@@ -33,19 +33,19 @@ public class FakeCompiler extends Compiler {
 	public static class FakeCommunicationPatternAgent implements
 			CommunicationPatternAgent {
 
-		private ThreadLocal<Runtime> initiator = new ThreadLocal<Runtime>();
+		private ThreadLocal<MicaRuntime> initiator = new ThreadLocal<MicaRuntime>();
 
 		@Override
-		public Serializable f1(Runtime initiatorRuntime) throws MicaException {
+		public Serializable f1(MicaRuntime initiatorRuntime) throws MicaException {
 			assert (initiator.get() == null);
 			initiator.set(initiatorRuntime);
 			return null;
 		}
 
 		@Override
-		public Serializable f2(Runtime receiverRuntime, Serializable m1)
+		public Serializable f2(MicaRuntime receiverRuntime, Serializable m1)
 				throws FatalErrorHalt, AbortRound {
-			Runtime i = initiator.get();
+			MicaRuntime i = initiator.get();
 			MiCA.getRuntimeInterface().getRuntimeContextManager()
 					.setNativeRuntime(receiverRuntime);
 			MiCA.getRuntimeInterface()
@@ -65,7 +65,7 @@ public class FakeCompiler extends Compiler {
 		}
 
 		@Override
-		public void f3(Runtime initiatorRuntime, Serializable m2)
+		public void f3(MicaRuntime initiatorRuntime, Serializable m2)
 				throws FatalErrorHalt, AbortRound {
 			// do nothing
 		}
