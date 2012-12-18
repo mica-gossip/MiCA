@@ -1,4 +1,4 @@
-package org.princehouse.mica.experiment.dilation;
+package org.princehouse.mica.experiment.ecoop2013.dilation;
 
 import org.princehouse.mica.base.LogFlag;
 import org.princehouse.mica.base.model.MiCA;
@@ -14,17 +14,17 @@ import org.princehouse.mica.util.harness.ProtocolInstanceFactory;
 import org.princehouse.mica.util.harness.TestHarness;
 
 /**
- * Test of dilation of findmin protocol on singly-linked ring
+ * Test of dilation of findmin protocol on a complete graph
  * 
  * @author lonnie
  * 
  */
-public class DilationExperimentE extends TestHarness implements
+public class DilationExperimentB extends TestHarness implements
 		ProtocolInstanceFactory {
 	
 	public static void main(String[] args) {
-		for(int dilation = 0 ; dilation < 6; dilation+=2) {
-			DilationExperimentE test = new DilationExperimentE(dilation);
+		for(int dilation = 0 ; dilation < 5; dilation++) {
+			DilationExperimentB test = new DilationExperimentB(dilation);
 			MicaOptions options = test.parseOptions(args);
 			if(dilation > 0) {
 				options.clearLogdir = false;
@@ -39,19 +39,21 @@ public class DilationExperimentE extends TestHarness implements
 		MicaOptions options = super.defaultOptions();
 		options.n = 1000;
 		options.implementation = "sim";
-		options.graphType = "singlering";
+		options.simUpdateDuration = 0;
+		options.graphType = "complete";
 		options.timeout = 10000;
 		// set very high to prevent high dilation from timing out and aborting
 		options.roundLength = 100000;
 		options.stagger = options.roundLength;
-		options.stopAfter = 300;
+		options.stopAfter = 15;
 		options.logsDisable = Functional.list(new String[]{
 				"state","rate","select","merge","error"
 		});
+		options.reflectionCache = true;
 		return options;
 	}
 
-	public DilationExperimentE(int dilation) {
+	public DilationExperimentB(int dilation) {
 		this.dilation = dilation;
 		direction = Protocol.Direction.PUSHPULL;
 	}
@@ -70,41 +72,5 @@ public class DilationExperimentE extends TestHarness implements
 		return p;
 	}
 
-	public static class FindMinChatty extends FindMin<Integer> {
-		private static final long serialVersionUID = 1L;
-		private String name = null; // used for logging
-		
-		public String getName() {
-			return name;
-		}
-		
-		public void setName(String n) {
-			this.name = n;
-		}
-		
-		public FindMinChatty(Integer initialValue, Overlay overlay,
-				Direction direction, String name) {
-			super(initialValue, overlay, direction);
-			setName(name);
-		}
-
-		@Override
-		public int compare(Integer o1, Integer o2) {
-			return o1.compareTo(o2);
-		}
-		
-		@Override
-		public void setValue(Integer value) {
-			super.setValue(value);
-			if(getName() != null) 
-				logJson(LogFlag.user, "notable-event-change", getName());
-		}
 	
-		@GossipUpdate
-		@Override
-		public void update(Protocol other) {
-			logJson(LogFlag.user, "notable-event-gossip", getName());
-			super.update(other);
-		}
-	}
 }

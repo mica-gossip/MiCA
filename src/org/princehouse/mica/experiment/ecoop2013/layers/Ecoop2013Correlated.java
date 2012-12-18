@@ -1,4 +1,4 @@
-package org.princehouse.mica.test;
+package org.princehouse.mica.experiment.ecoop2013.layers;
 
 import java.net.UnknownHostException;
 import java.util.List;
@@ -20,7 +20,7 @@ import org.princehouse.mica.example.TreeLabelNodes;
 import org.princehouse.mica.lib.MinAddressLeaderElection;
 import org.princehouse.mica.lib.SpanningTreeOverlay;
 import org.princehouse.mica.lib.abstractions.Merge;
-import org.princehouse.mica.lib.abstractions.MergeIndependent;
+import org.princehouse.mica.lib.abstractions.MergeCorrelated;
 import org.princehouse.mica.lib.abstractions.MergeOperator;
 import org.princehouse.mica.lib.abstractions.Overlay;
 import org.princehouse.mica.util.Functional;
@@ -35,7 +35,7 @@ import fj.F;
  * @author lonnie
  * 
  */
-public class Ecoop2013Independent extends TestHarness {
+public class Ecoop2013Correlated extends TestHarness {
 	public  int BEGIN_TRANSIENT_FAILURE;
 	public  int END_TRANSIENT_FAILURE;
 	public  int MEGA_DISRUPTION;
@@ -43,7 +43,7 @@ public class Ecoop2013Independent extends TestHarness {
 	
 	public MergeOperator merge = null;
 
-	public Ecoop2013Independent() {
+	public Ecoop2013Correlated() {
 		super();
 	}
 
@@ -62,7 +62,7 @@ public class Ecoop2013Independent extends TestHarness {
 	
 	public void configure() {
 		super.configure();
-		merge = MergeIndependent.operator;
+		merge = MergeCorrelated.operator;
 		addTimerRounds(BEGIN_TRANSIENT_FAILURE, new TimerTask() {
 			@Override
 			public void run() {
@@ -142,7 +142,7 @@ public class Ecoop2013Independent extends TestHarness {
 	 * @throws UnknownHostException
 	 */
 	public static void main(String[] args) {
-		TestHarness test = new Ecoop2013Independent();
+		TestHarness test = new Ecoop2013Correlated();
 		test.runMain(args);
 	}
 
