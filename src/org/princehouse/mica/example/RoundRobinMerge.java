@@ -9,12 +9,10 @@ import org.princehouse.mica.base.sugar.annotations.View;
 import org.princehouse.mica.util.Distribution;
 
 public class RoundRobinMerge extends BaseProtocol {
-
 	/**
 	 * 
 	 */
 	private static final long serialVersionUID = 1L;
-
 	
 	private Protocol p1 = null;
 	private Protocol p2 = null;
@@ -41,7 +39,6 @@ public class RoundRobinMerge extends BaseProtocol {
 		} else {
 			p2.preUpdate(a);
 		}
-		
 		gossipP1 = !gossipP1;
 	}
 	
@@ -68,8 +65,11 @@ public class RoundRobinMerge extends BaseProtocol {
 	
 	@GossipRate
 	public double rate() {
+		double r1 = p1.getRate();
+		double r2 = p2.getRate();
 		// WARNING: rates really need to be equal for this round robin implementation to make sense
-		return p1.getRate() + p2.getRate();
+		assert(r1 == r2);
+		return r1 + r2;
 	}
 	
 }

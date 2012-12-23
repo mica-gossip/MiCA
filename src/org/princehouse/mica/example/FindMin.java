@@ -3,9 +3,10 @@ package org.princehouse.mica.example;
 
 import java.util.Comparator;
 
-import org.princehouse.mica.base.ExternalSelectProtocol;
+import org.princehouse.mica.base.BaseProtocol;
 import org.princehouse.mica.base.model.Protocol;
 import org.princehouse.mica.base.sugar.annotations.GossipUpdate;
+import org.princehouse.mica.base.sugar.annotations.View;
 import org.princehouse.mica.lib.abstractions.Overlay;
 
 /**
@@ -14,7 +15,7 @@ import org.princehouse.mica.lib.abstractions.Overlay;
  * @author lonnie
  *
  */
-public abstract class FindMin<T> extends ExternalSelectProtocol implements Comparator<T> {
+public abstract class FindMin<T> extends BaseProtocol implements Comparator<T> {
 
 	private static final long serialVersionUID = 1L;
 
@@ -29,11 +30,14 @@ public abstract class FindMin<T> extends ExternalSelectProtocol implements Compa
 	}
 
 	public final Protocol.Direction direction;
+
+	@View
+	public Overlay overlay = null;
 	
 	public FindMin(T initialValue, Overlay overlay, Protocol.Direction direction) {
-		super(overlay);
 		this.direction = direction;
 		setValue(initialValue);
+		this.overlay = overlay;
 	}
 	
 	@GossipUpdate
