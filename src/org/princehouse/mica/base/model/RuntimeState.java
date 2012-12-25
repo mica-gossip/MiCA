@@ -2,6 +2,7 @@ package org.princehouse.mica.base.model;
 
 
 import java.io.Serializable;
+import java.util.Date;
 import java.util.Random;
 
 import org.princehouse.mica.base.net.model.Address;
@@ -35,6 +36,13 @@ public class RuntimeState implements Serializable {
 		return intervalMS;
 	}
 
+	/**
+	 * Returns the system clock (in rounds)
+	 * @return
+	 */
+	public long getSystemClockRounds() {
+		return new Date().getTime() / intervalMS;
+	}
 
 	public void setIntervalMS(int intervalMS) {
 		this.intervalMS = intervalMS;

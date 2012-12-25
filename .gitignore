@@ -2,6 +2,7 @@
 *.orig
 *.log
 *.csv
+*.pyc
 
 /bin
 /mica_log
