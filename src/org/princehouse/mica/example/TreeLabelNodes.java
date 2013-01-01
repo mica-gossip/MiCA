@@ -41,7 +41,7 @@ public class TreeLabelNodes extends BaseProtocol {
 
 	private Map<Address, Integer> getChildLabelMap() {
 		Map<Address, Integer> mp = Functional.map();
-		List<Address> children = new ArrayList<Address>(mp.keySet());
+		List<Address> children = Functional.list(count.getTree().getChildren());
 		Collections.sort(children);
 		Map<Address, Integer> subtreeSizes = count.getSummaries();
 		int i = label + 1;

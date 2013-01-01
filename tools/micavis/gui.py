@@ -21,6 +21,8 @@ import micavis.analysis as analysis
 
 from event_tree_model import *
 
+from trace import *
+
 class GraphWindow(object):
     # graph = igraph instance
     # node_name_map = map from address_str => vertex id
@@ -114,34 +116,36 @@ class GraphWindow(object):
         analysis.show()
         bar.append(analysis)
 
+        def ignore_widget(f):
+            return lambda widget, *args: f(*args)
+
         def append_analysis_menuitem(label, callback):
             self.create_menu_item(analysis_menu, label, callback)
 
         append_analysis_menuitem(
-            "State change graph", self.analysis_state_change_graph)
+            "State change graph", ignore_widget(self.micavis.plot_state_change_graph))
 
         append_analysis_menuitem(
-            "State change graph (leaves)", self.analysis_state_change_graph_leaves)
+            "State change graph (leaves)", ignore_widget(self.micavis.plot_state_change_graph_leaves))
 
         append_analysis_menuitem(
-            "Gossip rate (leaves)", self.analysis_gossip_rate)
+            "Gossip rate (leaves)", ignore_widget(self.micavis.plot_gossip_rate))
 
         for ne_suffix in self.micavis.notable_event_labels():
             append_analysis_menuitem(
                 "Notable events: %s" % ne_suffix, 
-                lambda widget,sfx=ne_suffix: self.analysis_notable_events(sfx,widget))
+                lambda widget,sfx=ne_suffix: self.micavis.plot_notable_events(sfx))
 
         for ne_suffix in self.micavis.notable_event_labels():
             append_analysis_menuitem(
                 "Notable event timing histogram: %s" % ne_suffix, 
-                lambda widget,sfx=ne_suffix: self.analysis_notable_events_histogram(sfx,widget))
+                lambda widget,sfx=ne_suffix: self.micavis.plot_notable_events_histogram(sfx))
 
         for ne_suffix in self.micavis.notable_event_labels():
             append_analysis_menuitem(
                 "Notable event timing histogram (normalized): %s" % ne_suffix, 
-                lambda widget,sfx=ne_suffix: self.analysis_notable_events_histogram(sfx,widget,normalize=True))
+                lambda widget,sfx=ne_suffix: self.micavis.plot_notable_events_histogram(sfx,normalize=True))
 
-            
         for label, callback in self.micavis.temp_analysis_menus:
             append_analysis_menuitem(label, callback)
 
@@ -175,186 +179,21 @@ class GraphWindow(object):
         graph.add_edges(edges)
         self.micavis.set_layout(graph, namemap)
 
-    def analysis_state_change_graph(self, widget):
-        import matplotlib.pyplot as plt
-        import numpy as np
-        import analysis
-        
-        x,y = analysis.compute_changes_per_round(self.micavis)
-        xlabel =  "Round"
-        ylabel = "State changes per node per round"
 
-
-        self.analysis_plot_2d(x,y, xlabel, ylabel)
-
-    def analysis_gossip_rate(self, widget):
-        sequences = analysis.gossip_events(self.micavis.events)
-        for i in xrange(len(sequences)):
-            # don't want to bucket by address
-            sequences[i] = [t for t,src,dst in sequences[i]]
-
-        legend = self.micavis.leaf_projections
-        
-        scalar = 1./len(self.micavis.unique_addresses)
-        xyvals = [analysis.frequency_count(self.micavis, sequence, subdivisions=5, bucket_scalar = scalar)  
-                  for sequence in sequences]
-
-        ylabel = "Fraction of nodes initiating gossip"
-        xlabel = "Time (rounds)"
-        ipython.analysis_plot_2d_multiple(xyvals, xlabel, ylabel, legend)
         
         
         
-    def analysis_notable_events(self, ne_suffix, widget):
-        import matplotlib.pyplot as plt
-        import numpy as np
-
-        ne_categories = {}  # key -> sequence
-
-        for key, timestamp, address in self.micavis.notable_events(ne_suffix):
-            if key not in ne_categories:
-                ne_categories[key] = []
-            ne_categories[key].append(timestamp)
-        
-        notable_sequences = sorted(ne_categories.items())
-
-        xlabel =  "Round"
-        ylabel = "Rate (%s events per round)" % ne_suffix
-        legend_labels = []
-        xyvals = []
-
-        for key, sequence in notable_sequences:
-            legend_labels += [key]
-            xy = analysis.frequency_count(self.micavis, sequence, subdivisions=5)
-            xyvals += [xy]
-
-        ipython.analysis_plot_2d_multiple(xyvals, xlabel, ylabel, legend_labels)
-
-    def analysis_notable_events_histogram(self, ne_suffix, widget, normalize=False):
-        import matplotlib.pyplot as plt
-        import numpy as np
-        import analysis
-
-        ne = {}  # key -> sequence
-
-        ms_per_round = self.micavis.runtime_info.round_ms
-        def round(ms):
-            return float(ms)/ms_per_round
-
-        for key, timestamp, address in self.micavis.notable_events(ne_suffix):
-            if key not in ne:
-                ne[key] = {}
-            if address not in ne[key]:
-                ne[key][address] = []
-            ne[key][address].append(round(timestamp))
-
-        collated = {}
-        # fashion histograms
-        for key, kdic in ne.items():
-            for addr, seq in kdic.items():
-                deltas = list(analysis.deltas(seq))
-                if key not in collated:
-                    collated[key] = []
-                collated[key] += deltas
-        
-        for key,seq in collated.items():
-            collated[key] = np.array(seq)
-
-        maxval = max([d.max() for d in collated.itervalues()]) 
-        minval = min([d.min() for d in collated.itervalues()]) 
-
-        rng = maxval - minval
-
-        nbins = 100
-
-        collated = sorted(collated.items())
-
-        xlabel =  "Interval length between %s events (rounds)" % ne_suffix
-        ylabel = "Fraction of intervals"
-
-        if normalize:
-            legend_labels = ["%s" % k for k,v in collated]            
-        else:
-            legend_labels = ["%s (%s total)" % (k,len(v)) for k,v in collated]
 
 
-        datasets = [v for k,v in collated]
+class MicaVisMicavis(MicaTrace):
 
-        # manually layout bins so they're the same for all...
-        binsize = (maxval-minval) / float(nbins)
-        nbins = [minval + i*binsize for i in xrange(nbins+1)]
-
-        ipython.analysis_plot_hist_multiple(datasets, 
-                                         xlabel=xlabel, ylabel=ylabel,
-                                         legends=legend_labels, nbins=nbins, normalize=normalize)
-
-
-
-    def analysis_state_change_graph_leaves(self, widget):
-        import matplotlib.pyplot as plt
-        import numpy as np
-        import analysis
-
-        saved_projection = self.micavis.get_projection()
-
-        n = len(self.micavis.unique_addresses)
-        xyvals = []
-        for leaf_projection in self.micavis.leaf_projections:
-            self.micavis.set_projection(leaf_projection)
-            xyvals += [analysis.compute_changes_per_round(self.micavis, subdivisions=1, bucket_scalar = 1./n)]
-
-        # restore previous projection
-        self.micavis.set_projection(saved_projection)
-        xlabel =  "MiCA Rounds (%s ms)" % self.micavis.runtime_info.round_ms
-        ylabel = "Fraction of nodes changed state"
-        legend_labels = self.micavis.leaf_projections
-        ipython.analysis_plot_2d_multiple(xyvals, xlabel, ylabel, legend_labels)
-
-
-    def analysis_plot_2d(self, x, y, xlabel="x", ylabel = "y"):
-        ipython.analysis_plot_2d_multiple([(x,y)], xlabel, ylabel, )
-
-
-
-class MicaVisMicavis:
-
-    standard_display_options = dict(
-        vertex_color = "#cccccc",
-        vertex_size = 10,
-        vertex_label_dist = 3
-        )
-
-
-    def __init__(self, events, options):
+    def __init__(self, logloc, options):
+        MicaTrace.__init__(self, logloc)
         self.current = 0
         self.options = options
         self.cursor_listeners = []   # functions that updated cursor ("current") values will be passed to, whenever it changes
         self.adj = None
-        self.events = events
         # initialize custom modules
-        self.temp_analysis_menus = [] # used for graph window initialization
-        custom.init(self)
-        # initialize event processing (one-time analysis on events)
-        self.process_events()
-
-        self.current_node_state = logs.CurrentValueTracker(
-            events, 
-            filter_func =  logs.state_event_filter,
-            value_func = lambda e,mv=self: (e['address'],mv.project(e['data'])) )
-
-        def view_value_func(data):
-            # if view is empty, logging will omit it 
-            return data.get('view',{})
-
-        self.current_node_view = logs.CurrentValueTracker(
-            events,
-            filter_func = logs.view_event_filter,
-#self.projected_filter(lambda ed: 'view' in ed),
-            value_func = lambda e: (e['address'],
-                                    view_value_func(self.project(e['data']))))
-#            value_func = lambda e: (e['address'],
-#                                    self.project(e['data'])['view']))
-
 
         self.create_event_window()
         self.create_graph_window()
@@ -364,7 +203,6 @@ class MicaVisMicavis:
         if self.adj is None:
             print "Warning: micavis.adj is None, graph window creation failed somehow"
 
-        self.runtime_info = logs.RuntimeInfoParser(events)
 
 
         self.add_cursor_listener(self.current_node_state.set_i)
@@ -375,7 +213,7 @@ class MicaVisMicavis:
 
         self.add_cursor_listener(self.current_node_view.set_i)
 
-        self.exchange_tracker = logs.GossipExchangeTracker2(events)
+        self.exchange_tracker = logs.GossipExchangeTracker2(self.events)
         self.add_cursor_listener(self.exchange_tracker.set_i)
 
         # NOTE: This cursor listener should be last executed!
@@ -416,7 +254,6 @@ class MicaVisMicavis:
                 key = ne_name
                 yield key,e['timestamp'],e['address']
         
-    
     def add_analysis(self, label, callback):
         # called by custom protocols before graph window is created
         # graph window will read this list and use it to build a menu
@@ -426,10 +263,6 @@ class MicaVisMicavis:
         def pf(e):
             return logs.state_event_filter(e) and data_filter(e['data'])
         return pf
-
-    # called on initialization to analyze events
-    def process_events(self):
-        self.init_projections()
     
     _inproj = False # set_active triggers set_projection to be called recursively
                     # _inproj is used to make that recursion fizzle out
@@ -449,67 +282,15 @@ class MicaVisMicavis:
         self.graph_window.refresh_graph()
         self._inproj = False
 
-    # note: doesn't update the display or menu; see set_projection_gui
     def set_projection(self, p):
-        self.projection = p
-        self.current_node_state.reset()
-        self.current_node_view.reset()
-    
-    def get_projection(self):
-        return self.projection
-        
+        MicaTrace.set_projection(self,p)
+        if hasattr(self,'graph_window'):
+            self.graph_window.refresh_graph()
+
     # return subdata) for current projection
     def project(self, data):
         subdata = custom.project(self, self.projection, data)
         return subdata
-
-    def init_projections(self):
-        # check for all the projections used
-        print "Identify projections..."
-        self.projection = 'root'
-        self.projections = set([
-            'root' 
-            ])
-        for e in self.events:
-            if not logs.state_event_filter(e):
-                continue
-            data = e.get('data',None)
-            if not data:
-                continue
-            if 'state' not in data:
-                continue
-            protocolName = data['stateType']
-            module = custom.load(self,protocolName)
-            if not module:
-                continue
-            for name, namefunc in module.projections(data):
-                self.projections.add(name)
-        self.projections.remove('root')
-        self.projections = sorted(list(self.projections))
-        self.projections = ['root'] + self.projections
-
-        def compute_leaves(projections):
-            temp = projections[:]
-            temp.remove('root')
-            temp.sort(key=lambda x: -len(x))
-            lv = []
-            def is_prefix(s):
-                for s2 in lv:
-                    if s2.startswith(s):
-                        return True
-                return False
-
-            for t in temp:
-#                print 'temp t', t
-                if not is_prefix(t):
-                    lv += [t]
- #                   print 'not prefix!'
- #               else:
- #                   print 'is prefix!'
-#            print 'leaves:', lv
-            return lv
-                
-        self.leaf_projections = compute_leaves(self.projections)
 
     def add_cursor_listener(self, f):
         # TODO currently no way to remove cursor listeners
@@ -587,14 +368,11 @@ class MicaVisMicavis:
     # where igraph is an igraph object with nodes and edges of the comm graph
     # and namemap maps address_string => graph vertex id 
     def create_default_graph(self):
-        ual = logs.query_unique_addresses(self.events)
-        self.unique_addresses = ual
         if self.options['novis']:
             return None, None
-
+        ual = self.unique_addresses
         g = igraph.Graph(directed=True)
 
-        print "Logs report %s unique addresses" % len(ual)
         g.add_vertices(len(ual))
         namemap = dict((n,i) for i,n in enumerate(ual))
 
@@ -825,12 +603,7 @@ def main(args=sys.argv):
         print >> sys.stderr, "Usage: %s <mica_log_dir_or_file>" % args
         sys.exit(1)
 
-    import logs
-    events = logs.read_mica_logs(logloc)
-    print "Read %s log events" % len(events)
-
-        
-    micavis = MicaVisMicavis(events, options = options)
+    micavis = MicaVisMicavis(logloc, options = options)
     gtk.main()
     
 
