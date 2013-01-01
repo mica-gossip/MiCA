@@ -2,6 +2,9 @@
 *.orig
 *.log
 *.csv
+*.pyc
+*.pickle
+sootOutput
 
 /bin
 /mica_log
