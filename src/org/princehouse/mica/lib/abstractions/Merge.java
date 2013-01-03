@@ -4,7 +4,6 @@ import java.util.List;
 
 import org.princehouse.mica.base.BaseProtocol;
 import org.princehouse.mica.base.LogFlag;
-import org.princehouse.mica.base.model.MiCA;
 import org.princehouse.mica.base.model.Protocol;
 import org.princehouse.mica.base.net.model.Address;
 import org.princehouse.mica.base.sugar.annotations.GossipUpdate;
@@ -225,7 +224,6 @@ public abstract class Merge extends BaseProtocol {
 	 * 
 	 * @return
 	 */
-	@SuppressWarnings("unchecked")
 	private List<P2<String, Boolean>> collectLeafProtocolStatus() {
 		List<P2<String, Boolean>> status = Functional.list();
 		MergeSelectionCase choice = getSubProtocolGossipCase();

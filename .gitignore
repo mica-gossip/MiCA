@@ -4,6 +4,7 @@
 *.csv
 *.pyc
 *.pickle
+.cache
 sootOutput
 
 /bin

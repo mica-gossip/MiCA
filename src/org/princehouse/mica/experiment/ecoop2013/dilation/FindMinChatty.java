@@ -2,7 +2,6 @@ package org.princehouse.mica.experiment.ecoop2013.dilation;
 
 import org.princehouse.mica.base.LogFlag;
 import org.princehouse.mica.base.model.Protocol;
-import org.princehouse.mica.base.model.Protocol.Direction;
 import org.princehouse.mica.base.sugar.annotations.GossipUpdate;
 import org.princehouse.mica.example.FindMin;
 import org.princehouse.mica.lib.abstractions.Overlay;

@@ -41,6 +41,7 @@ public class Functional {
 	 * @param lists
 	 * @return
 	 */
+	@SafeVarargs
 	public static <T> List<T> concatenate(List<T>... lists) {
 		List<T> temp = list();
 		for (List<T> l : lists) {

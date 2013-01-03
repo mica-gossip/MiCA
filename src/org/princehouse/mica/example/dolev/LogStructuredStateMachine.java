@@ -104,7 +104,6 @@ public abstract class LogStructuredStateMachine extends RoundManager {
 	@GossipUpdate
 	public void update(LogStructuredStateMachine that) {
 		super.update(that);
-		@SuppressWarnings("unchecked")
 		List<LSSMMessage> msgcopy = Functional.concatenate(that.log);
 		// update both nodes
 		that.assimilateInformation(getAddress(), log);

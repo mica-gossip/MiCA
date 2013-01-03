@@ -8,11 +8,12 @@ import java.util.Random;
 import java.util.TimerTask;
 
 import org.princehouse.mica.base.LogFlag;
+import org.princehouse.mica.base.c1.C1Compiler;
 import org.princehouse.mica.base.exceptions.InvalidOption;
 import org.princehouse.mica.base.model.MiCA;
 import org.princehouse.mica.base.model.MicaOptions;
-import org.princehouse.mica.base.model.Protocol;
 import org.princehouse.mica.base.model.MicaRuntime;
+import org.princehouse.mica.base.model.Protocol;
 import org.princehouse.mica.base.model.RuntimeInterface;
 import org.princehouse.mica.base.net.model.Address;
 import org.princehouse.mica.base.net.tcpip.TCPAddress;
@@ -255,9 +256,6 @@ public class TestHarness implements ProtocolInstanceFactory {
 			runtimeInterface = new SimpleRuntimeInterface();
 		} else if (runtimeName.equals("sim")) {
 			runtimeInterface = Simulator.v();
-		} else if (runtimeName.equals("a1")) {
-			throw new UnsupportedOperationException();
-			// runtimeInterface = new A1RuntimeInterface();
 		} else {
 			throw new InvalidOption("implementation", options.implementation);
 		}
@@ -268,6 +266,8 @@ public class TestHarness implements ProtocolInstanceFactory {
 			MiCA.setCompiler(new SimpleCompiler());
 		} else if (options.compiler.equals("fake")) {
 			MiCA.setCompiler(new FakeCompiler());
+		} else if (options.compiler.equals("c1")) {
+			MiCA.setCompiler(new C1Compiler());
 		} else {
 			throw new InvalidOption("compiler", options.compiler);
 		}

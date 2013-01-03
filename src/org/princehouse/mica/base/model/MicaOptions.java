@@ -53,7 +53,7 @@ public class MicaOptions {
 	@Parameter(names = "-implementation", description = "Runtime implementation name. Valid options: simple, sim.  Default: sim")
 	public String implementation = "sim";
 
-	@Parameter(names = "-compiler", description="Analysis implementation. Options: default, simple, fake")
+	@Parameter(names = "-compiler", description="Analysis implementation. Options: default, simple, fake, c1")
 	public String compiler = "default";
 	
 	@Parameter(names = "-timeout", description = "Lock waiting timeout (ms)")

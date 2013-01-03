@@ -29,6 +29,11 @@ public class SimAddress implements Address {
 	private static final long serialVersionUID = 1L;
 
 	@Override
+	public String toString() {
+		return id;
+	}
+	
+	@Override
 	public int compareTo(Address a) {
 		if(!(a instanceof SimAddress)) {
 			return 0;
