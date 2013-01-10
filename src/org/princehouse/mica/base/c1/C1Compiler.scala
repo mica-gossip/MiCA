@@ -7,6 +7,9 @@ import org.princehouse.mica.base.simple.SimpleCommunicationPatternAgent
 import soot.options.Options
 import soot.SootClass
 import soot.Scene
+import soot.Body
+import soot.Transform
+import soot.BodyTransformer
 import org.princehouse.mica.util.Functional
 import soot.PackManager
 import collection.JavaConversions._
@@ -49,7 +52,9 @@ class C1Compiler extends Compiler {
     //val sootArgs = Array[String]("-w", "-f", "jimple")
 
     // note: -dump-cfg ALL prints out a lotta spam...  view with dotview script
-    val sootArgs = Array[String]("-w", "-f", "jimple", "-dump-cfg","ALL")
+    initializeSoot
+
+    val sootArgs = Array[String]("-f", "jimple")
 
     SootUtils.options.parse(sootArgs)
 
@@ -70,14 +75,42 @@ class C1Compiler extends Compiler {
     } catch {
       case e: RuntimeException =>
         e.printStackTrace()
-      //println("Scene resolved classes at BODIES level:")
-      //for(k <- SootUtils.scene.getClasses(SootClass.BODIES)) {
-      //  println(k)
-      //}
     }
     println("Done")
     result
   }
+
+  private var sootInitialized = false
+
+  def initializeSoot: Unit = {
+    //    PackManager.v().getPack("jtp").add(new
+    //Transform("jpt.myanalysistagger",
+    //MyAnalysisTagger.instance()));
+    if (!sootInitialized) {
+      sootInitialized = true
+      SootUtils.packManager.getPack("jap").add(new C1MayUseFieldAnalysis)
+    }
+  }
+}
+
+class C1Transformer extends BodyTransformer {
+  // internalTransform in class BodyTransformer of type (x$1: soot.Body, x$2: java.lang.String, x$3: java.util.Map[_, _])Unit
+  def internalTransform(body: Body, phaseName: String, options: java.util.Map[_, _]): Unit = {
+    println("internal transform called: phaseName = " + phaseName + "  class = " +
+      body.getMethod.getDeclaringClass.getName + " method = " + body.getMethod.getName);
+    
+    println("   body is of type: " + body.getClass.getName)
+    for(loc <- body.getLocals) {
+      println("     local: " + loc.getName  + ": " + loc.getType);
+    }
+    
+    for(unit <- body.getUnits) {
+      println("     unit: " + unit)
+    }
+  }
+  
+}
+class C1MayUseFieldAnalysis extends Transform("jap.c1fieldanalysis", new C1Transformer) {
 
 }
 

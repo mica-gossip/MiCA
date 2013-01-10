@@ -5,7 +5,7 @@
 *.pyc
 *.pickle
 .cache
-sootOutput
-
+/sootOutput
+/sootOutput-cfg
 /bin
 /mica_log
