@@ -61,4 +61,5 @@ public abstract class FindMin<T> extends BaseProtocol implements Comparator<T> {
 		}
 	}
 	
+
 }

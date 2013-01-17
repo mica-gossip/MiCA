@@ -9,11 +9,15 @@ import soot.SootClass
 import soot.Scene
 import soot.Body
 import soot.Transform
+import soot.toolkits.graph.UnitGraph
+import soot.toolkits.graph.ExceptionalUnitGraph
 import soot.BodyTransformer
 import org.princehouse.mica.util.Functional
 import soot.PackManager
 import collection.JavaConversions._
 import org.princehouse.mica.util.scala.SootUtils
+import soot.toolkits.scalar.BackwardFlowAnalysis
+import soot.toolkits.graph.DirectedGraph
 
 class C1Compiler extends Compiler {
 
@@ -43,40 +47,40 @@ class C1Compiler extends Compiler {
     val result = new AnalysisResult
 
     // limit the singletons to this chunk of code, so they can possibly be replaced later with something more sustainable
-
     // -w is whole program mode for inter-procedural analysis
-
     // dump body causes errors -- does it terminate execution at the named phase??
     //val sootArgs = Array[String]("-v","-w","-f","jimple","-dump-body","jb")
-
     //val sootArgs = Array[String]("-w", "-f", "jimple")
-
     // note: -dump-cfg ALL prints out a lotta spam...  view with dotview script
     initializeSoot
-
+   //val sootArgs = Array[String]("-w", "-f", "jimple")
+    /*
     val sootArgs = Array[String]("-f", "jimple")
-
     SootUtils.options.parse(sootArgs)
-
     val sclass = SootUtils.forceResolveJavaClass(pclass, SootClass.BODIES)
-
     val Some(smethod) = SootUtils.getInheritedMethodByName(sclass, "update")
-
     val mclass = smethod.getDeclaringClass()
-
     println("Declaring class:" + mclass)
     mclass.setApplicationClass()
     SootUtils.scene.loadNecessaryClasses()
-
     SootUtils.scene.setEntryPoints(List(smethod))
-
     try {
       SootUtils.packManager.runPacks()
     } catch {
       case e: RuntimeException =>
         e.printStackTrace()
     }
-    println("Done")
+    println("Done") */
+    
+    var sclass = SootUtils.forceResolveJavaClass(pclass, SootClass.BODIES)
+    val Some(smethod) = SootUtils.getInheritedMethodByName(sclass, "update")
+    
+    sclass = SootUtils.scene.loadClassAndSupport(smethod.getDeclaringClass.getName)
+    sclass.setApplicationClass()
+    val body = smethod.retrieveActiveBody()
+    val graph : ExceptionalUnitGraph = new ExceptionalUnitGraph(body)
+    val flow = new TestDataFlow(graph)
+    
     result
   }
 
@@ -92,6 +96,42 @@ class C1Compiler extends Compiler {
     }
   }
 }
+
+/*
+class Skub[X,Y](zub:X) {
+  def bubu(arz : X) = {
+    
+  }
+}
+*/
+
+
+class TestDataFlow[A](graph:ExceptionalUnitGraph) extends BackwardFlowAnalysis[soot.Unit,A](graph) {
+  def flowThrough(in:A, d:soot.Unit, out:A) : Unit = {
+    // fixme
+	
+  }
+  
+  def merge(in1:A, in2:A, out:A) : Unit = {
+    
+  }
+  
+  def entryInitialFlow : A = {
+    // fixme
+    throw new RuntimeException
+  }
+  
+  def copy(source:A, dest:A) : Unit = {
+  }
+  
+  def newInitialFlow : A = {
+        throw new RuntimeException
+  }
+  
+  
+  
+}
+
 
 class C1Transformer extends BodyTransformer {
   // internalTransform in class BodyTransformer of type (x$1: soot.Body, x$2: java.lang.String, x$3: java.util.Map[_, _])Unit

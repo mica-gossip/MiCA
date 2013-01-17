@@ -24,12 +24,10 @@ class ScalaMin(initvalue: Int, overlay: Overlay) extends BaseProtocol {
   override def update(other: Protocol) =
     other match {
       case that: ScalaMin =>
-        that
         value = Math.min(value, that.value)
         that.value = value
       case _ => throw new RuntimeException
     }
-
 }
 
 /**
