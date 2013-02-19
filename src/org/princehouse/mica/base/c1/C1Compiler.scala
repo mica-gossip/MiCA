@@ -79,8 +79,8 @@ class C1Compiler extends Compiler {
     sclass.setApplicationClass()
     val body = smethod.retrieveActiveBody()
     val graph : ExceptionalUnitGraph = new ExceptionalUnitGraph(body)
-    val flow = new TestDataFlow(graph)
-    
+    val flow = new TestDataFlow(graph,"Hello")
+    flow.go
     result
   }
 
@@ -106,26 +106,31 @@ class Skub[X,Y](zub:X) {
 */
 
 
-class TestDataFlow[A](graph:ExceptionalUnitGraph) extends BackwardFlowAnalysis[soot.Unit,A](graph) {
+class TestDataFlow[A](graph:ExceptionalUnitGraph,initial:A) extends BackwardFlowAnalysis[soot.Unit,A](graph) {
+  
+  def go = {
+    doAnalysis
+  }
+  
   def flowThrough(in:A, d:soot.Unit, out:A) : Unit = {
     // fixme
-	
+    println("flowThrough. in:" + in + " d["+d.getClass.getSimpleName+"]:" + d + " out:" + out)
   }
   
   def merge(in1:A, in2:A, out:A) : Unit = {
-    
+    println("merge. in1:"+in1+" in2:"+in2+" out:"+out)
   }
   
   def entryInitialFlow : A = {
-    // fixme
-    throw new RuntimeException
+    initial
   }
   
   def copy(source:A, dest:A) : Unit = {
+    println("copy. source:"+source+" dest:"+dest)
   }
   
   def newInitialFlow : A = {
-        throw new RuntimeException
+    initial
   }
   
   
