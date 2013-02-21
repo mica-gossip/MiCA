@@ -15,8 +15,8 @@ import soot.BodyTransformer
 import org.princehouse.mica.util.Functional
 import soot.PackManager
 import collection.JavaConversions._
-import collection.mutable.Map
-import collection.mutable.Set
+import collection.immutable.Map
+import collection.immutable.Set
 import org.princehouse.mica.util.scala.SootUtils
 import soot.toolkits.scalar.ForwardFlowAnalysis
 import soot.toolkits.graph.DirectedGraph
@@ -55,7 +55,7 @@ class C1Compiler extends Compiler {
     //val sootArgs = Array[String]("-w", "-f", "jimple")
     // note: -dump-cfg ALL prints out a lotta spam...  view with dotview script
     initializeSoot
-   //val sootArgs = Array[String]("-w", "-f", "jimple")
+    //val sootArgs = Array[String]("-w", "-f", "jimple")
     /*
     val sootArgs = Array[String]("-f", "jimple")
     SootUtils.options.parse(sootArgs)
@@ -73,15 +73,22 @@ class C1Compiler extends Compiler {
         e.printStackTrace()
     }
     println("Done") */
-    
+
     var sclass = SootUtils.forceResolveJavaClass(pclass, SootClass.BODIES)
     val Some(smethod) = SootUtils.getInheritedMethodByName(sclass, "update")
-    
+
     sclass = SootUtils.scene.loadClassAndSupport(smethod.getDeclaringClass.getName)
     sclass.setApplicationClass()
     val body = smethod.retrieveActiveBody()
-    val graph : ExceptionalUnitGraph = new ExceptionalUnitGraph(body)
-    val flow = new TestDataFlow(graph)
+    val graph: ExceptionalUnitGraph = new ExceptionalUnitGraph(body)
+
+    val entryData = new UnitData()
+    entryData.addPath(new soot.jimple.ThisRef(smethod.getDeclaringClass().getType()),new Location("A"))
+    entryData.addPath(new soot.jimple.ParameterRef(smethod.getParameterType(0),0), new Location("B"))
+
+    // entryData.source = entryData.source()
+
+    val flow = new TestDataFlow(graph, entryData)
     flow.go
     result
   }
@@ -110,79 +117,98 @@ class Skub[X,Y](zub:X) {
 class Path {
 }
 
-class UnitData {
-	var source:Map[Object,Set[Path]] = Map()
-	
-	// transform x into an exact copy of this
-	def copy(x:UnitData) : Unit = {
-	  x.source.clear()
-	  for((k,v) <- source) {
-	    val ns:Set[Path] = Set()
-	    for(p <- v) {
-	      ns.add(p)
-	    } 
-	    x.source(k) = ns
-	  } 
-	}
+class Location(name:String) extends Path {
 }
 
-class TestDataFlow(graph:ExceptionalUnitGraph) extends ForwardFlowAnalysis[soot.Unit,UnitData](graph) {
-    
+class UnitData {
+  var source: Map[Object, Set[Path]] = Map()
+
+  // transform x into an exact copy of this
+  def copy(x: UnitData): Unit = {
+    x.source = source
+  }
+
+  def merge(x: UnitData): UnitData = {
+    val m = new UnitData
+    val allkeys = x.source.keySet.union(source.keySet)
+
+    def valueunion(k: Object): Set[Path] = {
+      val empty: Set[Path] = Set()
+      val s1: Set[Path] = source.getOrElse[Set[Path]](k, empty)
+      val s2: Set[Path] = x.source.getOrElse[Set[Path]](k, empty)
+      s1.union(s2)
+    }
+    m.source = m.source ++ allkeys.map((k) => (k, valueunion(k)))
+    m
+  }
   
+  def addPath(k:java.lang.Object,p:Path) = {
+    source += ((k, source.getOrElse(k,Set[Path]()) + p))
+  }
+}
+
+class TestDataFlow(graph: ExceptionalUnitGraph, entryData: UnitData) extends ForwardFlowAnalysis[soot.Unit, UnitData](graph) {
+
   def go = {
     doAnalysis
   }
-  
-  def flowThrough(in:UnitData, d:soot.Unit, out:UnitData) : Unit = {
-    // fixme
-    //println("\nflowThrough. in:" + in + " d["+d.getClass.getSimpleName+"]:" + d + " out:" + out)
-    println("\nflow unit["+d.getClass.getSimpleName+"]:" + d)
 
-    for(usebox <- d.getUseBoxes) {
-      println("   use: " + usebox)
-    }
-    for(defbox <- d.getDefBoxes) {
-      println("   def: " + defbox)
-    }
+  def flowThrough(in: UnitData, d: soot.Unit, out: UnitData): Unit = {
+    (d match {
+      case _ =>
+        println("\nUNKNOWN FLOW CASE unit[" + d.getClass.getSimpleName + "]:" + d)
+
+        for (usebox <- d.getUseBoxes) {
+          println("   use: " + usebox)
+          usebox match {
+            case x: soot.AbstractValueBox =>
+              val v = x.getValue
+              println("     getValue["+v.getClass.getSimpleName+"]: " + v)
+            case _ =>
+          }
+        }
+        for (defbox <- d.getDefBoxes) {
+          println("   def: " + defbox)
+        }
+        in
+    }).copy(out)
+
   }
-  
-  def merge(in1:UnitData, in2:UnitData, out:UnitData) : Unit = {
-    println("merge. in1:"+in1+" in2:"+in2+" out:"+out)
+
+  def merge(in1: UnitData, in2: UnitData, out: UnitData): Unit = {
+    in1.merge(in2).copy(out)
   }
-  
-  def entryInitialFlow : UnitData = {
-    new UnitData
+
+  def entryInitialFlow: UnitData = {
+    entryData
   }
-  
-  def copy(source:UnitData, dest:UnitData) : Unit = {
+
+  def copy(source: UnitData, dest: UnitData): Unit = {
     source.copy(dest)
   }
-  
-  def newInitialFlow : UnitData = {
+
+  def newInitialFlow: UnitData = {
     new UnitData
   }
-  
-  
-  
-}
 
+}
 
 class C1Transformer extends BodyTransformer {
   // internalTransform in class BodyTransformer of type (x$1: soot.Body, x$2: java.lang.String, x$3: java.util.Map[_, _])Unit
   def internalTransform(body: Body, phaseName: String, options: java.util.Map[_, _]): Unit = {
     println("internal transform called: phaseName = " + phaseName + "  class = " +
       body.getMethod.getDeclaringClass.getName + " method = " + body.getMethod.getName);
-    
+
     println("   body is of type: " + body.getClass.getName)
-    for(loc <- body.getLocals) {
-      println("     local: " + loc.getName  + ": " + loc.getType);
+    for (loc <- body.getLocals) {
+      println("     local: " + loc.getName + ": " + loc.getType);
     }
-    
-    for(unit <- body.getUnits) {
+
+    for (unit <- body.getUnits) {
       println("     unit: " + unit)
     }
   }
-  
+
 }
 class C1MayUseFieldAnalysis extends Transform("jap.c1fieldanalysis", new C1Transformer) {
 
@@ -192,25 +218,24 @@ class AnalysisResult {
 
 }
 
-
-class ObjectReference { 
+class ObjectReference {
 }
 
 // ------------ object modifications
 // assign an object's field
-class AssignField(ref:ObjectReference, fieldName:String) {
+class AssignField(ref: ObjectReference, fieldName: String) {
 }
 
 // non-specific modification
-class Modify(ref:ObjectReference) {
+class Modify(ref: ObjectReference) {
 }
 
 // ------------- read from objects
 // non-specific read
-class Read(ref:ObjectReference) {
+class Read(ref: ObjectReference) {
 }
 
 // read a field from object
-class ReadField(ref:ObjectReference, fieldName:String) {
+class ReadField(ref: ObjectReference, fieldName: String) {
 }
 
