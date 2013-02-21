@@ -15,8 +15,10 @@ import soot.BodyTransformer
 import org.princehouse.mica.util.Functional
 import soot.PackManager
 import collection.JavaConversions._
+import collection.mutable.Map
+import collection.mutable.Set
 import org.princehouse.mica.util.scala.SootUtils
-import soot.toolkits.scalar.BackwardFlowAnalysis
+import soot.toolkits.scalar.ForwardFlowAnalysis
 import soot.toolkits.graph.DirectedGraph
 
 class C1Compiler extends Compiler {
@@ -79,7 +81,7 @@ class C1Compiler extends Compiler {
     sclass.setApplicationClass()
     val body = smethod.retrieveActiveBody()
     val graph : ExceptionalUnitGraph = new ExceptionalUnitGraph(body)
-    val flow = new TestDataFlow(graph,"Hello")
+    val flow = new TestDataFlow(graph)
     flow.go
     result
   }
@@ -105,32 +107,59 @@ class Skub[X,Y](zub:X) {
 }
 */
 
+class Path {
+}
 
-class TestDataFlow[A](graph:ExceptionalUnitGraph,initial:A) extends BackwardFlowAnalysis[soot.Unit,A](graph) {
+class UnitData {
+	var source:Map[Object,Set[Path]] = Map()
+	
+	// transform x into an exact copy of this
+	def copy(x:UnitData) : Unit = {
+	  x.source.clear()
+	  for((k,v) <- source) {
+	    val ns:Set[Path] = Set()
+	    for(p <- v) {
+	      ns.add(p)
+	    } 
+	    x.source(k) = ns
+	  } 
+	}
+}
+
+class TestDataFlow(graph:ExceptionalUnitGraph) extends ForwardFlowAnalysis[soot.Unit,UnitData](graph) {
+    
   
   def go = {
     doAnalysis
   }
   
-  def flowThrough(in:A, d:soot.Unit, out:A) : Unit = {
+  def flowThrough(in:UnitData, d:soot.Unit, out:UnitData) : Unit = {
     // fixme
-    println("flowThrough. in:" + in + " d["+d.getClass.getSimpleName+"]:" + d + " out:" + out)
+    //println("\nflowThrough. in:" + in + " d["+d.getClass.getSimpleName+"]:" + d + " out:" + out)
+    println("\nflow unit["+d.getClass.getSimpleName+"]:" + d)
+
+    for(usebox <- d.getUseBoxes) {
+      println("   use: " + usebox)
+    }
+    for(defbox <- d.getDefBoxes) {
+      println("   def: " + defbox)
+    }
   }
   
-  def merge(in1:A, in2:A, out:A) : Unit = {
+  def merge(in1:UnitData, in2:UnitData, out:UnitData) : Unit = {
     println("merge. in1:"+in1+" in2:"+in2+" out:"+out)
   }
   
-  def entryInitialFlow : A = {
-    initial
+  def entryInitialFlow : UnitData = {
+    new UnitData
   }
   
-  def copy(source:A, dest:A) : Unit = {
-    println("copy. source:"+source+" dest:"+dest)
+  def copy(source:UnitData, dest:UnitData) : Unit = {
+    source.copy(dest)
   }
   
-  def newInitialFlow : A = {
-    initial
+  def newInitialFlow : UnitData = {
+    new UnitData
   }
   
   
@@ -162,3 +191,26 @@ class C1MayUseFieldAnalysis extends Transform("jap.c1fieldanalysis", new C1Trans
 class AnalysisResult {
 
 }
+
+
+class ObjectReference { 
+}
+
+// ------------ object modifications
+// assign an object's field
+class AssignField(ref:ObjectReference, fieldName:String) {
+}
+
+// non-specific modification
+class Modify(ref:ObjectReference) {
+}
+
+// ------------- read from objects
+// non-specific read
+class Read(ref:ObjectReference) {
+}
+
+// read a field from object
+class ReadField(ref:ObjectReference, fieldName:String) {
+}
+
