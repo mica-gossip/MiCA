@@ -83,8 +83,8 @@ class C1Compiler extends Compiler {
     val graph: ExceptionalUnitGraph = new ExceptionalUnitGraph(body)
 
     val entryData = new UnitData()
-    entryData.addPath(new soot.jimple.ThisRef(smethod.getDeclaringClass().getType()),new Location("A"))
-    entryData.addPath(new soot.jimple.ParameterRef(smethod.getParameterType(0),0), new Location("B"))
+    entryData.addPath(new soot.jimple.ThisRef(smethod.getDeclaringClass().getType()), new Location("A"))
+    entryData.addPath(new soot.jimple.ParameterRef(smethod.getParameterType(0), 0), new Location("B"))
 
     // entryData.source = entryData.source()
 
@@ -106,19 +106,16 @@ class C1Compiler extends Compiler {
   }
 }
 
-/*
-class Skub[X,Y](zub:X) {
-  def bubu(arz : X) = {
-    
-  }
-}
-*/
-
-class Path {
-}
-
-class Location(name:String) extends Path {
-}
+// YOU ARE HERE: current problem -- dataflow never stops, presumably because 
+// equals() not implemented correctly for UnitData.  Tests confirm this.
+//   It is probably at the soot level, relating to the hashcode of soot objects
+//   either as the map keys or set elements
+//
+// update: no, that's not it, setting equals() == true does not change the behavior
+// update: unitdata must implement equals AND hashcode
+class Path {}
+case class Location(name: String) extends Path {}
+case class Assignment(source: soot.Value) extends Path {}
 
 class UnitData {
   var source: Map[Object, Set[Path]] = Map()
@@ -141,9 +138,36 @@ class UnitData {
     m.source = m.source ++ allkeys.map((k) => (k, valueunion(k)))
     m
   }
+
+  def addPath(k: java.lang.Object, p: Path) = {
+    source += ((k, source.getOrElse(k, Set[Path]()) + p))
+  }
+
+  def setPath(k: java.lang.Object, p: Path) = {
+    // overwrite other paths.  used for assignment
+    source += ((k, Set[Path](p)))
+  }
+
+  override def equals(o: Any): Boolean = {
+    o match {
+      case x:UnitData => 
+       source.equals(x.source)
+      case _ => false
+    }
+  }
   
-  def addPath(k:java.lang.Object,p:Path) = {
-    source += ((k, source.getOrElse(k,Set[Path]()) + p))
+  def dump(name: String): Unit = {
+    println("------ " + name + "---------------------------")
+    for ((k, paths) <- source) {
+      println(k)
+      for (p <- paths) {
+        println("    " + p)
+      }
+    }
+  }
+  
+  override def hashCode(): Int = {
+    source.hashCode()
   }
 }
 
@@ -154,25 +178,39 @@ class TestDataFlow(graph: ExceptionalUnitGraph, entryData: UnitData) extends For
   }
 
   def flowThrough(in: UnitData, d: soot.Unit, out: UnitData): Unit = {
+    in.copy(out)
+    
+    // Unit cases
     (d match {
+      case x: soot.jimple.internal.JIdentityStmt =>
+       out.setPath(x.getLeftOpBox(), new Assignment(x.getRightOp()))
+      case x: soot.jimple.internal.JAssignStmt =>
+       out.setPath(x.getLeftOpBox(), new Assignment(x.getRightOp()))
       case _ =>
-        println("\nUNKNOWN FLOW CASE unit[" + d.getClass.getSimpleName + "]:" + d)
+        println("[UNKNOWN FLOW UNIT]")
+    })
+    
 
-        for (usebox <- d.getUseBoxes) {
-          println("   use: " + usebox)
-          usebox match {
-            case x: soot.AbstractValueBox =>
-              val v = x.getValue
-              println("     getValue["+v.getClass.getSimpleName+"]: " + v)
-            case _ =>
-          }
-        }
-        for (defbox <- d.getDefBoxes) {
-          println("   def: " + defbox)
-        }
-        in
-    }).copy(out)
+    dumpUnit(d)
 
+  }
+
+  def dumpUnit(d: soot.Unit) = {
+    println("unit[" + d.getClass.getSimpleName + "]:" + d)
+
+    for (usebox <- d.getUseBoxes) {
+      println("   use: " + usebox)
+      usebox match {
+        case x: soot.AbstractValueBox =>
+          val v = x.getValue
+          println("     getValue[" + v.getClass.getSimpleName + "]: " + v)
+        case _ =>
+      }
+    }
+    for (defbox <- d.getDefBoxes) {
+      println("   def: " + defbox)
+    }
+    println("\n")
   }
 
   def merge(in1: UnitData, in2: UnitData, out: UnitData): Unit = {

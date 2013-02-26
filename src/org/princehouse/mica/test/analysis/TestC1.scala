@@ -12,6 +12,8 @@ import org.princehouse.mica.base.c1.C1Compiler
 import org.princehouse.mica.example.FindMin
 import org.princehouse.mica.example.FindMinComparable
 
+import org.princehouse.mica.test.analysis.C1TestProtocol
+
 object TestC1 {
 
   def main(args: Array[String]): Unit = {
@@ -23,8 +25,9 @@ object TestC1 {
     dist.put(new SimAddress("3"), 1)
     dist.put(new SimAddress("4"), 1)
     dist.ipnormalize()
-    val p = new FindMinComparable[java.lang.Integer](3, new StaticOverlay(dist), Protocol.Direction.PUSHPULL)
-
+   // val p = new FindMinComparable[java.lang.Integer](3, new StaticOverlay(dist), Protocol.Direction.PUSHPULL)
+    val p = new C1TestProtocol()
+    
     val sim = new Simulator
     MiCA setRuntimeInterface sim
     
