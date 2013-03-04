@@ -20,6 +20,8 @@ import collection.immutable.Set
 import org.princehouse.mica.util.scala.SootUtils
 import soot.toolkits.scalar.ForwardFlowAnalysis
 import soot.toolkits.graph.DirectedGraph
+import org.princehouse.mica.util.scala.SootViz
+import soot.toolkits.graph.pdg._
 
 class C1Compiler extends Compiler {
 
@@ -80,16 +82,38 @@ class C1Compiler extends Compiler {
     sclass = SootUtils.scene.loadClassAndSupport(smethod.getDeclaringClass.getName)
     sclass.setApplicationClass()
     val body = smethod.retrieveActiveBody()
-    val graph: ExceptionalUnitGraph = new ExceptionalUnitGraph(body)
 
+    // Load the control flow graph
+    val cfg: ExceptionalUnitGraph = new ExceptionalUnitGraph(body)
+    SootViz.exportSootDirectedGraphToDot(cfg, "debug/cfg.dot")
+
+    // Get the PDG.  For info on this PDG implementation, see:
+    // http://www.sable.mcgill.ca/soot/doc/soot/toolkits/graph/pdg/HashMutablePDG.html
+    if (false) {
+      val pdg = new HashMutablePDG(cfg)
+      SootViz.exportSootDirectedGraphToDot(pdg, "debug/pdg.dot")
+    }
+    
+    //pdg.constructPDG()
+    // Initial flow info
     val entryData = new UnitData()
     entryData.addPath(new soot.jimple.ThisRef(smethod.getDeclaringClass().getType()), new Location("A"))
     entryData.addPath(new soot.jimple.ParameterRef(smethod.getParameterType(0), 0), new Location("B"))
 
-    // entryData.source = entryData.source()
-
-    val flow = new TestDataFlow(graph, entryData)
+    val flow = new TestDataFlow(cfg, entryData)
     flow.go
+
+    println("\n\n==================== Results")
+    for (node <- cfg) {
+      println("node: " + node)
+      println("------------------------------------------")
+      println("flow before: " + flow.getFlowBefore(node))
+      println("------------------------------------------")
+      println("flow after: " + flow.getFlowAfter(node))
+      println("------------------------------------------\n\n")
+
+    }
+
     result
   }
 
@@ -101,18 +125,11 @@ class C1Compiler extends Compiler {
     //MyAnalysisTagger.instance()));
     if (!sootInitialized) {
       sootInitialized = true
-      SootUtils.packManager.getPack("jap").add(new C1MayUseFieldAnalysis)
+      // SootUtils.packManager.getPack("jap").add(new C1MayUseFieldAnalysis)
     }
   }
 }
 
-// YOU ARE HERE: current problem -- dataflow never stops, presumably because 
-// equals() not implemented correctly for UnitData.  Tests confirm this.
-//   It is probably at the soot level, relating to the hashcode of soot objects
-//   either as the map keys or set elements
-//
-// update: no, that's not it, setting equals() == true does not change the behavior
-// update: unitdata must implement equals AND hashcode
 class Path {}
 case class Location(name: String) extends Path {}
 case class Assignment(source: soot.Value) extends Path {}
@@ -150,12 +167,12 @@ class UnitData {
 
   override def equals(o: Any): Boolean = {
     o match {
-      case x:UnitData => 
-       source.equals(x.source)
+      case x: UnitData =>
+        source.equals(x.source)
       case _ => false
     }
   }
-  
+
   def dump(name: String): Unit = {
     println("------ " + name + "---------------------------")
     for ((k, paths) <- source) {
@@ -165,7 +182,7 @@ class UnitData {
       }
     }
   }
-  
+
   override def hashCode(): Int = {
     source.hashCode()
   }
@@ -179,17 +196,29 @@ class TestDataFlow(graph: ExceptionalUnitGraph, entryData: UnitData) extends For
 
   def flowThrough(in: UnitData, d: soot.Unit, out: UnitData): Unit = {
     in.copy(out)
-    
+
     // Unit cases
     (d match {
       case x: soot.jimple.internal.JIdentityStmt =>
-       out.setPath(x.getLeftOpBox(), new Assignment(x.getRightOp()))
+        out.setPath(x.getLeftOpBox(), new Assignment(x.getRightOp()))
       case x: soot.jimple.internal.JAssignStmt =>
-       out.setPath(x.getLeftOpBox(), new Assignment(x.getRightOp()))
+        out.setPath(x.getLeftOpBox(), new Assignment(x.getRightOp()))
+      case x: soot.jimple.internal.JIfStmt =>
+      // fixme --- use and def need locations
+      // conditional control flow statement:
+      //   should not modify unitdata unless we want to be path sensitive,
+      //   but still needs to have a location assigned to it
+      case x: soot.jimple.internal.JGotoStmt =>
+      // non-conditional
+      // control flow statement:
+      //   should not modify unitdata unless we want to be path sensitive
+      case x: soot.jimple.internal.JInvokeStmt =>
+      // fixme --- invocation may modify use boxes
+      case x: soot.jimple.internal.JReturnVoidStmt =>
+      // exit node
       case _ =>
         println("[UNKNOWN FLOW UNIT]")
     })
-    
 
     dumpUnit(d)
 

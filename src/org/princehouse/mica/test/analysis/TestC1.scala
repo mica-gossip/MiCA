@@ -1,18 +1,12 @@
 package org.princehouse.mica.test.analysis
-import org.princehouse.mica.util.Distribution
+import org.princehouse.mica.base.c1.C1Compiler
+import org.princehouse.mica.base.model.MiCA
+import org.princehouse.mica.base.model.MicaRuntime
 import org.princehouse.mica.base.model.Protocol
-import org.princehouse.mica.lib.abstractions.StaticOverlay
-import org.princehouse.mica.lib.abstractions.Overlay
 import org.princehouse.mica.base.net.model.Address
 import org.princehouse.mica.base.sim.SimAddress
 import org.princehouse.mica.base.sim.Simulator
-import org.princehouse.mica.base.model.MiCA
-import org.princehouse.mica.base.model.MicaRuntime
-import org.princehouse.mica.base.c1.C1Compiler
-import org.princehouse.mica.example.FindMin
-import org.princehouse.mica.example.FindMinComparable
-
-import org.princehouse.mica.test.analysis.C1TestProtocol
+import org.princehouse.mica.util.Distribution
 
 object TestC1 {
 
