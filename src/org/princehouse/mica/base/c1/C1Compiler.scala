@@ -1,9 +1,11 @@
 package org.princehouse.mica.base.c1
 
-import org.princehouse.mica.base.model.Compiler
-import org.princehouse.mica.base.model.CommunicationPatternAgent
-import org.princehouse.mica.base.model.Protocol
-import org.princehouse.mica.base.simple.SimpleCommunicationPatternAgent
+import _root_.org.princehouse.mica.base.model.Compiler
+import _root_.org.princehouse.mica.base.model.CommunicationPatternAgent
+import _root_.org.princehouse.mica.base.model.Protocol
+import _root_.org.princehouse.mica.base.simple.SimpleCommunicationPatternAgent
+import _root_.org.princehouse.mica.util.scala.SootUtils
+import _root_.org.princehouse.mica.util.scala.SootViz
 import soot.options.Options
 import soot.SootClass
 import soot.Scene
@@ -12,15 +14,12 @@ import soot.Transform
 import soot.toolkits.graph.UnitGraph
 import soot.toolkits.graph.ExceptionalUnitGraph
 import soot.BodyTransformer
-import org.princehouse.mica.util.Functional
 import soot.PackManager
 import collection.JavaConversions._
 import collection.immutable.Map
 import collection.immutable.Set
-import org.princehouse.mica.util.scala.SootUtils
 import soot.toolkits.scalar.ForwardFlowAnalysis
 import soot.toolkits.graph.DirectedGraph
-import org.princehouse.mica.util.scala.SootViz
 import soot.toolkits.graph.pdg._
 
 class C1Compiler extends Compiler {
@@ -96,20 +95,22 @@ class C1Compiler extends Compiler {
     
     //pdg.constructPDG()
     // Initial flow info
-    val entryData = new UnitData()
-    entryData.addPath(new soot.jimple.ThisRef(smethod.getDeclaringClass().getType()), new Location("A"))
-    entryData.addPath(new soot.jimple.ParameterRef(smethod.getParameterType(0), 0), new Location("B"))
+    //val entryData = new UnitData()
+    //entryData.addPath(new soot.jimple.ThisRef(smethod.getDeclaringClass().getType()), new Location("A"))
+    //entryData.addPath(new soot.jimple.ParameterRef(smethod.getParameterType(0), 0), new Location("B"))
 
-    val flow = new TestDataFlow(cfg, entryData)
-    flow.go
-
+    //val flow = new TestDataFlow(cfg, entryData)
+    //flow.go
+    val pointsto = new PointsToAnalysis(cfg)
+    pointsto.go
+    
     println("\n\n==================== Results")
     for (node <- cfg) {
       println("node: " + node)
       println("------------------------------------------")
-      println("flow before: " + flow.getFlowBefore(node))
+      println("points-to before: " + pointsto.getFlowBefore(node))
       println("------------------------------------------")
-      println("flow after: " + flow.getFlowAfter(node))
+      println("points-to after: " + pointsto.getFlowAfter(node))
       println("------------------------------------------\n\n")
 
     }
