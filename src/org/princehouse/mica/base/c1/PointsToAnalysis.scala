@@ -111,7 +111,8 @@ class PointsToAnalysis(graph: ExceptionalUnitGraph) extends ForwardFlowAnalysis[
   def getValueVariable(v: Value): java.lang.Object = {
     (v match {
       case x: JimpleLocal => x
-      case _ => throw new RuntimeException("todo:" + v.getClass().getName())
+      case x: JInstanceFieldRef => x // fixme is this right?  how to handle field assignments? should r0.x be treated as a separate variable from r0??
+      case _ => throw new RuntimeException("todo:" + v.getClass().getName() + " == " + v)
     })
   }
 
