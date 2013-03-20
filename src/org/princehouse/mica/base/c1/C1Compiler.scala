@@ -92,7 +92,7 @@ class C1Compiler extends Compiler {
       val pdg = new HashMutablePDG(cfg)
       SootViz.exportSootDirectedGraphToDot(pdg, "debug/pdg.dot")
     }
-    
+
     //pdg.constructPDG()
     // Initial flow info
     //val entryData = new UnitData()
@@ -101,20 +101,21 @@ class C1Compiler extends Compiler {
 
     //val flow = new TestDataFlow(cfg, entryData)
     //flow.go
-    val pointsto = new PointsToAnalysis(cfg)
+    val pointsto = new BogoPointsToAnalysis(cfg)
     pointsto.go
-    
+
     println("\n\n==================== Results")
     for (node <- cfg) {
       println("node: " + node)
       println("------------------------------------------")
-      println("points-to before: " + pointsto.getFlowBefore(node))
+      println("points-to before:")
+      println(SootUtils.indentString(pointsto.getFlowBefore(node).toString))
       println("------------------------------------------")
-      println("points-to after: " + pointsto.getFlowAfter(node))
+      println("points-to after:")
+      println(SootUtils.indentString(pointsto.getFlowAfter(node).toString))
       println("------------------------------------------\n\n")
 
     }
-
     result
   }
 

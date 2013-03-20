@@ -4,6 +4,7 @@ import soot.SootClass
 import soot.Scene
 import soot.PackManager
 import soot.options.Options
+import soot.Value
 import collection.JavaConversions._
 import soot.jimple.internal._
 import soot.jimple._
@@ -73,8 +74,8 @@ object SootUtils {
     }
     (d match {
       case x: JAssignStmt =>
-        println("leftBox = " + dumpValueBox(x.leftBox))
-        println("rightBox = " + dumpValueBox(x.rightBox))
+        println(" leftBox = " + dumpValueBox(x.leftBox))
+        println(" rightBox = " + dumpValueBox(x.rightBox))
       case x: JBreakpointStmt =>
         throw new RuntimeException("unhandled unit type")
       case x: JEnterMonitorStmt =>
@@ -82,28 +83,34 @@ object SootUtils {
       case x: JExitMonitorStmt =>
         throw new RuntimeException("unhandled unit type")
       case x: JGotoStmt =>
-        throw new RuntimeException("unhandled unit type")
+      // no extra info to print
       case x: JIdentityStmt =>
-        println("  leftBox = " + dumpValueBox(x.leftBox))
-        println("  rightBox = " + dumpValueBox(x.rightBox))
+        println(" leftBox = " + dumpValueBox(x.leftBox))
+        println(" rightBox = " + dumpValueBox(x.rightBox))
       case x: JIfStmt =>
-        throw new RuntimeException("unhandled unit type")
+        println(" condition = " + dumpValue(x.getCondition()))
       case x: JInvokeStmt =>
-        throw new RuntimeException("unhandled unit type")
+        println(" invocation = " + dumpValue(x.getInvokeExpr()))
       case x: JLookupSwitchStmt =>
-        throw new RuntimeException("unhandled unit type")
+        println(" key = " + dumpValue(x.getKey()))
+        for (value <- x.getLookupValues) {
+          value match {
+            case valuev:Value => println(" lookupValue = " + dumpValue(valuev))
+            case _ => throw new RuntimeException("casting snafu")
+          }
+        }
       case x: JNopStmt =>
-        throw new RuntimeException("unhandled unit type")
+      // no extra info to print
       case x: JRetStmt =>
-        throw new RuntimeException("unhandled unit type")
+        println(" stmtAddress = " + dumpValue(x.getStmtAddress()))
       case x: JReturnStmt =>
-        throw new RuntimeException("unhandled unit type")
+        println(" op = " + x.getOp())
       case x: JReturnVoidStmt =>
-        throw new RuntimeException("unhandled unit type")
+        // no extra info
       case x: JTableSwitchStmt =>
-        throw new RuntimeException("unhandled unit type")
+        println(" key = " + dumpValue(x.getKey()))
       case x: JThrowStmt =>
-        throw new RuntimeException("unhandled unit type")
+        println(" op = " + x.getOp())
       case _ =>
         throw new RuntimeException("unknown unit class")
     })
@@ -111,8 +118,8 @@ object SootUtils {
   }
 
   def dumpValueBox(b: soot.ValueBox): String = {
-    val v: soot.Value = b.getValue()
-    return "[" + b.getClass().getSimpleName() + "] getValue() = " + dumpValue(v) +
+    val v: Value = b.getValue()
+    return "[" + b.getClass().getSimpleName() + "] " + dumpValue(v) +
       (b match {
         case x: JimpleLocalBox =>
           ""
@@ -131,11 +138,45 @@ object SootUtils {
       })
   }
 
-  def dumpValue(v: soot.Value): String = {
-    return "<" + v.getClass().getSimpleName() + " = " + v.toString() + ">" +
-      (v match {
-        case _ =>
-          ""
+  def dumpValue(v: Value): String = {
+    var s = "<" + v.getClass().getSimpleName() + " = " + v.toString() + ">"
+    for (sv <- subValues(v)) {
+      s = s + "\n" + indentString(dumpValue(sv))
+    }
+    s
+  }
+
+  def indentString(s: String): String = {
+    (s.split("\n").map("  " + _)).reduceLeft(_ + "\n" + _)
+  }
+
+  def subValuesLeaves(v: Value) : List[Value] = {
+    val lvs = subValues(v)
+    lvs match {
+      case Nil => List(v)
+      case _ => lvs.map(subValuesLeaves(_)).reduce(_:::_)
+    }
+  }
+  
+  def subValues(v: Value): List[Value] = {
+    var r: List[Value] = Nil
+    for (o <- v.getUseBoxes()) {
+      val temp = (o match {
+        case x: soot.ValueBox => x.getValue
+        case _ => throw new RuntimeException("uh oh")
       })
+      r = temp :: r
+    }
+    r
+    /*v match {
+      case x: AbstractBinopExpr => List(x.getOp1, x.getOp2)
+      case x: Constant => Nil
+      case x: ThisRef => Nil
+      case x: StaticFieldRef => Nil
+      case x: ParameterRef => Nil
+      case x: JArrayRef => List(x.getBase(), x.getIndex())
+      case _ =>
+        throw new RuntimeException("unrecognized value class for subValues(): " + v.getClass().getName())
+    }*/
   }
 }
