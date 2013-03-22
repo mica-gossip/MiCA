@@ -1,15 +1,32 @@
 package org.princehouse.mica.util.scala
-import soot.SootMethod
-import soot.SootClass
-import soot.Scene
-import soot.PackManager
-import soot.options.Options
-import soot.Value
+
 import collection.JavaConversions._
 import soot.jimple.internal._
 import soot.jimple._
+import soot._
+import soot.util._
+import java.io._
+import soot.options._
 
 object SootUtils {
+
+  // compile a jimple class into a .class file
+  def writeSootClass(sClass: SootClass): scala.Unit = {
+    val outfile = SourceLocator.v.getFileNameFor(sClass, soot.options.Options.output_format_class)
+    
+    // ensure existence of parent directory
+    val parentDir = new File(outfile).getParentFile()
+    parentDir.mkdirs()
+    
+    println("Writing to " + outfile)
+
+    val streamOut = new JasminOutputStream(new FileOutputStream(outfile))
+    val writerOut = new PrintWriter(new OutputStreamWriter(streamOut))
+    val jasminClass = new JasminClass(sClass)
+    jasminClass.print(writerOut)
+    writerOut.flush()
+    streamOut.close()
+  }
 
   // wrap the soot singletons 
   def scene = Scene.v
@@ -95,7 +112,7 @@ object SootUtils {
         println(" key = " + dumpValue(x.getKey()))
         for (value <- x.getLookupValues) {
           value match {
-            case valuev:Value => println(" lookupValue = " + dumpValue(valuev))
+            case valuev: Value => println(" lookupValue = " + dumpValue(valuev))
             case _ => throw new RuntimeException("casting snafu")
           }
         }
@@ -106,7 +123,7 @@ object SootUtils {
       case x: JReturnStmt =>
         println(" op = " + x.getOp())
       case x: JReturnVoidStmt =>
-        // no extra info
+      // no extra info
       case x: JTableSwitchStmt =>
         println(" key = " + dumpValue(x.getKey()))
       case x: JThrowStmt =>
@@ -150,14 +167,14 @@ object SootUtils {
     (s.split("\n").map("  " + _)).reduceLeft(_ + "\n" + _)
   }
 
-  def subValuesLeaves(v: Value) : List[Value] = {
+  def subValuesLeaves(v: Value): List[Value] = {
     val lvs = subValues(v)
     lvs match {
       case Nil => List(v)
-      case _ => lvs.map(subValuesLeaves(_)).reduce(_:::_)
+      case _ => lvs.map(subValuesLeaves(_)).reduce(_ ::: _)
     }
   }
-  
+
   def subValues(v: Value): List[Value] = {
     var r: List[Value] = Nil
     for (o <- v.getUseBoxes()) {
