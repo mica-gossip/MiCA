@@ -5,90 +5,108 @@ import java.util.Arrays
 import collection.JavaConversions._
 import soot.jimple._
 import soot.util._
+import soot.jimple.spark.ondemand.pautil.SootUtil
+import org.princehouse.mica.util.scala.SootUtils
 
 class FieldProxy(originalField: SootField, proxyField: SootField, dirtyBitField: SootField, targetClass: SootClass) {
   val ftype = originalField.getType()
   var getter: SootMethod = null
   var setter: SootMethod = null
+  val j = Jimple.v
 
   def createGetter(proxyClass: SootClass) = {
-    val j = Jimple.v()
     val method = new SootMethod("get%s".format(proxyField.getName()), List(), ftype, Modifier.PUBLIC)
     proxyClass.addMethod(method)
     val body = j.newBody(method)
     method.setActiveBody(body)
-
     val proxyBase = proxyClass.getSuperclass
-    
+
     val targetField = proxyBase.getField("java.lang.Object target")
     val objectType = Scene.v().loadClassAndSupport("java.lang.Object").getType()
     val targetType = targetClass.getType()
 
     val units = body.getUnits()
 
-    val loc = j.newLocal("this", proxyClass.getType())
-    body.getLocals().add(loc)
-    units.add(j.newIdentityStmt(loc, j.newThisRef(proxyClass.getType())))
+    val proxy = SootUtils.addNewUniqueLocal("this", method, proxyClass.getType())
+    units.add(j.newIdentityStmt(proxy, j.newThisRef(proxyClass.getType())))
 
-    val tmp = j.newLocal("tmp", ftype)
-    body.getLocals().add(tmp)
+    val tmp = SootUtils.addNewUniqueLocal("tmp", method, ftype)
 
-    val c = j.newLocal("c", BooleanType.v)
-    body.getLocals().add(c)
-
-    val targetUncast = j.newLocal("targetUncast", objectType) // before casting
-    body.getLocals().add(targetUncast)
-
-    val target = j.newLocal("target", targetType)
-    body.getLocals().add(target)
-
-    val isProxyField = proxyBase.getField("boolean isProxy")
-    units.add(j.newAssignStmt(c, j.newInstanceFieldRef(loc, isProxyField.makeRef)))
+    val targetUncast = SootUtils.addNewUniqueLocal("targetUncast", method, objectType)
+    val target = SootUtils.addNewUniqueLocal("target", method, targetType)
 
     val isProxyBranch = j.newAssignStmt(tmp,
-      j.newInstanceFieldRef(loc, proxyField.makeRef()))
+      j.newInstanceFieldRef(proxy, proxyField.makeRef()))
 
-    val finish = j.newReturnStmt(tmp)
+    // if isProxy ... else ..
+    val c = SootUtils.addNewUniqueLocal("c", method, BooleanType.v)
+    val isProxyField = proxyBase.getField("boolean isProxy")
+    units.add(j.newAssignStmt(c, j.newInstanceFieldRef(proxy, isProxyField.makeRef)))
+    units.addAll(SootUtils.ifThenElse(c,
+      // !isProxy clause
+      List[Unit](
+        j.newAssignStmt(targetUncast, j.newInstanceFieldRef(proxy, targetField.makeRef())),
+        j.newAssignStmt(target, j.newCastExpr(targetUncast, targetType)),
+        j.newAssignStmt(tmp, j.newInstanceFieldRef(target, originalField.makeRef()))),
+      // isProxy clause
+      j.newAssignStmt(tmp,
+        j.newInstanceFieldRef(proxy, proxyField.makeRef())) :: setDirtyBitAst(proxy, SootUtils.TRUE)))
 
-    val cEqualsTrue = j.newEqExpr(c, IntConstant.v(1))
-    
-    units.add(j.newIfStmt(cEqualsTrue, isProxyBranch))
+    units.add(j.newReturnStmt(tmp))
 
-    {
-      // conditional branch for !isProxy
-      units.add(j.newAssignStmt(target, j.newCastExpr(
-          j.newInstanceFieldRef(loc,targetField.makeRef()),
-          targetType)))
-      
-      units.add(j.newAssignStmt(tmp,
-        j.newInstanceFieldRef(target, originalField.makeRef())))
-      units.add(j.newGotoStmt(finish))
-    }
-    {
-      // conditional branch for isProxy
-      units.add(isProxyBranch)
-      units.add(j.newAssignStmt(tmp,
-        j.newInstanceFieldRef(loc, proxyField.makeRef())))
-    }
-
-    units.add(finish)
     getter = method
+
+  }
+
+  // emit jimple code for copying the target field to the proxied field
+  def box(method: SootMethod, proxy: Local, target: Local): List[Unit] = {
+    val tmp = SootUtils.addNewUniqueLocal("l",method,ftype)
+    
+    List(j.newAssignStmt(tmp, j.newInstanceFieldRef(target, originalField.makeRef())),
+        j.newAssignStmt(j.newInstanceFieldRef(proxy, proxyField.makeRef()), tmp)) ::: setDirtyBitAst(proxy, SootUtils.FALSE)
+  }
+
+  def setDirtyBitAst(proxy: Local, value: Value): List[Unit] = {
+    val assignment = j.newAssignStmt(j.newInstanceFieldRef(proxy, dirtyBitField.makeRef()), value)
+    List[Unit](assignment)
   }
 
   def createSetter(proxyClass: SootClass) = {
-    val j = Jimple.v()
     val method = new SootMethod("set%s".format(proxyField.getName()), List(ftype), VoidType.v(), Modifier.PUBLIC)
     proxyClass.addMethod(method)
     val body = j.newBody(method)
     method.setActiveBody(body)
     val units = body.getUnits()
-    val loc = j.newLocal("this", proxyClass.getType())
-    body.getLocals().add(loc)
-    units.add(j.newIdentityStmt(loc, j.newThisRef(proxyClass.getType())))
-    val tmp = j.newLocal("tmp", ftype)
-    body.getLocals().add(tmp)
+    val proxyBase = proxyClass.getSuperclass
+
+    // this = @this
+    val proxy = SootUtils.addNewUniqueLocal("this", method, proxyClass.getType())
+    units.add(j.newIdentityStmt(proxy, j.newThisRef(proxyClass.getType())))
+
+    // tmp = @parameter0
+    val tmp = SootUtils.addNewUniqueLocal("tmp", method, ftype)
     units.add(j.newIdentityStmt(tmp, j.newParameterRef(ftype, 0)))
-    units.add(j.newAssignStmt(j.newInstanceFieldRef(loc, proxyField.makeRef()), tmp))
+
+    val objectType = Scene.v().loadClassAndSupport("java.lang.Object").getType()
+    val targetType = targetClass.getType()
+
+    val targetUncast = SootUtils.addNewUniqueLocal("targetUncast", method, objectType)
+    val target = SootUtils.addNewUniqueLocal("target", method, targetType)
+    val targetField = proxyBase.getField("java.lang.Object target")
+
+    // if isProxy ... else ..
+    val c = SootUtils.addNewUniqueLocal("c", method, BooleanType.v)
+    val isProxyField = proxyBase.getField("boolean isProxy")
+    units.add(j.newAssignStmt(c, j.newInstanceFieldRef(proxy, isProxyField.makeRef)))
+    units.addAll(SootUtils.ifThenElse(c,
+      // !isProxy clause
+      List[Unit](
+        j.newAssignStmt(targetUncast, j.newInstanceFieldRef(proxy, targetField.makeRef())), // targetUncast = proxy.target
+        j.newAssignStmt(target, j.newCastExpr(targetUncast, targetType)), // target = (PROXYCLASS) targetUncast
+        j.newAssignStmt(j.newInstanceFieldRef(target, originalField.makeRef()), tmp)), //
+      // isProxy clause
+      j.newAssignStmt(j.newInstanceFieldRef(proxy, proxyField.makeRef()), tmp) :: setDirtyBitAst(proxy, SootUtils.TRUE)))
+
     units.add(j.newReturnVoidStmt())
     setter = method
   }
@@ -105,10 +123,15 @@ class UIDGenerator(base: String) {
 }
 
 class ProxyGenerator(targetClass: SootClass, proxiedFields: Set[SootField], refactorTargets: Map[SootMethod, Set[Value]]) {
+  validityCheckInputs
+
   val proxyBaseClassName = "org.princehouse.mica.base.c1.ProxyBase"
   val proxyBaseClass = Scene.v.loadClassAndSupport(proxyBaseClassName)
   val objectClass = Scene.v.loadClassAndSupport("java.lang.Object")
   val j = Jimple.v()
+  val objectType = Scene.v().loadClassAndSupport("java.lang.Object").getType()
+  val targetType = targetClass.getType()
+  val targetField = proxyBaseClass.getField("java.lang.Object target")
 
   val fieldNameGenerator = new UIDGenerator("field")
   val methodNameGenerator = new UIDGenerator("method")
@@ -121,6 +144,17 @@ class ProxyGenerator(targetClass: SootClass, proxiedFields: Set[SootField], refa
 
   // SootClass representing the proxy class. Call createMethodProxy to fill it out
   var proxyClass: SootClass = new SootClass(proxyClassName, Modifier.PUBLIC)
+
+  def validityCheckInputs = {
+    // static field proxies currently not allowed
+    for (field <- proxiedFields) {
+      if (SootUtils.isStatic(field)) {
+        throw new RuntimeException("Error while proxying: Static field proxying is not allowed (%s.%s)".format(
+          field.getDeclaringClass().getName(), field.getSignature()))
+      }
+
+    }
+  }
 
   // prerequisite: "obj" must be of the proxy type
   def exprGetField(obj: Local, field: SootField): Value = {
@@ -154,7 +188,6 @@ class ProxyGenerator(targetClass: SootClass, proxiedFields: Set[SootField], refa
   }
 
   def implementBoxMethod(): scala.Unit = {
-
     val method = new SootMethod("box", List[Type](objectClass.getType()),
       VoidType.v(), Modifier.PUBLIC)
     proxyClass.addMethod(method)
@@ -162,13 +195,21 @@ class ProxyGenerator(targetClass: SootClass, proxiedFields: Set[SootField], refa
     method.setActiveBody(body)
     val units = body.getUnits()
 
-    // assign this to a local variable
-    val thisproxy = Jimple.v.newLocal("this", proxyClass.getType)
-    body.getLocals().add(thisproxy)
+    // this = @this
+    val thisproxy = SootUtils.addNewUniqueLocal("this", method, proxyClass.getType)
     units.add(Jimple.v().newIdentityStmt(thisproxy,
       Jimple.v().newThisRef(proxyClass.getType)))
 
-    // TODO -- implement all of the actual boxing.  This is just a stub right now
+    val targetUncast = SootUtils.addNewUniqueLocal("targetUncast", method, objectType)
+    val target = SootUtils.addNewUniqueLocal("target", method, targetType)
+
+    // targetUncast = @parameter0
+    units.add(j.newIdentityStmt(targetUncast, j.newParameterRef(objectType,0)))
+    // target = (TARGETCLASS) targetUncast
+    units.add(j.newAssignStmt(target, j.newCastExpr(targetUncast, targetType)))
+
+    // all of the code for boxing all fields
+    units.addAll(fieldMap.values.map(_.box(method, thisproxy, target)).reduce(_:::_))
 
     units.add(Jimple.v.newReturnVoidStmt)
   }

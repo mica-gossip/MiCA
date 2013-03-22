@@ -15,7 +15,8 @@ object TestProxyGenerator {
     val p = new C1TestProtocol
     var targetClass = SootUtils.forceResolveJavaClass(p.getClass, SootClass.BODIES)
         
-    var proxyFields:Set[SootField] = targetClass.getFields().toSet[SootField]
+    var proxyFields:Set[SootField] = (targetClass.getFields().toSet[SootField]).filter(!SootUtils.isStatic(_))
+    
     
     val updateMethod = targetClass.getMethod("void update(org.princehouse.mica.base.model.Protocol)")
     val thisRef = j.newThisRef(targetClass.getType()) 

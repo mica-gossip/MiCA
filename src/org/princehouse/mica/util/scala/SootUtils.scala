@@ -13,11 +13,11 @@ object SootUtils {
   // compile a jimple class into a .class file
   def writeSootClass(sClass: SootClass): scala.Unit = {
     val outfile = SourceLocator.v.getFileNameFor(sClass, soot.options.Options.output_format_class)
-    
+
     // ensure existence of parent directory
     val parentDir = new File(outfile).getParentFile()
     parentDir.mkdirs()
-    
+
     println("Writing to " + outfile)
 
     val streamOut = new JasminOutputStream(new FileOutputStream(outfile))
@@ -196,4 +196,67 @@ object SootUtils {
         throw new RuntimeException("unrecognized value class for subValues(): " + v.getClass().getName())
     }*/
   }
+
+  def isStatic(sootThing: java.lang.Object): Boolean = {
+    val modifiers = sootThing match {
+      case x: SootMethod => x.getModifiers
+      case x: SootField => x.getModifiers
+      case _ =>
+        throw new RuntimeException("Unsupported parameter type (%s) for isStatic.  Only SootMethod and SootField are supported".format(sootThing.getClass().getName()))
+    }
+    ((modifiers & Modifier.STATIC) == Modifier.STATIC)
+  }
+
+  val TRUE = IntConstant.v(1)
+  val FALSE = IntConstant.v(0)
+
+  // create a new local variable with a unique name and add it to the soot body
+  def addNewUniqueLocal(nameTemplate: String, method: SootMethod, ltype: Type): Local = {
+    val j = Jimple.v
+    val locals = method.getActiveBody.getLocals()
+    // find a unique name of the form l%d
+    val localNames = locals.map(_.getName).toSet
+    var i = 0
+    def name: String = {
+      if (i == 0) { nameTemplate } else { "%s%s".format(nameTemplate, i) }
+    }
+    while (localNames.contains(name)) { i += 1 }
+    val local = j.newLocal(name, ltype)
+    locals.add(local)
+    local
+  }
+
+  /* condition: Either a BooleanType (in which case it will be replaced with (condition==true)), or a conditional operator expr (==,>,<,etc)
+   * thenStmts: Either a unit or a list of units
+   * elseStmts: Either a unit or a list of units
+   */
+  def ifThenElse(condition:Value, thenClause:Any, elseClause:Any) : List[Unit] = {
+    val j = Jimple.v
+
+    val finished = j.newNopStmt()
+    
+    def asUnitList(v:Any) = {
+      v match {
+        case x: Unit => List(x)
+        case x: List[Unit] => x
+        case _ => throw new RuntimeException("unrecognized type for interpretation as List[Unit]")
+      }
+    }
+
+    val binopCondition = condition match {
+      case x: AbstractJimpleIntBinopExpr => x
+      case _ =>
+        condition.getType() match {
+          case t:BooleanType => 
+            j.newEqExpr(condition, TRUE)
+          case _ =>
+            throw new RuntimeException("unrecognized type for BinopExpr casting")   
+        }
+    }
+    
+    val elseList = asUnitList(elseClause)
+    
+    j.newIfStmt(binopCondition, elseList.head) :: asUnitList(thenClause) ::: List(j.newGotoStmt(finished)) ::: elseList ::: List(finished) 
+  }
+
 }

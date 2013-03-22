@@ -11,6 +11,6 @@
 	<classpathentry kind="con" path="org.eclipse.jdt.junit.JUNIT_CONTAINER/4"/>
 	<classpathentry kind="lib" path="lib/gson-2.2.2.jar" sourcepath="lib/gson-2.2.2-javadoc.jar"/>
 	<classpathentry kind="lib" path="/usr/share/java/jgrapht0.8.jar"/>
-	<classpathentry kind="lib" path="/home/lonnie/git/MiCA/sootOutput"/>
+	<classpathentry kind="lib" path="sootOutput"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>
