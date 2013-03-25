@@ -8,8 +8,8 @@ import soot.util._
 import soot.jimple.spark.ondemand.pautil.SootUtil
 import org.princehouse.mica.util.scala.SootUtils
 
-class FieldProxy(originalField: SootField, proxyField: SootField, dirtyBitField: SootField, targetClass: SootClass) {
-  val ftype = originalField.getType()
+class FieldProxy(sourceField: SootField, proxyField: SootField, dirtyBitField: SootField, targetClass: SootClass) {
+  val ftype = sourceField.getType()
   var getter: SootMethod = null
   var setter: SootMethod = null
   val j = Jimple.v
@@ -47,7 +47,7 @@ class FieldProxy(originalField: SootField, proxyField: SootField, dirtyBitField:
       List[Unit](
         j.newAssignStmt(targetUncast, j.newInstanceFieldRef(proxy, targetField.makeRef())),
         j.newAssignStmt(target, j.newCastExpr(targetUncast, targetType)),
-        j.newAssignStmt(tmp, j.newInstanceFieldRef(target, originalField.makeRef()))),
+        j.newAssignStmt(tmp, j.newInstanceFieldRef(target, sourceField.makeRef()))),
       // isProxy clause
       j.newAssignStmt(tmp,
         j.newInstanceFieldRef(proxy, proxyField.makeRef())) :: setDirtyBitAst(proxy, SootUtils.TRUE)))
@@ -62,7 +62,7 @@ class FieldProxy(originalField: SootField, proxyField: SootField, dirtyBitField:
   def box(method: SootMethod, proxy: Local, target: Local): List[Unit] = {
     val tmp = SootUtils.addNewUniqueLocal("l",method,ftype)
     
-    List(j.newAssignStmt(tmp, j.newInstanceFieldRef(target, originalField.makeRef())),
+    List(j.newAssignStmt(tmp, j.newInstanceFieldRef(target, sourceField.makeRef())),
         j.newAssignStmt(j.newInstanceFieldRef(proxy, proxyField.makeRef()), tmp)) ::: setDirtyBitAst(proxy, SootUtils.FALSE)
   }
 
@@ -103,7 +103,7 @@ class FieldProxy(originalField: SootField, proxyField: SootField, dirtyBitField:
       List[Unit](
         j.newAssignStmt(targetUncast, j.newInstanceFieldRef(proxy, targetField.makeRef())), // targetUncast = proxy.target
         j.newAssignStmt(target, j.newCastExpr(targetUncast, targetType)), // target = (PROXYCLASS) targetUncast
-        j.newAssignStmt(j.newInstanceFieldRef(target, originalField.makeRef()), tmp)), //
+        j.newAssignStmt(j.newInstanceFieldRef(target, sourceField.makeRef()), tmp)), //
       // isProxy clause
       j.newAssignStmt(j.newInstanceFieldRef(proxy, proxyField.makeRef()), tmp) :: setDirtyBitAst(proxy, SootUtils.TRUE)))
 
@@ -122,6 +122,11 @@ class UIDGenerator(base: String) {
   }
 }
 
+class MethodProxy(sourceMethod: SootMethod, proxiedValues: Set[Value], gen: ProxyGenerator) {
+  val proxyMethodName = gen.methodNameGenerator.next
+  
+}
+
 class ProxyGenerator(targetClass: SootClass, proxiedFields: Set[SootField], refactorTargets: Map[SootMethod, Set[Value]]) {
   validityCheckInputs
 
@@ -138,7 +143,8 @@ class ProxyGenerator(targetClass: SootClass, proxiedFields: Set[SootField], refa
 
   // maps soot fields to their proxy objects
   val fieldMap = collection.mutable.Map[SootField, FieldProxy]()
-
+  val methodMap = collection.mutable.Map[SootMethod, MethodProxy]()
+  
   // Name of the proxy class we're creating.  
   val proxyClassName = targetClass.getName() + "Proxy"
 
@@ -154,11 +160,6 @@ class ProxyGenerator(targetClass: SootClass, proxiedFields: Set[SootField], refa
       }
 
     }
-  }
-
-  // prerequisite: "obj" must be of the proxy type
-  def exprGetField(obj: Local, field: SootField): Value = {
-    null // TODO FIXME
   }
 
   // implement a proxied field in the proxy class
@@ -179,13 +180,6 @@ class ProxyGenerator(targetClass: SootClass, proxiedFields: Set[SootField], refa
     proxy.createSetter(proxyClass)
   }
 
-  // implement a refactored method in the proxy class
-  def createMethodProxy(method: SootMethod): scala.Unit = {
-    // values must be either local, parameter, thisref, or rvalue -- essentially, variables whose type must be changed to proxy
-    // TODO
-    val methodProxyName = methodNameGenerator.next
-    println("Proxy method  %s -> %s".format(method.getName(), methodProxyName))
-  }
 
   def implementBoxMethod(): scala.Unit = {
     val method = new SootMethod("box", List[Type](objectClass.getType()),
@@ -271,7 +265,8 @@ class ProxyGenerator(targetClass: SootClass, proxiedFields: Set[SootField], refa
 
     // refactor methods (need to be in sorted order to get consistent naming)
     for (method <- refactorTargets.keys.toList.sortBy(m => m.getSignature())) {
-      createMethodProxy(method)
+      
+      
     }
 
     implementBoxMethod
