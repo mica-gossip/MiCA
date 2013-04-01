@@ -8,6 +8,35 @@ import soot.util._
 import soot.jimple.spark.ondemand.pautil.SootUtil
 import org.princehouse.mica.util.scala.SootUtils
 
+class MethodProxy(sourceMethod: SootMethod, proxiedValues: Set[Value], gen: ProxyGenerator) {
+  val proxyMethodName = gen.methodNameGenerator.next
+  val proxyMethod = createProxiedMethod
+  
+  def createProxiedMethod : SootMethod = {
+    // Create the SootMethod, but do not create the body
+    var parameterTypes:List[Type] = Nil // fixme
+    
+    if(sourceMethod.isStatic()) {
+      throw new RuntimeException("static proxied methods not currently supported")
+    }
+    
+    val sourceParamTypes:List[Type] = sourceMethod.getParameterTypes().asInstanceOf[List[Type]]
+    
+    // Loop over sourceMethod parameters; replace any that are proxied with the proxy type
+    //for(p <=  sourceParamTypes) {
+      
+    //}
+    
+    val returnType:Type = null // fixme
+    val method = new SootMethod(proxyMethodName, parameterTypes, returnType, Modifier.PUBLIC | Modifier.STATIC)
+    method
+  }
+  
+  def createBody = {
+    
+  }
+}
+
 class FieldProxy(sourceField: SootField, proxyField: SootField, dirtyBitField: SootField, targetClass: SootClass) {
   val ftype = sourceField.getType()
   var getter: SootMethod = null
@@ -122,10 +151,6 @@ class UIDGenerator(base: String) {
   }
 }
 
-class MethodProxy(sourceMethod: SootMethod, proxiedValues: Set[Value], gen: ProxyGenerator) {
-  val proxyMethodName = gen.methodNameGenerator.next
-  
-}
 
 class ProxyGenerator(targetClass: SootClass, proxiedFields: Set[SootField], refactorTargets: Map[SootMethod, Set[Value]]) {
   validityCheckInputs
@@ -175,7 +200,6 @@ class ProxyGenerator(targetClass: SootClass, proxiedFields: Set[SootField], refa
     proxyClass.addField(dirtyField)
     val proxy = new FieldProxy(field, proxyField, dirtyField, targetClass)
     fieldMap.put(field, proxy)
-
     proxy.createGetter(proxyClass)
     proxy.createSetter(proxyClass)
   }
@@ -265,7 +289,7 @@ class ProxyGenerator(targetClass: SootClass, proxiedFields: Set[SootField], refa
 
     // refactor methods (need to be in sorted order to get consistent naming)
     for (method <- refactorTargets.keys.toList.sortBy(m => m.getSignature())) {
-      
+      // you are here
       
     }
 

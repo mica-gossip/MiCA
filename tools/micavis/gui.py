@@ -94,8 +94,8 @@ class GraphWindow(object):
         projection.set_submenu(menu)
         self.projection_checkitems = {}
 
-        for p in self.micavis.projections:
-            checkitem = gtk.CheckMenuItem(p)
+        for p,shortname in self.projection_hierarchy(): 
+            checkitem = gtk.CheckMenuItem(shortname)
             if p == 'root':
                 active = True
             else:
@@ -163,6 +163,27 @@ class GraphWindow(object):
 
         return bar
 
+    def projection_hierarchy(self):
+        projs = self.micavis.projections
+        ancestors = [0]*len(projs)
+        ancestors[0] = -1
+        levels = [1]*len(projs)
+        levels[0] = 0
+
+        for i,p in enumerate(projs):
+            for j,r in reversed(list(enumerate(projs[:i]))):
+                if p.startswith(r):
+                    ancestors[i] = j
+                    levels[i] = levels[j]+1
+                    break
+
+        for i,p in enumerate(projs):
+            if ancestors[i] <= 0:
+                short = p
+            else:
+                short = p[len(projs[ancestors[i]])+1:]
+            short = '    '*levels[i] + short
+            yield p,short
 
     def recompute_layout_from_view(self, widget):
         ual = self.micavis.unique_addresses
