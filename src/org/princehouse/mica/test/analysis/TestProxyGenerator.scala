@@ -20,8 +20,12 @@ object TestProxyGenerator {
     
     val updateMethod = targetClass.getMethod("void update(org.princehouse.mica.base.model.Protocol)")
     val thisRef = j.newThisRef(targetClass.getType()) 
-    val refactorTargets = Map[SootMethod,Set[Value]](updateMethod -> Set(thisRef))
     
+    val updateRefactorTargets:(Set[Value],Boolean) = new IdentifyRefactorTargets(updateMethod, Set(thisRef)).targets
+    
+    //val updateRefactorTargets:(Set[Value],Boolean) = (Set(thisRef),false)
+    
+    val refactorTargets = Map[SootMethod, (Set[Value],Boolean)](updateMethod -> updateRefactorTargets)
     
     val gen = new ProxyGenerator(targetClass, proxyFields, refactorTargets)
     
