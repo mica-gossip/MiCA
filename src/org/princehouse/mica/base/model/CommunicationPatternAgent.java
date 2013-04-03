@@ -1,5 +1,7 @@
 package org.princehouse.mica.base.model;
 
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.io.Serializable;
 
 import org.princehouse.mica.base.exceptions.AbortRound;
@@ -40,4 +42,7 @@ public interface CommunicationPatternAgent {
 	public abstract void f3(MicaRuntime initiatorRuntime, Serializable m2)
 			throws FatalErrorHalt, AbortRound;
 
+	public abstract void sendObject(Serializable obj, OutputStream out) throws FatalErrorHalt, AbortRound;
+	
+	public abstract Serializable recvObject(InputStream in) throws FatalErrorHalt, AbortRound;
 }

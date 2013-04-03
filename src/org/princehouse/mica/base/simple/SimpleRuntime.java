@@ -464,6 +464,16 @@ public class SimpleRuntime extends MicaRuntime implements AcceptConnectionHandle
 
 	private <T extends Serializable> void sendObject(Connection connection,
 			T obj) throws FatalErrorHalt, AbortRound {
+		sendObjectJava(connection,obj);
+	}
+
+	private <T extends Serializable> T receiveObject(Connection connection)
+			throws FatalErrorHalt, AbortRound {
+		return receiveObjectJava(connection);
+	}
+
+	private <T extends Serializable> void sendObjectJava(Connection connection,
+			T obj) throws FatalErrorHalt, AbortRound {
 		try {
 			ObjectOutputStream oos = new ObjectOutputStream(
 					connection.getOutputStream());
@@ -475,8 +485,9 @@ public class SimpleRuntime extends MicaRuntime implements AcceptConnectionHandle
 		}
 	}
 
+	
 	@SuppressWarnings("unchecked")
-	private <T extends Serializable> T receiveObject(Connection connection)
+	private <T extends Serializable> T receiveObjectJava(Connection connection)
 			throws FatalErrorHalt, AbortRound {
 		try {
 			ObjectInputStream ois = new ObjectInputStream(

@@ -1,5 +1,7 @@
 package org.princehouse.mica.base.sim;
 
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.io.Serializable;
 
 import org.princehouse.mica.base.RuntimeErrorCondition;
@@ -68,6 +70,20 @@ public class FakeCompiler extends Compiler {
 		public void f3(MicaRuntime initiatorRuntime, Serializable m2)
 				throws FatalErrorHalt, AbortRound {
 			// do nothing
+		}
+
+		@Override
+		public void sendObject(Serializable obj, OutputStream out)
+				throws FatalErrorHalt, AbortRound {
+			// TODO Auto-generated method stub
+			
+		}
+
+		@Override
+		public Serializable recvObject(InputStream in) throws FatalErrorHalt,
+				AbortRound {
+			// TODO Auto-generated method stub
+			return null;
 		}
 
 	}
