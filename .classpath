@@ -5,7 +5,6 @@
 	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
 	<classpathentry kind="lib" path="lib/functionaljava.jar"/>
 	<classpathentry kind="lib" path="lib/jgrapht0.8.jar"/>
-	<classpathentry kind="lib" path="lib/asm3-all-3.3.2.jar"/>
 	<classpathentry kind="lib" path="lib/soot-2.5.0.jar"/>
 	<classpathentry kind="lib" path="lib/jcommander-1.31-SNAPSHOT.jar"/>
 	<classpathentry kind="lib" path="lib/asm-4.0.jar"/>
@@ -14,6 +13,7 @@
 	<classpathentry kind="lib" path="lib/objenesis-1.2.jar"/>
 	<classpathentry kind="lib" path="lib/reflectasm-1.07.jar"/>
 	<classpathentry kind="lib" path="lib/commons-io-2.4.jar"/>
+	<classpathentry kind="lib" path="lib/kryo-serializers-0.22.jar"/>
 	<classpathentry kind="con" path="org.eclipse.jdt.junit.JUNIT_CONTAINER/4"/>
 	<classpathentry kind="lib" path="lib/gson-2.2.2.jar" sourcepath="lib/gson-2.2.2-javadoc.jar"/>
 	<classpathentry kind="lib" path="/usr/share/java/jgrapht0.8.jar"/>

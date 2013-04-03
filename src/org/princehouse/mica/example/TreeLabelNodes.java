@@ -20,6 +20,8 @@ import org.princehouse.mica.util.Functional;
  */
 public class TreeLabelNodes extends BaseProtocol {
 
+	public TreeLabelNodes() {}
+	
 	private static final long serialVersionUID = 1L;
 
 	private TreeCountNodes count;

@@ -28,6 +28,8 @@ import org.princehouse.mica.util.Functional;
  * @param <Aggregate>
  */
 public abstract class Aggregator<Summary, Aggregate> extends FailureDetector {
+	public Aggregator() {}
+	
 	private static final long serialVersionUID = 1L;
 
 	private Map<Address, Summary> summaries = null;

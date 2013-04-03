@@ -16,6 +16,8 @@ import org.princehouse.mica.lib.abstractions.RootedTree;
  */
 public class TreeCountNodes extends Aggregator<Integer, Integer> {
 
+	public TreeCountNodes() { super(); }
+	
 	private static final long serialVersionUID = 1L;
 
 	@View

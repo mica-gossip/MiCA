@@ -7,10 +7,7 @@ import java.io.InputStream;
 import org.apache.commons.io.IOUtils;
 
 public class StreamUtil {
-	public static InputStream bufferCompleteInputStream(InputStream is) throws IOException {
-		byte[] bytes = IOUtils.toByteArray(is);
-		System.out.printf("debug: inputStream is %d bytes\n",bytes.length);
-		is.close();
-		return new ByteArrayInputStream(bytes);
+	public static byte[] readEntireInputStream(InputStream is) throws IOException {
+		return IOUtils.toByteArray(is);
 	}
 }

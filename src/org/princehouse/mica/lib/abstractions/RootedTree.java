@@ -24,6 +24,8 @@ public interface RootedTree extends TreeOverlay {
 	 */
 	public static class ChildOverlay implements Overlay, Serializable {
 
+		public ChildOverlay() {}
+		
 		private static final long serialVersionUID = 1L;
 		private RootedTree tree;
 		public ChildOverlay(RootedTree t) {

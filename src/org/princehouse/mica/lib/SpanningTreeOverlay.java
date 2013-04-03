@@ -30,6 +30,8 @@ import org.princehouse.mica.util.Functional;
 public class SpanningTreeOverlay extends FailureDetector implements
 		RootedTree {
 
+	public SpanningTreeOverlay() {}
+	
 	private static final long serialVersionUID = 1L;
 
 	// remember self-reported distance-from-root of neighbors

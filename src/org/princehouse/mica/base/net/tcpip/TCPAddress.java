@@ -16,6 +16,11 @@ import org.princehouse.mica.base.net.model.AcceptConnectionHandler;
 import org.princehouse.mica.base.net.model.Address;
 import org.princehouse.mica.base.net.model.Connection;
 
+import com.esotericsoftware.kryo.Kryo;
+import com.esotericsoftware.kryo.KryoSerializable;
+import com.esotericsoftware.kryo.io.Input;
+import com.esotericsoftware.kryo.io.Output;
+
 
 /**
  * TCP/IP Address implementation.
@@ -25,7 +30,7 @@ import org.princehouse.mica.base.net.model.Connection;
  * @author lonnie
  *
  */
-public class TCPAddress implements Address, Externalizable {
+public class TCPAddress implements Address, Externalizable, KryoSerializable {
 	
 	/**
 	 * Used when interpreting an address from a String if no port is specified
@@ -43,9 +48,14 @@ public class TCPAddress implements Address, Externalizable {
 			return false;
 		} else { 
 			TCPAddress t = (TCPAddress) o;
+			
+		//	if(address == null) {
+		//		if(t.address != null) return false;
+		//		else return true;
+		//	}
+			
 			return address.equals(t.address) && port == t.port;
 		}
-		
 	}
 	
 	/**
@@ -179,5 +189,18 @@ public class TCPAddress implements Address, Externalizable {
 	@Override
 	public int hashCode() {
 		return toString().hashCode();
+	}
+
+	@Override
+	public void read(Kryo kryo, Input in) {
+		// TODO Auto-generated method stub
+		address = (InetAddress) kryo.readObject(in, InetAddress.class);
+		port = (Integer) kryo.readObject(in, Integer.class);
+	}
+
+	@Override
+	public void write(Kryo kryo, Output out) {
+		kryo.writeObject(out,address);
+		kryo.writeObject(out,(Integer)port);
 	}
 }

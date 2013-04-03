@@ -18,7 +18,10 @@ import org.princehouse.mica.util.Distribution;
  * @author lonnie
  *
  */
-public class StaticOverlay implements Overlay, Serializable {	
+public class StaticOverlay implements Overlay, Serializable {
+	
+	public StaticOverlay() {}
+	
 	private static final long serialVersionUID = 1L;
 	
 	private Object view = null;

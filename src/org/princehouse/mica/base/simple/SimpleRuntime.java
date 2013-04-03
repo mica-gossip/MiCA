@@ -11,10 +11,12 @@ import static org.princehouse.mica.base.RuntimeErrorCondition.POSTUDPATE_EXCEPTI
 import static org.princehouse.mica.base.RuntimeErrorCondition.PREUDPATE_EXCEPTION;
 import static org.princehouse.mica.base.RuntimeErrorCondition.SELF_GOSSIP;
 
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
+import java.io.OutputStream;
 import java.io.Serializable;
 import java.net.SocketException;
 import java.util.Random;
@@ -33,12 +35,15 @@ import org.princehouse.mica.base.net.model.AcceptConnectionHandler;
 import org.princehouse.mica.base.net.model.Address;
 import org.princehouse.mica.base.net.model.Connection;
 import org.princehouse.mica.base.sim.StopWatch;
+import org.princehouse.mica.util.KryoUtil;
 import org.princehouse.mica.util.Logging.SelectEvent;
 import org.princehouse.mica.util.StreamUtil;
 
 import com.esotericsoftware.kryo.Kryo;
+import com.esotericsoftware.kryo.KryoException;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
+import com.sun.xml.internal.messaging.saaj.util.ByteOutputStream;
 
 /**
  * Basic Runtime implementation.
@@ -46,17 +51,21 @@ import com.esotericsoftware.kryo.io.Output;
  * Nothing fancy: It just serializes and exchanges complete node state.
  * 
  */
-public class SimpleRuntime extends MicaRuntime implements AcceptConnectionHandler {
+public class SimpleRuntime extends MicaRuntime implements
+		AcceptConnectionHandler {
+
+	public static final boolean KRYO_SERIALIZATION = true;
 
 	public static final boolean DEBUG_NETWORKING = false;
 
 	private ReentrantLock lock = new ReentrantLock();
 
-
 	public SimpleRuntime(Address address) {
 		super();
 		setAddress(address);
 	}
+
+	private static final Kryo kryo = KryoUtil.defaultKryo();
 
 	@Override
 	public void setAddress(Address address) {
@@ -83,9 +92,9 @@ public class SimpleRuntime extends MicaRuntime implements AcceptConnectionHandle
 	 *            Random seed to use for this runtime
 	 * @return New Runtime instance
 	 */
-	public static MicaRuntime launch(final MicaRuntime rt, final Protocol pinstance,
-			final boolean daemon, final int intervalMS, final long randomSeed,
-			int lockWaitTimeoutMS) {
+	public static MicaRuntime launch(final MicaRuntime rt,
+			final Protocol pinstance, final boolean daemon,
+			final int intervalMS, final long randomSeed, int lockWaitTimeoutMS) {
 		rt.setProtocolInstance(pinstance);
 		rt.setInterval(intervalMS);
 		rt.setLockWaitTimeout(lockWaitTimeoutMS);
@@ -282,7 +291,6 @@ public class SimpleRuntime extends MicaRuntime implements AcceptConnectionHandle
 								break;
 							}
 
-
 							SelectEvent se = null;
 
 							Protocol p = getProtocolInstance();
@@ -416,8 +424,8 @@ public class SimpleRuntime extends MicaRuntime implements AcceptConnectionHandle
 					}
 
 					double sec = ((double) stopwatch.elapsed()) / 1000.0;
-					MicaRuntime.debug.printf("%s -> %s, elapsed time %g s\n", this,
-							partner, sec);
+					MicaRuntime.debug.printf("%s -> %s, elapsed time %g s\n",
+							this, partner, sec);
 				} catch (AbortRound ar) {
 					// ... do nothing, and on to the next round...
 				}
@@ -468,12 +476,18 @@ public class SimpleRuntime extends MicaRuntime implements AcceptConnectionHandle
 
 	private <T extends Serializable> void sendObject(Connection connection,
 			T obj) throws FatalErrorHalt, AbortRound {
-		sendObjectKryo(connection,obj);
+		if (KRYO_SERIALIZATION)
+			sendObjectKryoOLD(connection, obj);
+		else
+			sendObjectJava(connection, obj);
 	}
 
 	private <T extends Serializable> T receiveObject(Connection connection)
 			throws FatalErrorHalt, AbortRound {
-		return receiveObjectKryo(connection);
+		if (KRYO_SERIALIZATION)
+			return receiveObjectKryoOLD(connection);
+		else
+			return receiveObjectJava(connection);
 	}
 
 	private <T extends Serializable> void sendObjectJava(Connection connection,
@@ -488,58 +502,107 @@ public class SimpleRuntime extends MicaRuntime implements AcceptConnectionHandle
 			handleError(GOSSIP_IO_ERROR, e);
 		}
 	}
-
+	
 	private <T extends Serializable> void sendObjectKryo(Connection connection,
 			T obj) throws FatalErrorHalt, AbortRound {
-		System.out.printf("[DEBUG]: BEGIN SEND OBJECT %s\n", this.getAddress());
-
-		Kryo kryo = new Kryo();
-		Output output = null;
 		try {
-			System.out.printf("[DEBUG]: GET OUTPUT STREAM %s\n", this.getAddress());
-
-			output = new Output(connection.getOutputStream());
-			System.out.printf("[DEBUG]: GOT! OUTPUT STREAM %s\n", this.getAddress());
+			kryo.writeClassAndObject(new Output(connection.getOutputStream()), obj);
+		} catch (SocketException se) {
+			handleError(GOSSIP_IO_ERROR, se);
 		} catch (IOException e) {
-			System.out.println("ERROR!!!");
 			handleError(GOSSIP_IO_ERROR, e);
+		} catch (KryoException ke) {
+			handleError(GOSSIP_IO_ERROR,ke);
 		}
-		System.out.printf("[DEBUG]: WRITE KRYO %s\n", this.getAddress());
-
-		kryo.writeObject(output, obj);
-		System.out.printf("[DEBUG]: COMPLETE SEND OBJECT %s\n", this.getAddress());
-		output.close();
 	}
-	
+
 	@SuppressWarnings("unchecked")
 	private <T extends Serializable> T receiveObjectKryo(Connection connection)
 			throws FatalErrorHalt, AbortRound {
-		Kryo kryo = new Kryo();
-		Input input = null;
-		System.out.printf("[DEBUG]: RECV OBJECT %s\n", this.getAddress());
-
 		try {
-			InputStream inputStream = connection.getInputStream();
-			//try {
-				//Thread.sleep(10);
-			//} catch (InterruptedException e) {
-				// TODO Auto-generated catch block
-			//	e.printStackTrace();
-			//} // stupid hack
-			//inputStream = StreamUtil.bufferCompleteInputStream(connection.getInputStream());
-			//input = new Input());
-			input = new Input(inputStream);
+			Input ois = new Input(
+					connection.getInputStream());
+			try{
+				return (T) kryo.readClassAndObject(ois);
+			} catch(KryoException ke) {
+				handleError(GOSSIP_IO_ERROR,ke);
+			}
+		} catch (SocketException e) {
+			handleError(GOSSIP_IO_ERROR, e);
 		} catch (IOException e) {
 			handleError(GOSSIP_IO_ERROR, e);
 		}
-		//T obj = (T) kryo.readObject(input, Serializable.class);
-		Object obj = (T) kryo.readClassAndObject(input);
-		input.close();
-		System.out.printf("[fibbo success]\n");
-		return (T) obj;
-
+		return null; // unreachable
 	}
+
 	
+	private <T extends Serializable> void sendObjectKryoOLD(Connection connection,
+			T obj) throws FatalErrorHalt, AbortRound {
+		debug.printf("[DEBUG]: BEGIN SEND OBJECT %s\n", this.getAddress());
+
+		// Kryo kryo = new Kryo();
+		// kryo.register(getProtocolInstance().getClass());
+		ByteOutputStream buffer = new ByteOutputStream();
+		Output output = new Output(buffer);
+		// Serializer ser = new KryoReflectionFactorySupport();
+		try {
+			kryo.writeClassAndObject(output, obj);
+		} catch (Throwable t) {
+			// debug.printf("WTF %s\n", t);
+			handleError(GOSSIP_IO_ERROR, t);
+		}
+		//output.close();
+		byte[] bytes = buffer.getBytes();
+		debug.printf("  Kryo object size = %d\n", bytes.length);
+
+		try {
+			OutputStream os = connection.getOutputStream();
+			os.write(bytes);
+			//os.close();
+		} catch (IOException e) {
+			handleError(GOSSIP_IO_ERROR, e);
+		}
+		debug.printf("[DEBUG]: COMPLETE SEND OBJECT %s\n", this.getAddress());
+	}
+
+	@SuppressWarnings("unchecked")
+	private <T extends Serializable> T receiveObjectKryoOLD(Connection connection)
+			throws FatalErrorHalt, AbortRound {
+		// Kryo kryo = new Kryo();
+		// kryo.register(getProtocolInstance().getClass());
+
+		Input input = null;
+		debug.printf("[DEBUG]: RECV OBJECT %s\n", this.getAddress());
+
+		InputStream inputStream = null;
+		try {
+			inputStream = connection.getInputStream();
+			byte[] data = StreamUtil.readEntireInputStream(inputStream);
+			debug.printf("  read from input stream %d bytes\n", data.length);
+			input = new Input(new ByteArrayInputStream(data));
+			Object obj = null;
+			try {
+				obj = (T) kryo.readClassAndObject(input);
+			} catch (Throwable t) {
+				debug.printf("WTF2 %s\n", t);
+			}
+			debug.printf("   deserialized success\n");
+			return (T) obj;
+
+		} catch (IOException e) {
+			debug.printf("   failure @ %s %s ; abort round\n",getAddress(),e);
+//			throw new AbortRound();
+			handleError(GOSSIP_IO_ERROR, e);
+		} catch (com.esotericsoftware.kryo.KryoException ke) {
+			debug.printf("ERROR KryoException at %s:  %s\n", getAddress(), ke);
+
+			handleError(GOSSIP_IO_ERROR, ke);
+		} finally {
+			//input.close();
+		}
+		return null; // not reachable
+	}
+
 	@SuppressWarnings("unchecked")
 	private <T extends Serializable> T receiveObjectJava(Connection connection)
 			throws FatalErrorHalt, AbortRound {

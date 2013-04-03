@@ -20,6 +20,8 @@ import org.princehouse.mica.lib.abstractions.Overlay;
  *
  */
 public class MinAddressLeaderElection extends BaseProtocol implements LeaderElection {
+	public MinAddressLeaderElection() {}
+	
 	private static final long serialVersionUID = 1L;
 	private Address leader;
 

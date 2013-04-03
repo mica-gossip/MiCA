@@ -16,6 +16,8 @@ public class SimpleCommunicationPatternAgent implements
 
 	@SuppressWarnings("serial")
 	protected static class SimpleM implements Serializable {
+		public SimpleM() {} 
+	
 		public SimpleM(Protocol p, RuntimeState runtimeState) {
 			this.p = p;
 			this.runtimeState = runtimeState;
