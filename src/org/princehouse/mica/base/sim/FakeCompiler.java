@@ -72,19 +72,6 @@ public class FakeCompiler extends Compiler {
 			// do nothing
 		}
 
-		@Override
-		public void sendObject(Serializable obj, OutputStream out)
-				throws FatalErrorHalt, AbortRound {
-			// TODO Auto-generated method stub
-			
-		}
-
-		@Override
-		public Serializable recvObject(InputStream in) throws FatalErrorHalt,
-				AbortRound {
-			// TODO Auto-generated method stub
-			return null;
-		}
-
+		
 	}
 }

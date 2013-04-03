@@ -12,6 +12,7 @@ import static org.princehouse.mica.base.RuntimeErrorCondition.PREUDPATE_EXCEPTIO
 import static org.princehouse.mica.base.RuntimeErrorCondition.SELF_GOSSIP;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.Serializable;
@@ -26,13 +27,18 @@ import org.princehouse.mica.base.exceptions.AbortRound;
 import org.princehouse.mica.base.exceptions.FatalErrorHalt;
 import org.princehouse.mica.base.model.CommunicationPatternAgent;
 import org.princehouse.mica.base.model.MiCA;
-import org.princehouse.mica.base.model.Protocol;
 import org.princehouse.mica.base.model.MicaRuntime;
+import org.princehouse.mica.base.model.Protocol;
 import org.princehouse.mica.base.net.model.AcceptConnectionHandler;
 import org.princehouse.mica.base.net.model.Address;
 import org.princehouse.mica.base.net.model.Connection;
 import org.princehouse.mica.base.sim.StopWatch;
 import org.princehouse.mica.util.Logging.SelectEvent;
+import org.princehouse.mica.util.StreamUtil;
+
+import com.esotericsoftware.kryo.Kryo;
+import com.esotericsoftware.kryo.io.Input;
+import com.esotericsoftware.kryo.io.Output;
 
 /**
  * Basic Runtime implementation.
@@ -276,8 +282,6 @@ public class SimpleRuntime extends MicaRuntime implements AcceptConnectionHandle
 								break;
 							}
 
-							// RuntimeAgent agent =
-							// compile(getProtocolInstance());
 
 							SelectEvent se = null;
 
@@ -464,12 +468,12 @@ public class SimpleRuntime extends MicaRuntime implements AcceptConnectionHandle
 
 	private <T extends Serializable> void sendObject(Connection connection,
 			T obj) throws FatalErrorHalt, AbortRound {
-		sendObjectJava(connection,obj);
+		sendObjectKryo(connection,obj);
 	}
 
 	private <T extends Serializable> T receiveObject(Connection connection)
 			throws FatalErrorHalt, AbortRound {
-		return receiveObjectJava(connection);
+		return receiveObjectKryo(connection);
 	}
 
 	private <T extends Serializable> void sendObjectJava(Connection connection,
@@ -485,6 +489,56 @@ public class SimpleRuntime extends MicaRuntime implements AcceptConnectionHandle
 		}
 	}
 
+	private <T extends Serializable> void sendObjectKryo(Connection connection,
+			T obj) throws FatalErrorHalt, AbortRound {
+		System.out.printf("[DEBUG]: BEGIN SEND OBJECT %s\n", this.getAddress());
+
+		Kryo kryo = new Kryo();
+		Output output = null;
+		try {
+			System.out.printf("[DEBUG]: GET OUTPUT STREAM %s\n", this.getAddress());
+
+			output = new Output(connection.getOutputStream());
+			System.out.printf("[DEBUG]: GOT! OUTPUT STREAM %s\n", this.getAddress());
+		} catch (IOException e) {
+			System.out.println("ERROR!!!");
+			handleError(GOSSIP_IO_ERROR, e);
+		}
+		System.out.printf("[DEBUG]: WRITE KRYO %s\n", this.getAddress());
+
+		kryo.writeObject(output, obj);
+		System.out.printf("[DEBUG]: COMPLETE SEND OBJECT %s\n", this.getAddress());
+		output.close();
+	}
+	
+	@SuppressWarnings("unchecked")
+	private <T extends Serializable> T receiveObjectKryo(Connection connection)
+			throws FatalErrorHalt, AbortRound {
+		Kryo kryo = new Kryo();
+		Input input = null;
+		System.out.printf("[DEBUG]: RECV OBJECT %s\n", this.getAddress());
+
+		try {
+			InputStream inputStream = connection.getInputStream();
+			//try {
+				//Thread.sleep(10);
+			//} catch (InterruptedException e) {
+				// TODO Auto-generated catch block
+			//	e.printStackTrace();
+			//} // stupid hack
+			//inputStream = StreamUtil.bufferCompleteInputStream(connection.getInputStream());
+			//input = new Input());
+			input = new Input(inputStream);
+		} catch (IOException e) {
+			handleError(GOSSIP_IO_ERROR, e);
+		}
+		//T obj = (T) kryo.readObject(input, Serializable.class);
+		Object obj = (T) kryo.readClassAndObject(input);
+		input.close();
+		System.out.printf("[fibbo success]\n");
+		return (T) obj;
+
+	}
 	
 	@SuppressWarnings("unchecked")
 	private <T extends Serializable> T receiveObjectJava(Connection connection)

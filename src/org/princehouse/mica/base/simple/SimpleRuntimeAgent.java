@@ -102,55 +102,6 @@ class SimpleRuntimeAgent extends RuntimeAgent {
 	public SimpleRuntimeAgent(Class<Protocol> pclass) throws CompilerException {
 	}
 
-	/*
-	@Override
-	public void gossip(Runtime rt, Protocol pinstance, Connection connection)
-			throws AbortRound, FatalErrorHalt {
-		// 1. serialize local state, send over connection
-		// 2. receive updated state
-		// prerequisite of this agent: protocols implement serializable
-		RequestMessage msg = new RequestMessage(pinstance,
-				rt.getRuntimeState());
-
-		try {
-			// send m1 to receiver
-			ObjectOutputStream oos = new ObjectOutputStream(
-					connection.getOutputStream());
-			oos.writeObject(msg);
-		} catch (SocketException se) {
-			rt.handleError(GOSSIP_IO_ERROR, se);
-		} catch (IOException e) {
-			rt.handleError(GOSSIP_IO_ERROR, e);
-		}
-
-		ObjectInputStream ois = null;
-		try {
-			ois = new ObjectInputStream(connection.getInputStream());
-		} catch (SocketException e) {
-			rt.handleError(GOSSIP_IO_ERROR, e);
-		} catch (IOException e) {
-			rt.handleError(GOSSIP_IO_ERROR, e);
-		}
-
-		try {
-			ResponseMessage rpm = (ResponseMessage) ois.readObject();
-
-			rt.setProtocolInstance(rpm.protocolInstance);
-
-			// Update runtime state
-			rt.getRuntimeState().update(rpm.runtimeState);
-		} catch (ClassNotFoundException e) {
-			rt.handleError(MISC_INTERNAL_ERROR, e);
-		} catch (IOException io) {
-			rt.handleError(GOSSIP_IO_ERROR, io);
-		}
-
-		try {
-			connection.close();
-		} catch (IOException e) {
-			rt.handleError(GOSSIP_IO_ERROR, e);
-		}
-	} */
 
 	/**
 	 * Callback executed when a gossip request arrives. Deserializes a
@@ -216,23 +167,7 @@ class SimpleRuntimeAgent extends RuntimeAgent {
 		}
 	}
 
-	/**
-	 * Executes the gossip update function on two local instances.
-	 * 
-	 * @param runtime
-	 *            Current runtime
-	 * @param pinit
-	 *            Initiating instance
-	 * @param precv
-	 *            Receiving instance
-	 */
-	private void runGossipUpdate(MicaRuntime runtime, Protocol pinit, Protocol precv) {
-		// imperative update of p1 and p2 states
-		
-	}
+
 	
-	public void executeUpdate(MicaRuntime rt, Protocol p1, Protocol p2) {
-		runGossipUpdate(rt, p1, p2);
-	}
 
 }

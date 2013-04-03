@@ -42,7 +42,7 @@ public interface CommunicationPatternAgent {
 	public abstract void f3(MicaRuntime initiatorRuntime, Serializable m2)
 			throws FatalErrorHalt, AbortRound;
 
-	public abstract void sendObject(Serializable obj, OutputStream out) throws FatalErrorHalt, AbortRound;
+	//public abstract void sendObject(Serializable obj, OutputStream out) throws FatalErrorHalt, AbortRound;
 	
-	public abstract Serializable recvObject(InputStream in) throws FatalErrorHalt, AbortRound;
+	//public abstract Serializable recvObject(InputStream in) throws FatalErrorHalt, AbortRound;
 }
