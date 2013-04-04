@@ -19,6 +19,7 @@ import java.io.ObjectOutputStream;
 import java.io.OutputStream;
 import java.io.Serializable;
 import java.net.SocketException;
+import java.nio.ByteBuffer;
 import java.util.Random;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.ReentrantLock;
@@ -35,8 +36,8 @@ import org.princehouse.mica.base.net.model.AcceptConnectionHandler;
 import org.princehouse.mica.base.net.model.Address;
 import org.princehouse.mica.base.net.model.Connection;
 import org.princehouse.mica.base.sim.StopWatch;
-import org.princehouse.mica.util.KryoUtil;
 import org.princehouse.mica.util.Logging.SelectEvent;
+import org.princehouse.mica.util.Serialization;
 import org.princehouse.mica.util.StreamUtil;
 
 import com.esotericsoftware.kryo.Kryo;
@@ -54,8 +55,6 @@ import com.sun.xml.internal.messaging.saaj.util.ByteOutputStream;
 public class SimpleRuntime extends MicaRuntime implements
 		AcceptConnectionHandler {
 
-	public static final boolean KRYO_SERIALIZATION = true;
-
 	public static final boolean DEBUG_NETWORKING = false;
 
 	private ReentrantLock lock = new ReentrantLock();
@@ -64,8 +63,6 @@ public class SimpleRuntime extends MicaRuntime implements
 		super();
 		setAddress(address);
 	}
-
-	private static final Kryo kryo = KryoUtil.defaultKryo();
 
 	@Override
 	public void setAddress(Address address) {
@@ -162,11 +159,15 @@ public class SimpleRuntime extends MicaRuntime implements
 					// ((SimpleRuntimeAgent)
 					// compile(pinstance)).acceptConnection(
 					// this, getProtocolInstance(), connection);
-					Serializable m1 = receiveObject(connection);
+					Serializable m1 = receiveObject(pattern, connection);
+					if(m1 == null) {
+						debug.printf("message is null!!!\n");
+					}
+					//logJson(LogFlag.debug,"receive-m1",m1);
 					Serializable m2 = pattern.f2(this, m1);
 					lock.unlock();
 					locked = false;
-					sendObject(connection, m2);
+					sendObject(pattern, connection, m2);
 				} finally {
 					if (locked) {
 						lock.unlock();
@@ -353,8 +354,9 @@ public class SimpleRuntime extends MicaRuntime implements
 
 							try {
 								Serializable m1 = pattern.f1(this);
-								sendObject(connection, m1);
-								Serializable m2 = receiveObject(connection);
+								//logJson(LogFlag.debug,"send-m1",m1);
+								sendObject(pattern, connection, m1);
+								Serializable m2 = receiveObject(pattern, connection);
 								pattern.f3(this, m2);
 							} catch (AbortRound ar) {
 								throw ar;
@@ -474,59 +476,75 @@ public class SimpleRuntime extends MicaRuntime implements
 		launchThread(true); // launch in a new thread
 	}
 
-	private <T extends Serializable> void sendObject(Connection connection,
-			T obj) throws FatalErrorHalt, AbortRound {
-		if (KRYO_SERIALIZATION)
-			sendObjectKryoOLD(connection, obj);
-		else
-			sendObjectJava(connection, obj);
-	}
+	
 
-	private <T extends Serializable> T receiveObject(Connection connection)
-			throws FatalErrorHalt, AbortRound {
-		if (KRYO_SERIALIZATION)
-			return receiveObjectKryoOLD(connection);
-		else
-			return receiveObjectJava(connection);
-	}
-
-	private <T extends Serializable> void sendObjectJava(Connection connection,
+	private <T extends Serializable> void sendObject(CommunicationPatternAgent agent, Connection connection,
 			T obj) throws FatalErrorHalt, AbortRound {
+
+		byte[] data = null;
+		
+		data = agent.serialize(obj);
+
+		byte[] lengthBytes = ByteBuffer.allocate(4).putInt(data.length).array();
+	
 		try {
-			ObjectOutputStream oos = new ObjectOutputStream(
-					connection.getOutputStream());
-			oos.writeObject(obj);
+			connection.getOutputStream().write(lengthBytes);
+			connection.getOutputStream().write(data);
 		} catch (SocketException se) {
 			handleError(GOSSIP_IO_ERROR, se);
 		} catch (IOException e) {
 			handleError(GOSSIP_IO_ERROR, e);
 		}
+
+	}
+
+	/*
+	private void dumpDataBuffer(byte[] data) {
+		debug.println(bytesToHex(data,data.length));
 	}
 	
-	private <T extends Serializable> void sendObjectKryo(Connection connection,
-			T obj) throws FatalErrorHalt, AbortRound {
-		try {
-			kryo.writeClassAndObject(new Output(connection.getOutputStream()), obj);
-		} catch (SocketException se) {
-			handleError(GOSSIP_IO_ERROR, se);
-		} catch (IOException e) {
-			handleError(GOSSIP_IO_ERROR, e);
-		} catch (KryoException ke) {
-			handleError(GOSSIP_IO_ERROR,ke);
-		}
-	}
-
+	public static String bytesToHex(byte[] bytes, int stop) {
+	    final char[] hexArray = {'0','1','2','3','4','5','6','7','8','9','A','B','C','D','E','F'};
+	    char[] hexChars = new char[bytes.length * 2];
+	    int v;
+	    for ( int j = 0; j < stop; j++ ) {
+	        v = bytes[j] & 0xFF;
+	        hexChars[j * 2] = hexArray[v >>> 4];
+	        hexChars[j * 2 + 1] = hexArray[v & 0x0F];
+	    }
+	    return new String(hexChars);
+	} */
+	
 	@SuppressWarnings("unchecked")
-	private <T extends Serializable> T receiveObjectKryo(Connection connection)
+	private <T extends Serializable> T receiveObject(CommunicationPatternAgent agent, Connection connection)
 			throws FatalErrorHalt, AbortRound {
+
 		try {
-			Input ois = new Input(
-					connection.getInputStream());
-			try{
-				return (T) kryo.readClassAndObject(ois);
-			} catch(KryoException ke) {
-				handleError(GOSSIP_IO_ERROR,ke);
+			InputStream is = connection.getInputStream();
+			byte[] lengthBytes = new byte[4];
+			int bytesRead = is.read(lengthBytes, 0, 4);
+
+			if (bytesRead != 4) {
+				throw new RuntimeException(String.format(
+						"expected 4 bytes, read %d\n", bytesRead));
 			}
+
+			int length = (lengthBytes[0] << 24) | (lengthBytes[1] << 16)
+					| (lengthBytes[2] << 8) | (lengthBytes[3]);
+			//debug.printf("  (incoming %d bytes)\n", length);
+
+			byte[] data = new byte[length];
+
+			bytesRead = is.read(data, 0, length);
+			if (bytesRead != length) {
+				debug.printf("ERROR read %d bytes, expected %d\n", bytesRead, length);
+				throw new RuntimeException(String.format(
+						"EXPECTED %d bytes, read %d, ERROR\n", length,
+						bytesRead));
+			}
+			
+			return agent.<T>deserialize(data);
+		
 		} catch (SocketException e) {
 			handleError(GOSSIP_IO_ERROR, e);
 		} catch (IOException e) {
@@ -535,93 +553,5 @@ public class SimpleRuntime extends MicaRuntime implements
 		return null; // unreachable
 	}
 
-	
-	private <T extends Serializable> void sendObjectKryoOLD(Connection connection,
-			T obj) throws FatalErrorHalt, AbortRound {
-		debug.printf("[DEBUG]: BEGIN SEND OBJECT %s\n", this.getAddress());
-
-		// Kryo kryo = new Kryo();
-		// kryo.register(getProtocolInstance().getClass());
-		ByteOutputStream buffer = new ByteOutputStream();
-		Output output = new Output(buffer);
-		// Serializer ser = new KryoReflectionFactorySupport();
-		try {
-			kryo.writeClassAndObject(output, obj);
-		} catch (Throwable t) {
-			// debug.printf("WTF %s\n", t);
-			handleError(GOSSIP_IO_ERROR, t);
-		}
-		//output.close();
-		byte[] bytes = buffer.getBytes();
-		debug.printf("  Kryo object size = %d\n", bytes.length);
-
-		try {
-			OutputStream os = connection.getOutputStream();
-			os.write(bytes);
-			//os.close();
-		} catch (IOException e) {
-			handleError(GOSSIP_IO_ERROR, e);
-		}
-		debug.printf("[DEBUG]: COMPLETE SEND OBJECT %s\n", this.getAddress());
-	}
-
-	@SuppressWarnings("unchecked")
-	private <T extends Serializable> T receiveObjectKryoOLD(Connection connection)
-			throws FatalErrorHalt, AbortRound {
-		// Kryo kryo = new Kryo();
-		// kryo.register(getProtocolInstance().getClass());
-
-		Input input = null;
-		debug.printf("[DEBUG]: RECV OBJECT %s\n", this.getAddress());
-
-		InputStream inputStream = null;
-		try {
-			inputStream = connection.getInputStream();
-			byte[] data = StreamUtil.readEntireInputStream(inputStream);
-			debug.printf("  read from input stream %d bytes\n", data.length);
-			input = new Input(new ByteArrayInputStream(data));
-			Object obj = null;
-			try {
-				obj = (T) kryo.readClassAndObject(input);
-			} catch (Throwable t) {
-				debug.printf("WTF2 %s\n", t);
-			}
-			debug.printf("   deserialized success\n");
-			return (T) obj;
-
-		} catch (IOException e) {
-			debug.printf("   failure @ %s %s ; abort round\n",getAddress(),e);
-//			throw new AbortRound();
-			handleError(GOSSIP_IO_ERROR, e);
-		} catch (com.esotericsoftware.kryo.KryoException ke) {
-			debug.printf("ERROR KryoException at %s:  %s\n", getAddress(), ke);
-
-			handleError(GOSSIP_IO_ERROR, ke);
-		} finally {
-			//input.close();
-		}
-		return null; // not reachable
-	}
-
-	@SuppressWarnings("unchecked")
-	private <T extends Serializable> T receiveObjectJava(Connection connection)
-			throws FatalErrorHalt, AbortRound {
-		try {
-			ObjectInputStream ois = new ObjectInputStream(
-					connection.getInputStream());
-			try {
-				return (T) ois.readObject();
-			} catch (ClassNotFoundException e) {
-				handleError(MISC_INTERNAL_ERROR, e);
-			} catch (IOException io) {
-				handleError(GOSSIP_IO_ERROR, io);
-			}
-		} catch (SocketException e) {
-			handleError(GOSSIP_IO_ERROR, e);
-		} catch (IOException e) {
-			handleError(GOSSIP_IO_ERROR, e);
-		}
-		return null; // unreachable
-	}
 
 }

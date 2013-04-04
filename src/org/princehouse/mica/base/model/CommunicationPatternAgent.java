@@ -36,13 +36,17 @@ public interface CommunicationPatternAgent {
 	 * @param m1
 	 * @return
 	 */
-	public abstract Serializable f2(MicaRuntime receiverRuntime, Serializable m1)
+	public Serializable f2(MicaRuntime receiverRuntime, Serializable m1)
 			throws FatalErrorHalt, AbortRound;
 
-	public abstract void f3(MicaRuntime initiatorRuntime, Serializable m2)
+	public void f3(MicaRuntime initiatorRuntime, Serializable m2)
 			throws FatalErrorHalt, AbortRound;
 
 	//public abstract void sendObject(Serializable obj, OutputStream out) throws FatalErrorHalt, AbortRound;
 	
 	//public abstract Serializable recvObject(InputStream in) throws FatalErrorHalt, AbortRound;
+	
+	public byte[] serialize(Serializable obj);
+	
+	public <T extends Serializable> T deserialize(byte[] data);
 }

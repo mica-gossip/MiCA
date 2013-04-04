@@ -37,6 +37,11 @@ public class FakeCompiler extends Compiler {
 
 		private ThreadLocal<MicaRuntime> initiator = new ThreadLocal<MicaRuntime>();
 
+		
+		public void setInitiator(MicaRuntime initiator) {
+			this.initiator.set(initiator);
+		}
+		
 		@Override
 		public Serializable f1(MicaRuntime initiatorRuntime) throws MicaException {
 			assert (initiator.get() == null);
@@ -72,6 +77,15 @@ public class FakeCompiler extends Compiler {
 			// do nothing
 		}
 
-		
+		@Override
+		public byte[] serialize(Serializable obj) {
+			return null;
+		}
+
+		@Override
+		public <T extends Serializable> T deserialize(byte[] data) {
+			return null;
+		}
+
 	}
 }

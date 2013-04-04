@@ -288,15 +288,21 @@ public class SimRound {
 			CommunicationPatternAgent patternSend = MiCA.getCompiler().compile(
 					rta.getProtocolInstance());
 
-			//CommunicationPatternAgent patternRecv = MiCA.getCompiler().compile(
-			//		rtb.getProtocolInstance());
-			CommunicationPatternAgent patternRecv = patternSend; // hack to accommodate fake compiler
+			CommunicationPatternAgent patternRecv = MiCA.getCompiler().compile(
+					rtb.getProtocolInstance());
 			
 			try {
 				Serializable m1 = patternSend.f1(rta);
+			
+				if(patternRecv instanceof FakeCompiler.FakeCommunicationPatternAgent) {
+					((FakeCompiler.FakeCommunicationPatternAgent) patternRecv).setInitiator(rta);
+				} 
+				
+				m1 = patternRecv.deserialize(patternSend.serialize(m1));
+				
+				
 				Serializable m2 = patternRecv.f2(rtb, m1);
-				
-				
+				m2 = patternSend.deserialize(patternRecv.serialize(m2));
 				patternSend.f3(rta, m2);
 
 				simulator.getRuntimeContextManager().setNativeRuntime(rta);

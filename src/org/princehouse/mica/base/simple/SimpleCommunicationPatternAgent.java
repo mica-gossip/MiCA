@@ -10,6 +10,7 @@ import org.princehouse.mica.base.model.MiCA;
 import org.princehouse.mica.base.model.Protocol;
 import org.princehouse.mica.base.model.MicaRuntime;
 import org.princehouse.mica.base.model.RuntimeState;
+import org.princehouse.mica.util.Serialization;
 
 public class SimpleCommunicationPatternAgent implements
 		CommunicationPatternAgent {
@@ -72,6 +73,17 @@ public class SimpleCommunicationPatternAgent implements
 		SimpleM m2 = (SimpleM) o;
 		initiatorRuntime.setProtocolInstance(m2.p);
 		initiatorRuntime.setRuntimeState(m2.runtimeState);
+	}
+
+	@Override
+	public byte[] serialize(Serializable obj) {
+		return Serialization.serializeDefault(obj);
+	}
+
+	@SuppressWarnings("unchecked")
+	@Override
+	public <T extends Serializable> T deserialize(byte[] data) {
+		return (T) Serialization.deserializeDefault(data);
 	}
 
 }

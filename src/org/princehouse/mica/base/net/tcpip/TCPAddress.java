@@ -129,6 +129,9 @@ public class TCPAddress implements Address, Externalizable, KryoSerializable {
 			port = DEFAULT_PORT;
 			host = addr;
 		}
+		if(host.indexOf("/") >= 0) {
+			host = host.substring(0,host.indexOf("/"));
+		}
 		return new TCPAddress(InetAddress.getByName(host), port);
 	}
 
@@ -193,14 +196,21 @@ public class TCPAddress implements Address, Externalizable, KryoSerializable {
 
 	@Override
 	public void read(Kryo kryo, Input in) {
-		// TODO Auto-generated method stub
-		address = (InetAddress) kryo.readObject(in, InetAddress.class);
-		port = (Integer) kryo.readObject(in, Integer.class);
+		String val = kryo.readObject(in, String.class);
+
+		TCPAddress temp;
+		try {
+			temp = TCPAddress.valueOf(val);
+			address = temp.address;
+			port = temp.port;
+		} catch (UnknownHostException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 	}
 
 	@Override
 	public void write(Kryo kryo, Output out) {
-		kryo.writeObject(out,address);
-		kryo.writeObject(out,(Integer)port);
+		kryo.writeObject(out,toString());
 	}
 }
