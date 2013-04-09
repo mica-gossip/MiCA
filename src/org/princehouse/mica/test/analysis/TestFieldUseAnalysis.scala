@@ -1,28 +1,18 @@
 package org.princehouse.mica.test.analysis
 
-import _root_.org.princehouse.mica.base.model.Compiler
-import _root_.org.princehouse.mica.base.model.CommunicationPatternAgent
-import _root_.org.princehouse.mica.base.model.Protocol
-import _root_.org.princehouse.mica.base.simple.SimpleCommunicationPatternAgent
-import _root_.org.princehouse.mica.util.scala.SootUtils
-import _root_.org.princehouse.mica.util.scala.SootViz
+import scala.collection.JavaConversions.asScalaBuffer
+import scala.collection.JavaConversions.iterableAsScalaIterable
+import scala.collection.JavaConversions.seqAsJavaList
+import org.princehouse.mica.test.analysis.C1TestProtocol
+import org.princehouse.mica.util.scala.SootUtils
 import soot.options.Options
-import soot.SootClass
-import soot.Scene
-import soot.Body
-import soot.Transform
-import soot.toolkits.graph.UnitGraph
 import soot.toolkits.graph.ExceptionalUnitGraph
-import soot.BodyTransformer
+import soot.Local
 import soot.PackManager
-import collection.JavaConversions._
-import collection.immutable.Map
-import collection.immutable.Set
-import soot.toolkits.scalar.ForwardFlowAnalysis
-import soot.toolkits.graph.DirectedGraph
-import soot.toolkits.graph.pdg._
-import soot._
-import _root_.org.princehouse.mica.test.analysis.C1TestProtocol
+import soot.Scene
+import soot.SootClass
+import soot.SootMethod
+import org.princehouse.mica.util.scala.SootViz
 
 object TestPointsToSpark {
 
@@ -30,7 +20,7 @@ object TestPointsToSpark {
 
     val protocolClass = classOf[C1TestProtocol]
 
-    val sootArgs = "-W -app -f jimple -p jb use-original-names:true -p cg.spark on -p cg.spark simplify-offline:true -p jop.cse on -p wjop.smb on -p wjop.si off".split(" ")
+    val sootArgs = "-w -W -app -f jimple -p jb use-original-names:true -p cg.spark on -p cg.spark simplify-offline:true -p jop.cse on -p wjop.smb on -p wjop.si off".split(" ")
     Options.v().parse(sootArgs)
 
     val c = SootUtils.forceResolveJavaClass(protocolClass, SootClass.BODIES)
@@ -86,6 +76,18 @@ object TestPointsToSpark {
     }
 
     println("pta class is " + pta.getClass().getName())
+    
+    
+    val cg = Scene.v().getCallGraph()
+    
+    println("---- writing call graph to sootOutput/callgraph.dot")
+    SootViz.exportCallGraphToDot(cg,"sootOutput/callgraph.dot")
+    
+    println("number of call graph edges: %d\n".format( cg.size() ));
+    
+    
+    // ------------------ analyze field usage
+    
     
     // org.princehouse.mica.test.analysis
 
