@@ -7,9 +7,68 @@ import soot._
 import soot.util._
 import java.io._
 import soot.options._
+import soot.jimple.toolkits.callgraph.CallGraph
+import soot.jimple.toolkits.callgraph.Edge
 
 object SootUtils {
 
+  // inter-procedural
+  def getUsedFields(method: SootMethod, cg: CallGraph, visited: collection.mutable.Set[SootMethod] = collection.mutable.Set[SootMethod]()): Set[SootField] = {
+    // precondition: method is not in visited
+
+    visited += method
+
+    if (!method.hasActiveBody()) {
+      println("  [[getUsedFields: " + method + "]]   NO ACTIVE BODY")
+      return Set[SootField]()
+    } else {
+      println("  [[getUsedFields: " + method + "]]")
+    }
+
+    var fields = getUsedFields(method)
+
+    for (edge: Edge <- cg.edgesOutOf(method)) {
+      val sm = edge.getTgt().method()
+      if (!visited.contains(sm)) {
+        fields = fields.union(getUsedFields(sm, cg, visited))
+      }
+    }
+
+    fields
+  }
+
+  // obj can be:  SootMethod, soot.Unit
+  // not inter-procedural
+  def getUsedFields(obj: Any): Set[SootField] = {
+    var fields = Set[SootField]()
+
+    println("getUsedFields: " + obj)
+    obj match {
+      case method: SootMethod =>
+        val body = method.getActiveBody()
+        for (u <- body.getUnits()) {
+          fields = fields.union(getUsedFields(u))
+        }
+      case unit: soot.Unit =>
+        for (valbox <- unit.getUseBoxes()) {
+          for (value <- subValues(valbox.getValue())) {
+            fields = fields.union(getUsedFields(value))
+          }
+        }
+      case value: soot.Value =>
+        value match {
+          case fr: InstanceFieldRef =>
+            fields = fields + fr.getField()
+          case _ =>
+            for (v <- subValues(value)) {
+              fields = fields.union(getUsedFields(v))
+            }
+        }
+      case _ =>
+        throw new RuntimeException("unrecognized input type for getUsedFields")
+    }
+    fields
+  }
   // compile a jimple class into a .class file
   def writeSootClass(sClass: SootClass): scala.Unit = {
     val outfile = SourceLocator.v.getFileNameFor(sClass, soot.options.Options.output_format_class)
@@ -230,12 +289,12 @@ object SootUtils {
    * thenStmts: Either a unit or a list of units
    * elseStmts: Either a unit or a list of units
    */
-  def ifThenElse(condition:Value, thenClause:Any, elseClause:Any) : List[Unit] = {
+  def ifThenElse(condition: Value, thenClause: Any, elseClause: Any): List[Unit] = {
     val j = Jimple.v
 
     val finished = j.newNopStmt()
-    
-    def asUnitList(v:Any) = {
+
+    def asUnitList(v: Any) = {
       v match {
         case x: Unit => List(x)
         case x: List[Unit] => x
@@ -247,16 +306,16 @@ object SootUtils {
       case x: AbstractJimpleIntBinopExpr => x
       case _ =>
         condition.getType() match {
-          case t:BooleanType => 
+          case t: BooleanType =>
             j.newEqExpr(condition, TRUE)
           case _ =>
-            throw new RuntimeException("unrecognized type for BinopExpr casting")   
+            throw new RuntimeException("unrecognized type for BinopExpr casting")
         }
     }
-    
+
     val elseList = asUnitList(elseClause)
-    
-    j.newIfStmt(binopCondition, elseList.head) :: asUnitList(thenClause) ::: List(j.newGotoStmt(finished)) ::: elseList ::: List(finished) 
+
+    j.newIfStmt(binopCondition, elseList.head) :: asUnitList(thenClause) ::: List(j.newGotoStmt(finished)) ::: elseList ::: List(finished)
   }
 
 }

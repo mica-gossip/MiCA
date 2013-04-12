@@ -14,80 +14,22 @@ import soot.SootClass
 import soot.SootMethod
 import org.princehouse.mica.util.scala.SootViz
 
-object TestFieldUseAnalysis {
+object TestFieldUseAnalysisLocal {
 
   def main(args: Array[String]): scala.Unit = {
 
     val protocolClass = classOf[C1TestProtocol]
-
-    val sootArgs = "-w -W -app -f jimple -p jb use-original-names:true -p cg.spark on -p cg.spark simplify-offline:true -p jop.cse on -p wjop.smb on -p wjop.si off".split(" ")
-    Options.v().parse(sootArgs)
-
-    val c = SootUtils.forceResolveJavaClass(protocolClass, SootClass.BODIES)
+    Scene.v().loadClassAndSupport(protocolClass.getName())
+        val c = SootUtils.forceResolveJavaClass(protocolClass, SootClass.BODIES)
     c.setApplicationClass()
     Scene.v().loadNecessaryClasses()
+
     val entryMethod: SootMethod = c.getMethodByName("update")
+    entryMethod.retrieveActiveBody()
     Scene.v().setEntryPoints(List(entryMethod))
-    PackManager.v.runPacks
-
-    val pta = Scene.v().getPointsToAnalysis()
-
-    val body = entryMethod.retrieveActiveBody()
-    val cfg: ExceptionalUnitGraph = new ExceptionalUnitGraph(body)
-
-    println("------------------ points to sets-----------------")
-    var allLocals = collection.mutable.Set[Local]()
-    
-    for (node <- cfg) {
-      SootUtils.dumpUnit(node)
-
-      for (supervalue <- node.getUseBoxes()) {
-        for (value <- SootUtils.subValuesLeaves(supervalue.getValue())) {
-          val pointsTo: Option[soot.PointsToSet] = value match {
-            case x: soot.Local =>
-              allLocals.add(x)
-              Some(pta.reachingObjects(node, x))
-            case x: soot.jimple.internal.JInstanceFieldRef =>
-              val base = x.getBase()
-              base match {
-                case b:soot.Local =>
-                  Some(pta.reachingObjects(node, b, x.getField()))
-                case _ =>
-                  println("confusion: don't know how to handle base of class %s".format(base.getClass().getName()))
-                  None
-              }
-            case _ => None
-          }
-          
-          pointsTo match {
-            case Some(objSet) => 
-            	println("[%s set] = %s".format(value,(if(objSet.isEmpty) "empty" else objSet)))
-            case None => 
-          }
-        }
-      }
-      println("")
-    }
-    
-    println("---------------------- all locals points-to info, no context")
-    for(local:Local <- allLocals.toSet) {
-      val rset = pta.reachingObjects(local)
-      println("   %s : %s -->  %s ".format(local, rset.possibleTypes(), rset))
-    }
-
-    println("pta class is " + pta.getClass().getName())
-    
-    
-    val cg = Scene.v().getCallGraph()
-    
-    println("---- writing call graph to sootOutput/callgraph.dot")
-    SootViz.exportCallGraphToDot(cg,"sootOutput/callgraph.dot")
-    
-    println("number of call graph edges: %d\n".format( cg.size() ));
-    
-    
-    println("analyzing used fields of entry method")
-    for(field <- SootUtils.getUsedFields(entryMethod,cg)) {
+   
+    println("analyzing local used fields of entry method")
+    for(field <- SootUtils.getUsedFields(entryMethod)) {
       println("  field: " + field)
     }
     
