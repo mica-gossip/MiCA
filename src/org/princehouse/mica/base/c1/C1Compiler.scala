@@ -21,33 +21,97 @@ import collection.immutable.Set
 import soot.toolkits.scalar.ForwardFlowAnalysis
 import soot.toolkits.graph.DirectedGraph
 import soot.toolkits.graph.pdg._
+import soot.SootMethod
+import com.esotericsoftware.kryo.Kryo
+
+class AnalysisResult(val kryo:Kryo) {}
+
+object C1CompilerCache {
+  var analysisCache: Map[java.lang.Class[_ <: Protocol], AnalysisResult] = Map()
+}
 
 class C1Compiler extends Compiler {
-
-  private val pattern = new SimpleCommunicationPatternAgent;
-
-  private var analysisCache: Map[java.lang.Class[_ <: Protocol], AnalysisResult] = Map()
-
+  
   def compile(p: Protocol): CommunicationPatternAgent = {
-    analyze(p.getClass)
-    pattern
+    val kryo:Kryo = doStaticAnalysis(p.getClass()).kryo
+    return new C1CommunicationPatternAgent(kryo)
   }
 
-  private def analyze(pclass: java.lang.Class[_ <: Protocol]) = {
-    analysisCache.get(pclass) match {
+  // doStaticAnalysis is a memoizing facade for doStaticAnalysisHelper
+  private def doStaticAnalysis(pclass: java.lang.Class[_ <: Protocol]) = {
+    C1CompilerCache.analysisCache.get(pclass) match {
       case Some(result) => result
       case None => {
-        val result = doAnalysis(pclass)
-        analysisCache = analysisCache + (pclass -> result)
+        val result = doStaticAnalysisHelper(pclass)
+        C1CompilerCache.analysisCache = C1CompilerCache.analysisCache + (pclass -> result)
         result
       }
     }
   }
 
-  private def doAnalysis(pclass: java.lang.Class[_ <: Protocol]) = {
+  private def doStaticAnalysisHelper(pclass: java.lang.Class[_ <: Protocol]) : AnalysisResult = {
+    val sootArgs = "-w -W -app -f jimple -p jb use-original-names:true -p cg.spark on -p cg.spark simplify-offline:true -p jop.cse on -p wjop.smb on -p wjop.si off".split(" ")
+    Options.v().parse(sootArgs)
+    val c = SootUtils.forceResolveJavaClass(pclass, SootClass.BODIES)
+    c.setApplicationClass()
+    Scene.v().loadNecessaryClasses()
+    val entryMethod: SootMethod = c.getMethodByName("update")
+    Scene.v().setEntryPoints(List(entryMethod))
+    PackManager.v.runPacks
+    val pta = Scene.v().getPointsToAnalysis()
+    val cg = Scene.v().getCallGraph()
+    val usedFieldsSoot = SootUtils.getUsedFields(entryMethod, cg);
+    
+    val classesOfInterest: Set[Class[_]] = Set(pclass) // fixme expand to include other classes
+
+    val usedFieldsJava = usedFieldsSoot.map(SootUtils.sootFieldToField)
+    
+    val kryo = new Kryo()
+    for(cls <- classesOfInterest) {
+      kryo.register(cls, new ExclusiveFieldSerializer(kryo, cls, usedFieldsJava, classesOfInterest))
+    }
+     
+    return new AnalysisResult(kryo)
+  }
+}
+    /*
     println("C1Compiler: analyze " + pclass.getName)
 
     val result = new AnalysisResult
+    initializeSoot
+    var sclass = SootUtils.forceResolveJavaClass(pclass, SootClass.BODIES)
+    val Some(smethod) = SootUtils.getInheritedMethodByName(sclass, "update")
+
+    sclass = SootUtils.scene.loadClassAndSupport(smethod.getDeclaringClass.getName)
+    sclass.setApplicationClass()
+    val body = smethod.retrieveActiveBody()
+
+    // Load the control flow graph
+    val cfg: ExceptionalUnitGraph = new ExceptionalUnitGraph(body)
+    SootViz.exportSootDirectedGraphToDot(cfg, "debug/cfg.dot")
+
+    // Get the PDG.  For info on this PDG implementation, see:
+    // http://www.sable.mcgill.ca/soot/doc/soot/toolkits/graph/pdg/HashMutablePDG.html
+    if (false) {
+      val pdg = new HashMutablePDG(cfg)
+      SootViz.exportSootDirectedGraphToDot(pdg, "debug/pdg.dot")
+    }
+    val pointsto = new BogoPointsToAnalysis(cfg)
+    pointsto.go
+
+    println("\n\n==================== Results")
+    for (node <- cfg) {
+      println("node: " + node)
+      println("------------------------------------------")
+      println("points-to before:")
+      println(SootUtils.indentString(pointsto.getFlowBefore(node).toString))
+      println("------------------------------------------")
+      println("points-to after:")
+      println(SootUtils.indentString(pointsto.getFlowAfter(node).toString))
+      println("------------------------------------------\n\n")
+    }
+    result
+*/
 
     // limit the singletons to this chunk of code, so they can possibly be replaced later with something more sustainable
     // -w is whole program mode for inter-procedural analysis
@@ -55,7 +119,6 @@ class C1Compiler extends Compiler {
     //val sootArgs = Array[String]("-v","-w","-f","jimple","-dump-body","jb")
     //val sootArgs = Array[String]("-w", "-f", "jimple")
     // note: -dump-cfg ALL prints out a lotta spam...  view with dotview script
-    initializeSoot
     //val sootArgs = Array[String]("-w", "-f", "jimple")
     /*
     val sootArgs = Array[String]("-f", "jimple")
@@ -75,51 +138,16 @@ class C1Compiler extends Compiler {
     }
     println("Done") */
 
-    var sclass = SootUtils.forceResolveJavaClass(pclass, SootClass.BODIES)
-    val Some(smethod) = SootUtils.getInheritedMethodByName(sclass, "update")
-
-    sclass = SootUtils.scene.loadClassAndSupport(smethod.getDeclaringClass.getName)
-    sclass.setApplicationClass()
-    val body = smethod.retrieveActiveBody()
-
-    // Load the control flow graph
-    val cfg: ExceptionalUnitGraph = new ExceptionalUnitGraph(body)
-    SootViz.exportSootDirectedGraphToDot(cfg, "debug/cfg.dot")
-
-    // Get the PDG.  For info on this PDG implementation, see:
-    // http://www.sable.mcgill.ca/soot/doc/soot/toolkits/graph/pdg/HashMutablePDG.html
-    if (false) {
-      val pdg = new HashMutablePDG(cfg)
-      SootViz.exportSootDirectedGraphToDot(pdg, "debug/pdg.dot")
-    }
-
     //pdg.constructPDG()
     // Initial flow info
     //val entryData = new UnitData()
     //entryData.addPath(new soot.jimple.ThisRef(smethod.getDeclaringClass().getType()), new Location("A"))
     //entryData.addPath(new soot.jimple.ParameterRef(smethod.getParameterType(0), 0), new Location("B"))
-
     //val flow = new TestDataFlow(cfg, entryData)
     //flow.go
-    val pointsto = new BogoPointsToAnalysis(cfg)
-    pointsto.go
+  
 
-    println("\n\n==================== Results")
-    for (node <- cfg) {
-      println("node: " + node)
-      println("------------------------------------------")
-      println("points-to before:")
-      println(SootUtils.indentString(pointsto.getFlowBefore(node).toString))
-      println("------------------------------------------")
-      println("points-to after:")
-      println(SootUtils.indentString(pointsto.getFlowAfter(node).toString))
-      println("------------------------------------------\n\n")
-
-    }
-    result
-  }
-
-  private var sootInitialized = false
+ /* private var sootInitialized = false
 
   def initializeSoot: Unit = {
     //    PackManager.v().getPack("jtp").add(new
@@ -129,9 +157,12 @@ class C1Compiler extends Compiler {
       sootInitialized = true
       // SootUtils.packManager.getPack("jap").add(new C1MayUseFieldAnalysis)
     }
-  }
-}
+  } */
 
+
+/*
+ * 
+ 
 class Path {}
 case class Location(name: String) extends Path {}
 case class Assignment(source: soot.Value) extends Path {}
@@ -282,11 +313,11 @@ class C1Transformer extends BodyTransformer {
 class C1MayUseFieldAnalysis extends Transform("jap.c1fieldanalysis", new C1Transformer) {
 
 }
+ */
 
-class AnalysisResult {
 
-}
-
+/*
+ * 
 class ObjectReference {
 }
 
@@ -308,3 +339,4 @@ class Read(ref: ObjectReference) {
 class ReadField(ref: ObjectReference, fieldName: String) {
 }
 
+*/

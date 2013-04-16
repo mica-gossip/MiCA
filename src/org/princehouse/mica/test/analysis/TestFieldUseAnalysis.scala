@@ -22,7 +22,6 @@ object TestFieldUseAnalysis {
 
     val sootArgs = "-w -W -app -f jimple -p jb use-original-names:true -p cg.spark on -p cg.spark simplify-offline:true -p jop.cse on -p wjop.smb on -p wjop.si off".split(" ")
     Options.v().parse(sootArgs)
-
     val c = SootUtils.forceResolveJavaClass(protocolClass, SootClass.BODIES)
     c.setApplicationClass()
     Scene.v().loadNecessaryClasses()

@@ -167,7 +167,7 @@ public class SimpleRuntime extends MicaRuntime implements
 					Serializable m2 = pattern.f2(this, m1);
 					lock.unlock();
 					locked = false;
-					sendObject(pattern, connection, m2);
+					sendObject(pattern, connection, "m2", m2);
 				} finally {
 					if (locked) {
 						lock.unlock();
@@ -355,7 +355,7 @@ public class SimpleRuntime extends MicaRuntime implements
 							try {
 								Serializable m1 = pattern.f1(this);
 								//logJson(LogFlag.debug,"send-m1",m1);
-								sendObject(pattern, connection, m1);
+								sendObject(pattern, connection, "m1", m1);
 								Serializable m2 = receiveObject(pattern, connection);
 								pattern.f3(this, m2);
 							} catch (AbortRound ar) {
@@ -478,13 +478,14 @@ public class SimpleRuntime extends MicaRuntime implements
 
 	
 
-	private <T extends Serializable> void sendObject(CommunicationPatternAgent agent, Connection connection,
+	private <T extends Serializable> void sendObject(CommunicationPatternAgent agent, Connection connection, String logMessageName,
 			T obj) throws FatalErrorHalt, AbortRound {
 
 		byte[] data = null;
 		
 		data = agent.serialize(obj);
-
+		logJson(LogFlag.serialization, "mica-serialize-bytes-"+logMessageName, data.length);
+		
 		byte[] lengthBytes = ByteBuffer.allocate(4).putInt(data.length).array();
 	
 		try {

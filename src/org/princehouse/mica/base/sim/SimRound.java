@@ -298,11 +298,17 @@ public class SimRound {
 					((FakeCompiler.FakeCommunicationPatternAgent) patternRecv).setInitiator(rta);
 				} 
 				
-				m1 = patternRecv.deserialize(patternSend.serialize(m1));
+				byte[] m1bytes = patternSend.serialize(m1);
+				rta.logJson(LogFlag.serialization, "mica-serialize-bytes-m1", m1bytes.length);
+				m1 = patternRecv.deserialize(m1bytes);
 				
 				
 				Serializable m2 = patternRecv.f2(rtb, m1);
-				m2 = patternSend.deserialize(patternRecv.serialize(m2));
+				
+				byte[] m2bytes = patternRecv.serialize(m2);
+				rtb.logJson(LogFlag.serialization, "mica-serialize-bytes-m2", m2bytes.length);
+				m2 = patternSend.deserialize(m2bytes);
+				
 				patternSend.f3(rta, m2);
 
 				simulator.getRuntimeContextManager().setNativeRuntime(rta);

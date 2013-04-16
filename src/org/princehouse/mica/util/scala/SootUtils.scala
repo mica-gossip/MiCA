@@ -9,6 +9,8 @@ import java.io._
 import soot.options._
 import soot.jimple.toolkits.callgraph.CallGraph
 import soot.jimple.toolkits.callgraph.Edge
+import com.esotericsoftware.kryo.Kryo
+import org.princehouse.mica.base.model.MiCA
 
 object SootUtils {
 
@@ -41,8 +43,7 @@ object SootUtils {
   // not inter-procedural
   def getUsedFields(obj: Any): Set[SootField] = {
     var fields = Set[SootField]()
-
-    println("getUsedFields: " + obj)
+   // println("getUsedFields (%s): ".format(obj.getClass().getName()) + obj)
     obj match {
       case method: SootMethod =>
         val body = method.getActiveBody()
@@ -50,10 +51,10 @@ object SootUtils {
           fields = fields.union(getUsedFields(u))
         }
       case unit: soot.Unit =>
+     //   dumpUnit(unit)
         for (valbox <- unit.getUseBoxes()) {
-          for (value <- subValues(valbox.getValue())) {
-            fields = fields.union(getUsedFields(value))
-          }
+          //println("    debug: unit-use-box " + i + " = " + valbox.getValue())
+          fields = fields.union(getUsedFields(valbox.getValue()))
         }
       case value: soot.Value =>
         value match {
@@ -318,4 +319,19 @@ object SootUtils {
     j.newIfStmt(binopCondition, elseList.head) :: asUnitList(thenClause) ::: List(j.newGotoStmt(finished)) ::: elseList ::: List(finished)
   }
 
+  def getDefaultClassLoader() : ClassLoader = { 
+  	  return classOf[MiCA].getClassLoader()
+  }
+  
+  // translate from soot.SootClass to java.lang.Class
+  def sootClassToClass(sc:SootClass) : Class[_] = {
+	  return getDefaultClassLoader().loadClass(sc.getPackageName() + "." + sc.getName())
+  }
+  
+  // translate from soot.SootField to java.lang.reflect.Field
+  def sootFieldToField(sf:SootField) : java.lang.reflect.Field = {
+	  val jclass = sootClassToClass(sf.getDeclaringClass())
+	  return jclass.getField(sf.getName())
+  }
+  
 }

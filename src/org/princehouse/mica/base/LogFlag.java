@@ -6,7 +6,8 @@ import org.princehouse.mica.util.Functional;
 
 public enum LogFlag {
 	init(0, true), state(1, true), view(2, true), rate(3, true), select(4, true), error(
-			5, true), runtime(6, true), user(7, true), merge(8,true), debug(9,true), state_initial(10,true), detectFailure(11,true), gossip(12,true);
+			5, true), runtime(6, true), user(7, true), merge(8,true), debug(9,true), state_initial(10,true), 
+			detectFailure(11,true), gossip(12,true), serialization(13,true);
 
 	public int mask;
 	public boolean defaultValue;
