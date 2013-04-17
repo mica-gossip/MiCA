@@ -1,7 +1,5 @@
 package org.princehouse.mica.base.c1
 
-package org.princehouse.mica.util.scala
-
 import soot.jimple.internal._
 import soot.toolkits.graph.ExceptionalUnitGraph
 import soot.toolkits.scalar.ForwardFlowAnalysis

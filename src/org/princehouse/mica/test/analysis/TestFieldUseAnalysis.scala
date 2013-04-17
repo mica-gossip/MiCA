@@ -3,7 +3,6 @@ package org.princehouse.mica.test.analysis
 import scala.collection.JavaConversions.asScalaBuffer
 import scala.collection.JavaConversions.iterableAsScalaIterable
 import scala.collection.JavaConversions.seqAsJavaList
-import org.princehouse.mica.test.analysis.C1TestProtocol
 import org.princehouse.mica.util.scala.SootUtils
 import soot.options.Options
 import soot.toolkits.graph.ExceptionalUnitGraph

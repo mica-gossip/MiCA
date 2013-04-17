@@ -50,6 +50,7 @@ class C1Compiler extends Compiler {
   }
 
   private def doStaticAnalysisHelper(pclass: java.lang.Class[_ <: Protocol]) : AnalysisResult = {
+    //println("DEBUG: c1 static analysis 1")
     val sootArgs = "-w -W -app -f jimple -p jb use-original-names:true -p cg.spark on -p cg.spark simplify-offline:true -p jop.cse on -p wjop.smb on -p wjop.si off".split(" ")
     Options.v().parse(sootArgs)
     val c = SootUtils.forceResolveJavaClass(pclass, SootClass.BODIES)
@@ -63,11 +64,13 @@ class C1Compiler extends Compiler {
     val usedFieldsSoot = SootUtils.getUsedFields(entryMethod, cg);
     
     val classesOfInterest: Set[Class[_]] = Set(pclass) // fixme expand to include other classes
-
+ 
     val usedFieldsJava = usedFieldsSoot.map(SootUtils.sootFieldToField)
     
     val kryo = new Kryo()
     for(cls <- classesOfInterest) {
+      // This kryo.register line was causing a mysterious "illegal cyclic reference" scala build error.  Commented out and in 
+      // and everything's fine now.
       kryo.register(cls, new ExclusiveFieldSerializer(kryo, cls, usedFieldsJava, classesOfInterest))
     }
      
