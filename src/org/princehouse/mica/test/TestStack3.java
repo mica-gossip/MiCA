@@ -23,7 +23,7 @@ import fj.F3;
 public class TestStack3 extends TestHarness {
 
 	/**
-	 * @param args
+	 * @param 	args
 	 * @throws UnknownHostException 
 	 */
 	public static void main(String[] args)  {

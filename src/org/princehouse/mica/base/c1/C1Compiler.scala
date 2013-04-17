@@ -1,28 +1,20 @@
 package org.princehouse.mica.base.c1
 
-import _root_.org.princehouse.mica.base.model.Compiler
-import _root_.org.princehouse.mica.base.model.CommunicationPatternAgent
-import _root_.org.princehouse.mica.base.model.Protocol
-import _root_.org.princehouse.mica.base.simple.SimpleCommunicationPatternAgent
-import _root_.org.princehouse.mica.util.scala.SootUtils
-import _root_.org.princehouse.mica.util.scala.SootViz
-import soot.options.Options
-import soot.SootClass
-import soot.Scene
-import soot.Body
-import soot.Transform
-import soot.toolkits.graph.UnitGraph
-import soot.toolkits.graph.ExceptionalUnitGraph
-import soot.BodyTransformer
-import soot.PackManager
-import collection.JavaConversions._
-import collection.immutable.Map
-import collection.immutable.Set
-import soot.toolkits.scalar.ForwardFlowAnalysis
-import soot.toolkits.graph.DirectedGraph
-import soot.toolkits.graph.pdg._
-import soot.SootMethod
+import scala.collection.JavaConversions._
+import scala.collection.immutable.Map
+import scala.collection.immutable.Set
+import org.princehouse.mica.base.model.CommunicationPatternAgent
+import org.princehouse.mica.base.model.Compiler
+import org.princehouse.mica.base.model.Protocol
+import org.princehouse.mica.util.reflection.ReflectionUtil
+import org.princehouse.mica.util.scala.SootUtils
 import com.esotericsoftware.kryo.Kryo
+import soot.options.Options
+import soot.PackManager
+import soot.Scene
+import soot.SootClass
+import soot.SootMethod
+import java.lang.reflect.Field
 
 class AnalysisResult(val kryo:Kryo) {}
 
@@ -56,22 +48,33 @@ class C1Compiler extends Compiler {
     val c = SootUtils.forceResolveJavaClass(pclass, SootClass.BODIES)
     c.setApplicationClass()
     Scene.v().loadNecessaryClasses()
-    val entryMethod: SootMethod = c.getMethodByName("update")
+
+    
+    //val entryMethod: SootMethod = c.getMethodByName("update")
+    val entryMethod:SootMethod = SootUtils.getInheritedMethodByName(c,"update") match {
+      case Some(x) => x
+      case None => throw new RuntimeException("No update method found in protocol")
+    }
+    
     Scene.v().setEntryPoints(List(entryMethod))
     PackManager.v.runPacks
     val pta = Scene.v().getPointsToAnalysis()
     val cg = Scene.v().getCallGraph()
     val usedFieldsSoot = SootUtils.getUsedFields(entryMethod, cg);
     
-    val classesOfInterest: Set[Class[_]] = Set(pclass) // fixme expand to include other classes
- 
-    val usedFieldsJava = usedFieldsSoot.map(SootUtils.sootFieldToField)
+    //val classesOfInterest: Set[Class[_]] = Set(pclass) // fixme expand to include other classes
+    val protocolClasses = ReflectionUtil.getAllProtocolClasses()
+    
+    
+    val usedFieldsJava : java.util.Set[Field] = usedFieldsSoot.map(SootUtils.sootFieldToField)
+    
     
     val kryo = new Kryo()
-    for(cls <- classesOfInterest) {
+    for(cls <- protocolClasses) {
       // This kryo.register line was causing a mysterious "illegal cyclic reference" scala build error.  Commented out and in 
-      // and everything's fine now.
-      kryo.register(cls, new ExclusiveFieldSerializer(kryo, cls, usedFieldsJava, classesOfInterest))
+      // and everything's fine now.      
+      val serializer = new ExclusiveFieldSerializer(kryo, cls, usedFieldsJava)  
+      kryo.register(cls, serializer) 
     }
      
     return new AnalysisResult(kryo)

@@ -65,11 +65,11 @@ public class Serialization {
 	}
 
 	public static byte[] serializeDefault(Serializable obj) {
-		return serializeKryo(obj);
+		return serializeJava(obj); //fixme
 	}
 
 	public static Serializable deserializeDefault(byte[] data) {
-		return deserializeKryo(data);
+		return deserializeJava(data); // fixme
 	}
 
 	private static ThreadLocal<Kryo> kryo = new ThreadLocal<Kryo>();

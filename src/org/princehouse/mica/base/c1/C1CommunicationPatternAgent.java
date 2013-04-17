@@ -86,13 +86,13 @@ public class C1CommunicationPatternAgent implements
 
 	@Override
 	public byte[] serialize(Serializable obj) {
-		return Serialization.serializeDefault(obj);
+		return Serialization.serializeKryo(obj, kryo);
 	}
 
 	@SuppressWarnings("unchecked")
 	@Override
 	public <T extends Serializable> T deserialize(byte[] data) {
-		return (T) Serialization.deserializeDefault(data);
+		return (T) Serialization.deserializeKryo(data, kryo);
 	}
 
 }
