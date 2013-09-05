@@ -79,7 +79,7 @@ public class FakeCompiler extends Compiler {
 
 		@Override
 		public byte[] serialize(Serializable obj) {
-			return null;
+			return new byte[0];
 		}
 
 		@Override

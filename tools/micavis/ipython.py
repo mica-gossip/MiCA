@@ -12,8 +12,6 @@ micavis_py_dir = os.path.split(__file__)[0]
 mica_dir = os.path.split(os.path.split(micavis_py_dir)[0])[0]
 ipython_datafile = os.path.join(mica_dir, 'micavis_ipython_export.pickle')
 
-
-
 # stupid hack to avoid trying to pickle a function object...
 _picklemode = False
 

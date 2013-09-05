@@ -165,13 +165,13 @@ public class SimRound {
 			logJson(LogFlag.error, getSrc(), timeoutErrorMsg, null);
 			sim.getRuntime(getSrc()).getProtocolInstance().unreachable(lock);
 			sim.getRuntimeContextManager().clear();
-			
+
 			/*
-			sim.SPAM = true;
-			System.err.printf("unreachable: %s %s.lock(%s)    [holder=%s]\n",
-					getClass().getSimpleName(), getSrc(), lock,
-					sim.getLockHolder(lock));
-					*/
+			 * sim.SPAM = true;
+			 * System.err.printf("unreachable: %s %s.lock(%s)    [holder=%s]\n",
+			 * getClass().getSimpleName(), getSrc(), lock,
+			 * sim.getLockHolder(lock));
+			 */
 		}
 
 		public abstract void onAcquireLock();
@@ -290,29 +290,34 @@ public class SimRound {
 
 			CommunicationPatternAgent patternRecv = MiCA.getCompiler().compile(
 					rtb.getProtocolInstance());
-			
+
 			try {
 				Serializable m1 = patternSend.f1(rta);
-			
-				if(patternRecv instanceof FakeCompiler.FakeCommunicationPatternAgent) {
-					((FakeCompiler.FakeCommunicationPatternAgent) patternRecv).setInitiator(rta);
-				} 
-				
+
+				if (patternRecv instanceof FakeCompiler.FakeCommunicationPatternAgent) {
+					((FakeCompiler.FakeCommunicationPatternAgent) patternRecv)
+							.setInitiator(rta);
+				}
+
 				byte[] m1bytes = patternSend.serialize(m1);
-				rta.logJson(LogFlag.serialization, "mica-serialize-bytes-m1", m1bytes.length);
+				assert (m1bytes != null);
+				rta.logJson(LogFlag.serialization, "mica-serialize-bytes-m1",
+						m1bytes.length);
+
 				m1 = patternRecv.deserialize(m1bytes);
-				
-				
+
 				Serializable m2 = patternRecv.f2(rtb, m1);
-				
+
 				byte[] m2bytes = patternRecv.serialize(m2);
-				rtb.logJson(LogFlag.serialization, "mica-serialize-bytes-m2", m2bytes.length);
+				rtb.logJson(LogFlag.serialization, "mica-serialize-bytes-m2",
+						m2bytes.length);
 				m2 = patternSend.deserialize(m2bytes);
-				
+
 				patternSend.f3(rta, m2);
 
 				simulator.getRuntimeContextManager().setNativeRuntime(rta);
-				rta.logJson(LogFlag.gossip,"mica-gossip", new Address[]{round.src,round.dst});
+				rta.logJson(LogFlag.gossip, "mica-gossip", new Address[] {
+						round.src, round.dst });
 				rta.logState("gossip-initiator");
 				simulator.getRuntimeContextManager().clear();
 

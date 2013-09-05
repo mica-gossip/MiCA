@@ -6,6 +6,8 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.Serializable;
 
+import org.princehouse.mica.base.model.MiCA;
+
 import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.KryoException;
 import com.esotericsoftware.kryo.io.Input;
@@ -36,7 +38,7 @@ public class Serialization {
 	public static byte[] serializeKryo(Serializable obj) {
 		return serializeKryo(obj, getKryo());
 	}
-	
+
 	public static byte[] serializeKryo(Serializable obj, Kryo k) {
 
 		ByteOutputStream buffer = new ByteOutputStream();
@@ -47,17 +49,20 @@ public class Serialization {
 			throw ke;
 		}
 		output.close();
-		return buffer.getBytes();
+		byte[] bytes = buffer.getBytes();
+		assert(bytes != null);
+		return bytes;
 	}
 
 	public static Serializable deserializeKryo(byte[] data) {
 		return deserializeKryo(data, getKryo());
 	}
-	
+
 	public static Serializable deserializeKryo(byte[] data, Kryo k) {
+		
 		try {
-			Serializable obj = (Serializable) k.readClassAndObject(
-					new Input(new ByteArrayInputStream(data)));
+			Serializable obj = (Serializable) k.readClassAndObject(new Input(
+					new ByteArrayInputStream(data)));
 			return obj;
 		} catch (KryoException ke) {
 			throw ke;
@@ -65,11 +70,28 @@ public class Serialization {
 	}
 
 	public static byte[] serializeDefault(Serializable obj) {
-		return serializeJava(obj); //fixme
+		String sOpt = MiCA.getOptions().serializer;
+		if (sOpt.equals("java")) {
+			return serializeJava(obj); 
+		} else if (sOpt.equals("kryo")) {
+			return serializeKryo(obj);
+		} else {
+			throw new RuntimeException(
+					"unrecognized default serializer option: " + sOpt);
+		}
 	}
 
-	public static Serializable deserializeDefault(byte[] data) {
-		return deserializeJava(data); // fixme
+	public static Serializable deserializeDefault(byte[] data) {		
+		String sOpt = MiCA.getOptions().serializer;
+		if (sOpt.equals("java")) {
+			return deserializeJava(data); // fixme
+		} else if (sOpt.equals("kryo")) {
+			return deserializeKryo(data);
+		} else {
+			throw new RuntimeException(
+					"unrecognized default serializer option: " + sOpt);
+		}
+		
 	}
 
 	private static ThreadLocal<Kryo> kryo = new ThreadLocal<Kryo>();

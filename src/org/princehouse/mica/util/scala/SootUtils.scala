@@ -14,8 +14,21 @@ import org.princehouse.mica.base.model.MiCA
 
 object SootUtils {
 
-  // inter-procedural
-  def getUsedFields(method: SootMethod, cg: CallGraph, visited: collection.mutable.Set[SootMethod] = collection.mutable.Set[SootMethod]()): Set[SootField] = {
+  /**
+   * Return all fields that might be read or written (depending on params) by a call to method.
+   *
+   * Interprocedural version; runs recursively on the supplied call graph.
+   * 
+   * @param method The entry point method
+   * @param cg Call graph to use for recursive inter-procedural evaluation
+   * @param mayRead If true, include fields that may be read
+   * @param mayWrite If true, include fields that may be written
+   * @param visited For internal use; used to remember visited methods
+   * 
+   * FIXME clearly describe sources of imprecision and possibly throw exceptions or configure behavior for native methods and 
+   * methods whose bodies are otherwise unavailable.
+   */
+  def getUsedFields(method: SootMethod, cg: CallGraph, mayRead:Boolean=true, mayWrite:Boolean=true, visited: collection.mutable.Set[SootMethod] = collection.mutable.Set[SootMethod]()): Set[SootField] = {
     // precondition: method is not in visited
 
     visited += method
@@ -27,34 +40,49 @@ object SootUtils {
       println("  [[getUsedFields: " + method + "]]")
     }
 
-    var fields = getUsedFields(method)
+    var fields = getUsedFields(method, mayRead, mayWrite)
 
     for (edge: Edge <- cg.edgesOutOf(method)) {
       val sm = edge.getTgt().method()
       if (!visited.contains(sm)) {
-        fields = fields.union(getUsedFields(sm, cg, visited))
+        fields = fields.union(getUsedFields(sm, cg, mayRead, mayWrite, visited))
       }
     }
 
     fields
   }
 
-  // obj can be:  SootMethod, soot.Unit
-  // not inter-procedural
-  def getUsedFields(obj: Any): Set[SootField] = {
+  /**
+   * Return all fields that might be read or written (depending on params) by a call to this method.
+   *
+   * obj can be:  SootMethod, soot.Unit
+   * This version is not inter-procedural.  See the getUsedFields that takes a call graph parameter for that.
+   *
+   * mayRead:  If true, include fields that may be read
+   * mayWrite:  If true, include fields that may be assigned
+   */
+  def getUsedFields(obj: Any, mayRead: Boolean, mayWrite: Boolean): Set[SootField] = {
     var fields = Set[SootField]()
-   // println("getUsedFields (%s): ".format(obj.getClass().getName()) + obj)
+    // println("getUsedFields (%s): ".format(obj.getClass().getName()) + obj)
     obj match {
       case method: SootMethod =>
         val body = method.getActiveBody()
         for (u <- body.getUnits()) {
-          fields = fields.union(getUsedFields(u))
+          fields = fields.union(getUsedFields(u, mayRead, mayWrite))
         }
       case unit: soot.Unit =>
-     //   dumpUnit(unit)
-        for (valbox <- unit.getUseBoxes()) {
-          //println("    debug: unit-use-box " + i + " = " + valbox.getValue())
-          fields = fields.union(getUsedFields(valbox.getValue()))
+        //println("getUsedFields UNIT (%s): ".format(obj.getClass().getName()) + obj)
+        if (mayRead) {
+          for (valbox <- unit.getUseBoxes()) {
+            //println("    debug: unit-use-box = " + valbox.getValue())
+            fields = fields.union(getUsedFields(valbox.getValue(), mayRead, mayWrite))
+          }
+        }
+        if (mayWrite) {
+          for (valbox <- unit.getDefBoxes()) {
+            //println("    debug: unit-use-box = " + valbox.getValue())
+            fields = fields.union(getUsedFields(valbox.getValue(), mayRead, mayWrite))
+          }
         }
       case value: soot.Value =>
         value match {
@@ -62,7 +90,7 @@ object SootUtils {
             fields = fields + fr.getField()
           case _ =>
             for (v <- subValues(value)) {
-              fields = fields.union(getUsedFields(v))
+              fields = fields.union(getUsedFields(v, mayRead, mayWrite))
             }
         }
       case _ =>
@@ -319,19 +347,23 @@ object SootUtils {
     j.newIfStmt(binopCondition, elseList.head) :: asUnitList(thenClause) ::: List(j.newGotoStmt(finished)) ::: elseList ::: List(finished)
   }
 
-  def getDefaultClassLoader() : ClassLoader = { 
-  	  return classOf[MiCA].getClassLoader()
+  def getDefaultClassLoader(): ClassLoader = {
+    return classOf[MiCA].getClassLoader()
   }
-  
+
   // translate from soot.SootClass to java.lang.Class
-  def sootClassToClass(sc:SootClass) : Class[_] = {
-	  return getDefaultClassLoader().loadClass(sc.getPackageName() + "." + sc.getName())
+  def sootClassToClass(sc: SootClass): Class[_] = {
+    return getDefaultClassLoader().loadClass(sc.getPackageName() + "." + sc.getName())
   }
-  
+
   // translate from soot.SootField to java.lang.reflect.Field
-  def sootFieldToField(sf:SootField) : java.lang.reflect.Field = {
-	  val jclass = sootClassToClass(sf.getDeclaringClass())
-	  return jclass.getField(sf.getName())
+  def sootFieldToField(sf: SootField): java.lang.reflect.Field = {
+    try {
+      val jclass = sootClassToClass(sf.getDeclaringClass())
+      return jclass.getField(sf.getName())
+    } catch {
+      case e: java.lang.ClassNotFoundException => return null;
+    }
   }
-  
+
 }

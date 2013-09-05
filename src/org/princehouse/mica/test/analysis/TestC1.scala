@@ -19,7 +19,7 @@ object TestC1 {
     dist.put(new SimAddress("3"), 1)
     dist.put(new SimAddress("4"), 1)
     dist.ipnormalize()
-   // val p = new FindMinComparable[java.lang.Integer](3, new StaticOverlay(dist), Protocol.Direction.PUSHPULL)
+
     val p = new C1TestProtocol()
     
     val sim = new Simulator

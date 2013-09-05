@@ -1,0 +1,2 @@
+#!/bin/bash
+PYTHONPATH=$PYTHONPATH:$HOME/git/MiCA/tools ipython notebook --pylab inline

@@ -231,7 +231,6 @@ public abstract class MicaRuntime {
 		runtimeLoglock.unlock();
 	}
 
-
 	/**
 	 * Start the runtime. If you override this, be sure to call the inherited
 	 * run().
@@ -330,22 +329,36 @@ public abstract class MicaRuntime {
 		if (exception != null) {
 			if (exception instanceof FatalErrorHalt) {
 				throw (FatalErrorHalt) exception;
-			}
-			else if (exception instanceof AbortRound) {
+			} else if (exception instanceof AbortRound) {
 				throw (AbortRound) exception;
 			}
 		}
-		
+
 		RuntimeErrorResponse policy = getErrorPolicy(condition);
-		
-		logJson(LogFlag.error, "mica-error-handler",
-				String.format("%s -> %s", condition, policy));
-		
+
+		String lmsg = String.format("%s -> %s", condition, policy);
+		if (MiCA.getOptions().logErrorLocations) {
+			if (exception == null) {
+				lmsg += " (null exception)";
+			} else {
+				StackTraceElement[] st = exception.getStackTrace();
+				if (st != null && st.length > 0) {
+					StackTraceElement ste = st[0];
+					lmsg += String.format(" (%s:%d)", ste.getFileName(),
+							ste.getLineNumber());
+				} else {
+					lmsg += " (no stack trace)";
+				}
+			}
+		}
+
+		logJson(LogFlag.error, "mica-error-handler", lmsg);
+
 		switch (policy) {
 		case FATAL_ERROR_HALT:
 			throw new FatalErrorHalt(condition, exception);
 		case IGNORE:
-			return; // do nothing 
+			return; // do nothing
 		case ABORT_ROUND:
 			throw new AbortRound(condition, exception);
 		default:

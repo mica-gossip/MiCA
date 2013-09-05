@@ -14,6 +14,11 @@ public class C1TestProtocol extends BaseProtocol {
 	public Inner z = new Inner();
 	public Integer[] q = new Integer[10];
 
+	public Integer unusedField = 12;
+	
+	public int getUnusedField() {
+		return unusedField;
+	}
 	/**
 	 * 
 	 */

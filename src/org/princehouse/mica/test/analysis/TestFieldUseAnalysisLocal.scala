@@ -24,7 +24,7 @@ object TestFieldUseAnalysisLocal {
     Scene.v().setEntryPoints(List(entryMethod))
    
     println("analyzing local used fields of entry method")
-    for(field <- SootUtils.getUsedFields(entryMethod)) {
+    for(field <- SootUtils.getUsedFields(entryMethod, mayRead=true, mayWrite=true)) {
       println("  field: " + field)
     }
    }

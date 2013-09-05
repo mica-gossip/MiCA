@@ -224,13 +224,9 @@ class MicaVisMicavis(MicaTrace):
         if self.adj is None:
             print "Warning: micavis.adj is None, graph window creation failed somehow"
 
-
-
         self.add_cursor_listener(self.current_node_state.set_i)
 
         # current_node_state[addr] -> the latest state assigned to node "addr" w.r.t. the cursor self.get_current_i()
-
-
 
         self.add_cursor_listener(self.current_node_view.set_i)
 

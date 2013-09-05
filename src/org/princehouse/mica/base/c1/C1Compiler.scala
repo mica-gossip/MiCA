@@ -16,16 +16,16 @@ import soot.SootClass
 import soot.SootMethod
 import java.lang.reflect.Field
 
-class AnalysisResult(val kryo:Kryo) {}
+class AnalysisResult(val kryo: Kryo) {}
 
 object C1CompilerCache {
   var analysisCache: Map[java.lang.Class[_ <: Protocol], AnalysisResult] = Map()
 }
 
 class C1Compiler extends Compiler {
-  
+
   def compile(p: Protocol): CommunicationPatternAgent = {
-    val kryo:Kryo = doStaticAnalysis(p.getClass()).kryo
+    val kryo: Kryo = doStaticAnalysis(p.getClass()).kryo
     return new C1CommunicationPatternAgent(kryo)
   }
 
@@ -41,43 +41,54 @@ class C1Compiler extends Compiler {
     }
   }
 
-  private def doStaticAnalysisHelper(pclass: java.lang.Class[_ <: Protocol]) : AnalysisResult = {
-    //println("DEBUG: c1 static analysis 1")
+  private def doStaticAnalysisHelper(pclass: java.lang.Class[_ <: Protocol]): AnalysisResult = {
     val sootArgs = "-w -W -app -f jimple -p jb use-original-names:true -p cg.spark on -p cg.spark simplify-offline:true -p jop.cse on -p wjop.smb on -p wjop.si off".split(" ")
     Options.v().parse(sootArgs)
     val c = SootUtils.forceResolveJavaClass(pclass, SootClass.BODIES)
     c.setApplicationClass()
     Scene.v().loadNecessaryClasses()
-
     
-    //val entryMethod: SootMethod = c.getMethodByName("update")
-    val entryMethod:SootMethod = SootUtils.getInheritedMethodByName(c,"update") match {
+    val entryMethod: SootMethod = SootUtils.getInheritedMethodByName(c, "update") match {
       case Some(x) => x
       case None => throw new RuntimeException("No update method found in protocol")
     }
-    
+
     Scene.v().setEntryPoints(List(entryMethod))
     PackManager.v.runPacks
     val pta = Scene.v().getPointsToAnalysis()
     val cg = Scene.v().getCallGraph()
-    val usedFieldsSoot = SootUtils.getUsedFields(entryMethod, cg);
-    
-    //val classesOfInterest: Set[Class[_]] = Set(pclass) // fixme expand to include other classes
+    val usedFieldsSoot = SootUtils.getUsedFields(entryMethod, cg, mayRead=true, mayWrite=true);
+
     val protocolClasses = ReflectionUtil.getAllProtocolClasses()
-    
-    
-    val usedFieldsJava : java.util.Set[Field] = usedFieldsSoot.map(SootUtils.sootFieldToField)
-    
-    
+
+    // might be null if there's a security exception trying to load the field's declaring class
+    val usedFieldsScala = usedFieldsSoot.map(SootUtils.sootFieldToField).filter(_ != null)
+
+    val usedFieldsJava: java.util.Set[Field] = usedFieldsScala
+
+    dumpUsedGossipFields(usedFieldsScala, protocolClasses)
+
     val kryo = new Kryo()
-    for(cls <- protocolClasses) {
-      // This kryo.register line was causing a mysterious "illegal cyclic reference" scala build error.  Commented out and in 
+    for (cls <- protocolClasses) {
+      // TODO there's some scala build bug here.  If you get "C1Compiler not found" errors, comment then uncomment the following line...
+      kryo.register(cls,new ExclusiveFieldSerializer(kryo, cls, usedFieldsJava))
+          // This kryo.register line was causing a mysterious "illegal cyclic reference" scala build error.  Commented out and in 
       // and everything's fine now.      
-      val serializer = new ExclusiveFieldSerializer(kryo, cls, usedFieldsJava)  
-      kryo.register(cls, serializer) 
-    }
      
+    }
+
     return new AnalysisResult(kryo)
+  }
+
+  def dumpUsedGossipFields(usedFieldsScala:Set[Field],protocolClasses:java.util.Set[Class[_ <: Protocol]]) = {
+	  for(pc <- protocolClasses) {
+	    println("USED fields for class " + pc + ":")
+	    for(f:Field <- usedFieldsScala) { 
+	      if(pc == f.getDeclaringClass()) {
+	        println("    " + f)
+	      }
+	    }
+	  }
   }
 }
     /*

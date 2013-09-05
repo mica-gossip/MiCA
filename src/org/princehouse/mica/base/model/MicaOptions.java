@@ -71,5 +71,11 @@ public class MicaOptions {
 	@Parameter(names = "-simUpdateDuration", description = "Simulator only. Duration (ms) of simuated update function execution.  -1 indicates real wall clock time (default).")
 	public int simUpdateDuration = -1;
 	
+	@Parameter(names = "-serializer", description = "Default serializer. Values are 'java' or 'kryo'. Ignored by c1.")
+	public String serializer = "java";
+	
+	@Parameter(names = "-logErrorLocations", description = "Record error locations in the logs, default false")
+	public boolean logErrorLocations = false;
+	
 	public String mainClassName = null;
 }

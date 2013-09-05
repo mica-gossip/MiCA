@@ -22,41 +22,31 @@ import fj.F3;
  */
 public class TestStack3 extends TestHarness {
 
+	@Override
+	public Protocol createProtocolInstance(int i, Address address,
+			Overlay view) {
+		MinAddressLeaderElection leaderElection = new MinAddressLeaderElection(view);
+		SpanningTreeOverlay tree = new SpanningTreeOverlay(leaderElection,view);
+		TreeCountNodes counting = new TreeCountNodes(tree);
+		TreeLabelNodes labeling = new TreeLabelNodes(counting);
+		return MergeIndependent.merge(
+				MergeIndependent.merge(
+						leaderElection,
+						labeling
+				),
+				MergeIndependent.merge(
+						tree,
+						counting
+				));
+	}
+	
 	/**
 	 * @param 	args
 	 * @throws UnknownHostException 
 	 */
 	public static void main(String[] args)  {
-
-
-		F3<Integer, Address, Overlay, Protocol> createNodeFunc = new F3<Integer, Address, Overlay, Protocol>() {
-			@Override
-			public Protocol f(Integer i, Address address,
-					Overlay view) {
-
-				MinAddressLeaderElection leaderElection = new MinAddressLeaderElection(view);
-
-				SpanningTreeOverlay tree = new SpanningTreeOverlay(leaderElection,view);
-
-				TreeCountNodes counting = new TreeCountNodes(tree);
-
-				TreeLabelNodes labeling = new TreeLabelNodes(counting);
-
-				return MergeIndependent.merge(
-						MergeIndependent.merge(
-								leaderElection,
-								labeling
-						),
-						MergeIndependent.merge(
-								tree,
-								counting
-						));
-			}
-		};
-
 		TestHarness test = new TestStack3();
-		test.addTimer(15*60*1000, test.taskStop());
-		test.runMain(args, createNodeFunc);
+		test.runMain(args);
 	}
 
 }
