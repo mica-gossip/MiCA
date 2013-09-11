@@ -57,8 +57,10 @@ public class TestHarness implements ProtocolInstanceFactory {
 		return getOptions().roundLength;
 	}
 
+	@Deprecated
 	public void addTimerRounds(double rounds, TimerTask task) {
-		addTimer((long) (rounds * getRoundMS()), task);
+		throw new RuntimeException("currently unsupported"); // TODO getRoundsMS depends on options being set, but this function is usually called prior to harness runMain
+		//addTimer((long) (rounds * getRoundMS()), task);
 	}
 	
 	public static int BASE_PORT = 8000;
@@ -203,6 +205,7 @@ public class TestHarness implements ProtocolInstanceFactory {
 		// implement ProtocolInstanceFactory
 		ProtocolInstanceFactory factory = this;
 		MicaOptions options = parseOptions(argv);
+		assert(options != null);
 		runMain(options, factory);
 	}
 
@@ -244,6 +247,9 @@ public class TestHarness implements ProtocolInstanceFactory {
 	private MicaOptions options = null;
 
 	public MicaOptions getOptions() {
+		if(options == null) {
+			throw new RuntimeException("TestHarness not initialized. Options must be set before calling this");
+		}
 		return options;
 	}
 
@@ -350,9 +356,7 @@ public class TestHarness implements ProtocolInstanceFactory {
 		setOptions(options);
 		setFactory(factory);
 		processOptions();
-
 		configure();
-		
 		runGraph();
 	}
 	

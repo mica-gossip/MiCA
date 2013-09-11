@@ -23,7 +23,7 @@ public class SimRuntime extends MicaRuntime {
 
 	@Override
 	public ReentrantLock getProtocolInstanceLock() {
-		throw new RuntimeException();
+		throw new RuntimeException(); // not yet supported in simulator! use -implementation simple
 	}
 
 	@Override

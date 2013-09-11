@@ -3,14 +3,14 @@ package org.princehouse.mica.example;
 import java.util.TimerTask;
 
 import org.princehouse.mica.base.LogFlag;
-import org.princehouse.mica.base.model.Protocol;
+import org.princehouse.mica.base.model.MiCA;
+import org.princehouse.mica.base.model.MicaOptions;
 import org.princehouse.mica.base.model.MicaRuntime;
+import org.princehouse.mica.base.model.Protocol;
 import org.princehouse.mica.base.net.model.Address;
 import org.princehouse.mica.lib.NaiveBroadcast;
 import org.princehouse.mica.lib.abstractions.Overlay;
 import org.princehouse.mica.util.harness.TestHarness;
-
-import fj.F3;
 
 /**
  * This is a merged four-protocol, self-stabilizing stack that sits on top of an
@@ -34,7 +34,7 @@ import fj.F3;
  * @author lonnie
  * 
  */
-public class DemoNaiveBroadcast{
+public class DemoNaiveBroadcast extends TestHarness {
 	
 	
 	public static class StringBroadcast extends NaiveBroadcast<String>  {
@@ -42,7 +42,7 @@ public class DemoNaiveBroadcast{
 		private static final long serialVersionUID = 1L;
 
 		public StringBroadcast(Overlay overlay) {
-			super(overlay);
+			super(overlay, 5);
 		}
 		
 		@Override
@@ -53,44 +53,39 @@ public class DemoNaiveBroadcast{
 		
 	};
 	
+	@Override
+	public MicaOptions defaultOptions() {
+		MicaOptions ops = super.defaultOptions();
+		ops.implementation = "simple";
+		return ops;
+	}
 	
 	/** 
 	 * See TestHarness.TestHarnessOptions for command line options 
 	 * @param args
 	 */
 	public static void main(String[] args) {
-		final TestHarness harness = new TestHarness();
+		final TestHarness harness = new DemoNaiveBroadcast();
 		
-		harness.addTimerRounds(5, new TimerTask() {
+		
+		harness.addTimer(5000, new TimerTask() {
 			@SuppressWarnings("unchecked")
 			@Override
 			public void run() {
 				MicaRuntime rt = harness.getRuntimes().get(0);
 				rt.getProtocolInstanceLock().lock();
+				MiCA.getRuntimeInterface().getRuntimeContextManager().setNativeRuntime(rt);
+				System.out.println("Sending message at 5 seconds");
 				((NaiveBroadcast<String>)rt.getProtocolInstance()).sendMessage("hello world");
 				rt.getProtocolInstanceLock().unlock();
 			}
-		});
-
-		
-		harness.runMain(args, createNodeFunc);
+		}); 
+		harness.runMain(args);
 	}
 
-	/**
-	 * This createNodeFunc is used by the test harness to create individual node instances.
-	 * 
-	 * F3 is a fancy way of creating a callable object that can be passed 
-	 * as a parameter to the test harness.  The f() function is what's important.
-	 * 
-	 * 
-	 */
-	public static F3<Integer, Address, Overlay, Protocol> createNodeFunc = new F3<Integer, Address, Overlay, Protocol>() {
-		@Override
-		public Protocol f(Integer i, Address address,
-				Overlay neighbors) {
-			// Create a static overlay to bootstrap our set of neighbors
-			StringBroadcast bc = new StringBroadcast(neighbors);
-			return bc;
-		}
-	};
+	public Protocol createProtocolInstance(int i, Address address,
+			Overlay view) {
+		return  new StringBroadcast(view);
+	}
+	
 }

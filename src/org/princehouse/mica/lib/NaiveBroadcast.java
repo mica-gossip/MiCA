@@ -3,8 +3,6 @@ package org.princehouse.mica.lib;
 import java.io.Serializable;
 import java.util.HashSet;
 import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
 import java.util.Set;
 
 import org.princehouse.mica.base.BaseProtocol;
@@ -14,8 +12,6 @@ import org.princehouse.mica.base.sugar.annotations.GossipUpdate;
 import org.princehouse.mica.base.sugar.annotations.ViewUniformRandom;
 import org.princehouse.mica.lib.abstractions.Broadcast;
 import org.princehouse.mica.lib.abstractions.Overlay;
-import org.princehouse.mica.util.Distribution;
-import org.princehouse.mica.util.Functional;
 
 public abstract class NaiveBroadcast<Message extends Serializable> extends BaseProtocol implements Broadcast<Message> {
 
@@ -23,48 +19,49 @@ public abstract class NaiveBroadcast<Message extends Serializable> extends BaseP
 
 	@ViewUniformRandom
 	public Overlay overlay;
+		
+	public int ttl; // newly received messages will be broadcast this many times before we stop sending them to neighbors
 	
-	public NaiveBroadcast(Overlay overlay) {
+	public NaiveBroadcast(Overlay overlay, int ttl) {
 		this.overlay = overlay;
+		this.ttl = ttl;
+	}
+		
+	// Seriously inefficient: Keep a set of all the message hashes we've ever received, so we can compare them with incoming
+	// messages
+	public Set<Integer> knownMessageHashes = new HashSet<Integer>();
+	
+	public static class MessageWithTTL<Message extends Serializable> implements Serializable {
+		private static final long serialVersionUID = 1L;
+		public Message message;
+		public int ttl;
+		public MessageWithTTL(Message m, int ttl) {
+			this.message = m;
+			this.ttl = ttl;
+		}
 	}
 	
-	private Map<Address,List<Message>> sendQueues = Functional.map();
-	
-	// Seriously inefficient: Keep a set of all the messages we've ever received, so we can compare them with incoming
-	// messages
-	public Set<Message> received = new HashSet<Message>();
-	
-	/**
-	 * NOT THREAD SAFE.  Acquire a lock first!
+	// messages with ttl > 0 
+	public LinkedList<MessageWithTTL<Message>> outbox = new LinkedList<MessageWithTTL<Message>>();
+			
+	 /* 
+	 * Called by user to originate a message
 	 */
 	@Override
 	public void sendMessage(Message m) {
-		//logJson("send-message", m);
-		received.add(m);
-		Distribution<Address> dist = getView();
-		Set<Address> view = new HashSet<Address>();
-		for(Map.Entry<Address,Double> entry  : dist.entrySet()) {
-			// enumerate nodes with non-zero probability of selection
-			if(entry.getValue() > 0) 
-				view.add(entry.getKey());
-		}
-		
-		// queue the message to send to everyone in the current view
-		for(Address a : view) {
-			List<Message> q = null;
-			if(!sendQueues.containsKey(a)) {
-				q = new LinkedList<Message>();
-				sendQueues.put(a, q);
-			}
-		}
-		
-		// purge non-view members from the send queues
-		for(Address a : Functional.list(sendQueues.keySet())) {
-			if(!view.contains(a))
-				sendQueues.remove(a);
-		}
+		receiveMessageInternal(m);
 	}
-
+	
+	public void receiveMessageInternal(Message m) {
+		int hash = m.hashCode();
+		if(knownMessageHashes.contains(hash)) {
+			return;
+		}	
+		knownMessageHashes.add(hash);
+		outbox.add(new MessageWithTTL<Message>(m, ttl));
+		receiveMessage(m);
+	}
+	
 	
 	@GossipUpdate
 	@Override
@@ -72,14 +69,17 @@ public abstract class NaiveBroadcast<Message extends Serializable> extends BaseP
 		@SuppressWarnings("unchecked")
 		NaiveBroadcast<Message> other = (NaiveBroadcast<Message>) that;
 		Address oa = other.getAddress();
-		if(!sendQueues.containsKey(oa)) 
-			return;
-		for(Message m : sendQueues.get(oa)) {
-			if(!other.received.contains(m)) {
-				other.sendMessage(m);
-				other.receiveMessage(m);
+		
+		LinkedList<MessageWithTTL<Message>> newout = new LinkedList<MessageWithTTL<Message>>();
+		
+		for(MessageWithTTL<Message> mt : outbox) {
+			other.receiveMessageInternal(mt.message);
+			mt.ttl -= 1;
+			if(mt.ttl > 0) {
+				newout.add(mt);
 			}
 		}
+		outbox = newout;
 	}
 	
 	/**
