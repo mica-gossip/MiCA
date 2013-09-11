@@ -8,7 +8,6 @@ import java.util.Random;
 import java.util.TimerTask;
 
 import org.princehouse.mica.base.LogFlag;
-import org.princehouse.mica.base.c1.C1Compiler;
 import org.princehouse.mica.base.exceptions.InvalidOption;
 import org.princehouse.mica.base.model.MiCA;
 import org.princehouse.mica.base.model.MicaOptions;
@@ -266,8 +265,6 @@ public class TestHarness implements ProtocolInstanceFactory {
 			MiCA.setCompiler(new SimpleCompiler());
 		} else if (options.compiler.equals("fake")) {
 			MiCA.setCompiler(new FakeCompiler());
-		} else if (options.compiler.equals("c1")) {
-			MiCA.setCompiler(new C1Compiler());
 		} else {
 			throw new InvalidOption("compiler", options.compiler);
 		}
