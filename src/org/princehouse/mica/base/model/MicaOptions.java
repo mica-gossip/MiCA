@@ -59,10 +59,10 @@ public class MicaOptions {
 	@Parameter(names = "-timeout", description = "Lock waiting timeout (ms)")
 	public int timeout = 5000;
 
-	@Parameter(names = "-ldisable", variableArity = true, description = "Log types to disable (space separated log names). See LogFlags enum for log names.")
+	@Parameter(names = "-ldisable", variableArity = true, description = "Log types to disable (space separated log names). See LogFlag enum for log names.")
 	public List<String> logsDisable = Functional.list();
 
-	@Parameter(names = "-lenable", variableArity = true, description = "Log types to enable (space separated log names). See LogFlags enum for log names.")
+	@Parameter(names = "-lenable", variableArity = true, description = "Log types to enable (space separated log names). See LogFlag enum for log names.")
 	public List<String> logsEnable = Functional.list();
 
 	@Parameter(names = "-cacheReflection", description = "(Expert) Cache foreign objects analysis. This will cause incorrect behavior if new sub-protocols created dynamically after initialization of the parent protocol.")
