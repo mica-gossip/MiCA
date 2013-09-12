@@ -54,13 +54,14 @@ public class TestHarness implements ProtocolInstanceFactory {
 	}
 
 	private int getRoundMS() {
+		if(getOptions() == null) { 
+			throw new RuntimeException("Test Harness options must be set prior to calling getRoundMS().  Use parseOptions + setOptions and then call runMain with no arguments");
+		}
 		return getOptions().roundLength;
 	}
 
-	@Deprecated
 	public void addTimerRounds(double rounds, TimerTask task) {
-		throw new RuntimeException("currently unsupported"); // TODO getRoundsMS depends on options being set, but this function is usually called prior to harness runMain
-		//addTimer((long) (rounds * getRoundMS()), task);
+		addTimer((long) (rounds * getRoundMS()), task);
 	}
 	
 	public static int BASE_PORT = 8000;
@@ -209,6 +210,13 @@ public class TestHarness implements ProtocolInstanceFactory {
 		runMain(options, factory);
 	}
 
+	public void runMain() {
+		if(getOptions() == null) {
+			throw new RuntimeException("Options must be set with parseOptions + setOptions prior to using this constructor");
+		}
+		runMain(getOptions(), this);
+	}
+	
 	public void runMain(String[] argv,
 			F3<Integer, Address, Overlay, Protocol> createNodeFunc) {
 		runMain(argv, TestHarness.factoryFromCNF(createNodeFunc));

@@ -516,7 +516,6 @@ public class SimpleRuntime extends MicaRuntime implements
 	    return new String(hexChars);
 	} */
 	
-	@SuppressWarnings("unchecked")
 	private <T extends Serializable> T receiveObject(CommunicationPatternAgent agent, Connection connection)
 			throws FatalErrorHalt, AbortRound {
 
@@ -532,12 +531,20 @@ public class SimpleRuntime extends MicaRuntime implements
 
 			int length = (lengthBytes[0] << 24) | (lengthBytes[1] << 16)
 					| (lengthBytes[2] << 8) | (lengthBytes[3]);
-			//debug.printf("  (incoming %d bytes)\n", length);
 
 			byte[] data = new byte[length];
 
-			bytesRead = is.read(data, 0, length);
-			if (bytesRead != length) {
+			int offset = 0;
+			while (offset < length) {
+			   bytesRead = is.read(data, offset, length - offset);
+			   if (bytesRead < 0) {
+			    debug.printf("ERROR when trying to get bytes from peer");
+			    break;
+			   }
+			   offset += bytesRead;
+			}
+			
+			if (offset != length) {
 				debug.printf("ERROR read %d bytes, expected %d\n", bytesRead, length);
 				throw new RuntimeException(String.format(
 						"EXPECTED %d bytes, read %d, ERROR\n", length,
