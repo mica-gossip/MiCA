@@ -43,6 +43,7 @@ public class SimpleRuntime extends MicaRuntime implements
 		AcceptConnectionHandler {
 
 	public static final boolean DEBUG_NETWORKING = false;
+	public static Random rng = new Random();
 
 	private ReentrantLock lock = new ReentrantLock();
 
@@ -143,14 +144,10 @@ public class SimpleRuntime extends MicaRuntime implements
 						connection.close();
 						return;
 					}
-					// ((SimpleRuntimeAgent)
-					// compile(pinstance)).acceptConnection(
-					// this, getProtocolInstance(), connection);
 					Serializable m1 = receiveObject(pattern, connection);
-					if(m1 == null) {
+					if (m1 == null) {
 						debug.printf("message is null!!!\n");
 					}
-					//logJson(LogFlag.debug,"receive-m1",m1);
 					Serializable m2 = pattern.f2(this, m1);
 					lock.unlock();
 					locked = false;
@@ -169,7 +166,7 @@ public class SimpleRuntime extends MicaRuntime implements
 				}
 				// failed to acquire lock; timeout
 				logJson(LogFlag.error, "mica-error-accept-connection"); // sim-ok
-				System.err.printf(
+				debug.printf(
 						"%s accept: failed to acquire lock (timeout)\n", this);
 				connection.close();
 			}
@@ -225,9 +222,11 @@ public class SimpleRuntime extends MicaRuntime implements
 		}
 
 		int intervalMS = getInterval();
+		int intervalLength = 0;
 		StopWatch stopwatch = new StopWatch();
 
 		try {
+			// Main gossip loop
 			while (running) {
 				try {
 					Connection connection = null;
@@ -240,7 +239,7 @@ public class SimpleRuntime extends MicaRuntime implements
 					MiCA.getRuntimeInterface().getRuntimeContextManager()
 							.clear();
 
-					int intervalLength = (int) (((double) intervalMS) / rate);
+					intervalLength = (int) (((double) intervalMS) / rate);
 					if (intervalLength <= 0) {
 						System.err
 								.printf("%s error: Rate * intervalMS <= 0.  Resetting to default.\n",
@@ -339,11 +338,15 @@ public class SimpleRuntime extends MicaRuntime implements
 								handleError(OPEN_CONNECTION_FAIL, ce);
 							}
 
+							if (connection == null) {
+								continue;
+							}
+
 							try {
 								Serializable m1 = pattern.f1(this);
-								//logJson(LogFlag.debug,"send-m1",m1);
 								sendObject(pattern, connection, "m1", m1);
-								Serializable m2 = receiveObject(pattern, connection);
+								Serializable m2 = receiveObject(pattern,
+										connection);
 								pattern.f3(this, m2);
 							} catch (AbortRound ar) {
 								throw ar;
@@ -416,7 +419,13 @@ public class SimpleRuntime extends MicaRuntime implements
 					MicaRuntime.debug.printf("%s -> %s, elapsed time %g s\n",
 							this, partner, sec);
 				} catch (AbortRound ar) {
+					if (lock.isLocked() && lock.isHeldByCurrentThread()) {
+						lock.unlock();
 					// ... do nothing, and on to the next round...
+					}
+                    // FIXME: ideally how long should we sleep to recover from deadlock? 
+                    int backoff = rng.nextInt(intervalLength);
+					Thread.sleep(backoff);
 				}
 			} // end while
 		} catch (FatalErrorHalt e) {
@@ -463,57 +472,60 @@ public class SimpleRuntime extends MicaRuntime implements
 		launchThread(true); // launch in a new thread
 	}
 
-	
-
-	private <T extends Serializable> void sendObject(CommunicationPatternAgent agent, Connection connection, String logMessageName,
-			T obj) throws FatalErrorHalt, AbortRound {
+	private <T extends Serializable> void sendObject(
+			CommunicationPatternAgent agent, Connection connection,
+			String logMessageName, T obj) throws FatalErrorHalt, AbortRound {
 
 		byte[] data = null;
-		
+
 		data = agent.serialize(obj);
-		logJson(LogFlag.serialization, "mica-serialize-bytes-"+logMessageName, data.length);
-		
+		logJson(LogFlag.serialization,
+				"mica-serialize-bytes-" + logMessageName, data.length);
+
 		byte[] lengthBytes = ByteBuffer.allocate(4).putInt(data.length).array();
-	
+
 		try {
 			connection.getOutputStream().write(lengthBytes);
 			connection.getOutputStream().write(data);
 		} catch (SocketException se) {
-			handleError(GOSSIP_IO_ERROR, se);
+            // FIXME: check that handleError is aborting on GOSSIP_IO_ERROR
+			//handleError(GOSSIP_IO_ERROR, se);
+			handleError(GOSSIP_IO_ERROR, new AbortRound());
 		} catch (IOException e) {
-			handleError(GOSSIP_IO_ERROR, e);
+            // FIXME: check that handleError is aborting on GOSSIP_IO_ERROR
+			//handleError(GOSSIP_IO_ERROR, e);
+			handleError(GOSSIP_IO_ERROR, new AbortRound());
 		}
 
 	}
 
 	/*
-	private void dumpDataBuffer(byte[] data) {
-		debug.println(bytesToHex(data,data.length));
-	}
-	
-	public static String bytesToHex(byte[] bytes, int stop) {
-	    final char[] hexArray = {'0','1','2','3','4','5','6','7','8','9','A','B','C','D','E','F'};
-	    char[] hexChars = new char[bytes.length * 2];
-	    int v;
-	    for ( int j = 0; j < stop; j++ ) {
-	        v = bytes[j] & 0xFF;
-	        hexChars[j * 2] = hexArray[v >>> 4];
-	        hexChars[j * 2 + 1] = hexArray[v & 0x0F];
-	    }
-	    return new String(hexChars);
-	} */
-	
-	private <T extends Serializable> T receiveObject(CommunicationPatternAgent agent, Connection connection)
+	 * private void dumpDataBuffer(byte[] data) {
+	 * debug.println(bytesToHex(data,data.length)); }
+	 * 
+	 * public static String bytesToHex(byte[] bytes, int stop) { final char[]
+	 * hexArray =
+	 * {'0','1','2','3','4','5','6','7','8','9','A','B','C','D','E','F'}; char[]
+	 * hexChars = new char[bytes.length * 2]; int v; for ( int j = 0; j < stop;
+	 * j++ ) { v = bytes[j] & 0xFF; hexChars[j * 2] = hexArray[v >>> 4];
+	 * hexChars[j * 2 + 1] = hexArray[v & 0x0F]; } return new String(hexChars);
+	 * }
+	 */
+
+	private <T extends Serializable> T receiveObject(
+			CommunicationPatternAgent agent, Connection connection)
 			throws FatalErrorHalt, AbortRound {
 
 		try {
 			InputStream is = connection.getInputStream();
 			byte[] lengthBytes = new byte[4];
-			int bytesRead = is.read(lengthBytes, 0, 4);
-
-			if (bytesRead != 4) {
-				throw new RuntimeException(String.format(
-						"expected 4 bytes, read %d\n", bytesRead));
+			int offset_hdr = 0;
+			while (offset_hdr < 4) {
+			   int _bytesRead = is.read(lengthBytes, offset_hdr, 4 - offset_hdr);
+			   if (_bytesRead <= 0) {
+			    throw new AbortRound();
+			   }
+			   offset_hdr += _bytesRead;
 			}
 
 			int length = (lengthBytes[0] << 24) | (lengthBytes[1] << 16)
@@ -522,31 +534,37 @@ public class SimpleRuntime extends MicaRuntime implements
 			byte[] data = new byte[length];
 
 			int offset = 0;
+			int bytesRead = 0;
 			while (offset < length) {
-			   bytesRead = is.read(data, offset, length - offset);
-			   if (bytesRead < 0) {
-			    debug.printf("ERROR when trying to get bytes from peer");
-			    break;
-			   }
-			   offset += bytesRead;
+				bytesRead = is.read(data, offset, length - offset);
+				if (bytesRead < 0) {
+					debug.printf("ERROR when trying to get bytes from peer");
+					//break;
+			    	throw new AbortRound();
+				}
+				offset += bytesRead;
 			}
-			
+
 			if (offset != length) {
-				debug.printf("ERROR read %d bytes, expected %d\n", bytesRead, length);
+				debug.printf("ERROR read %d bytes, expected %d\n", bytesRead,
+						length);
 				throw new RuntimeException(String.format(
 						"EXPECTED %d bytes, read %d, ERROR\n", length,
 						bytesRead));
 			}
-			
+
 			return agent.<T>deserialize(data);
-		
+
 		} catch (SocketException e) {
-			handleError(GOSSIP_IO_ERROR, e);
+            // FIXME check that handlError is aborting round on GOSSIP_IO_ERROR
+			//handleError(GOSSIP_IO_ERROR, e);
+			handleError(GOSSIP_IO_ERROR, new AbortRound());
 		} catch (IOException e) {
-			handleError(GOSSIP_IO_ERROR, e);
+            // FIXME check that handlError is aborting round on GOSSIP_IO_ERROR
+			handleError(GOSSIP_IO_ERROR, new AbortRound());
+			//handleError(GOSSIP_IO_ERROR, e);
 		}
 		return null; // unreachable
 	}
-
 
 }
