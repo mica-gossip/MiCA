@@ -4,5 +4,5 @@ import org.princehouse.mica.base.model.Protocol;
 
 public interface ProtocolFactory<T extends Protocol> {
 
-	public T create();
+    public T create();
 }

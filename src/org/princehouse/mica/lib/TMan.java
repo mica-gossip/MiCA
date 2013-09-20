@@ -11,24 +11,24 @@ import org.princehouse.mica.lib.abstractions.PeerSamplingService;
 
 public abstract class TMan extends BaseProtocol {
 
-	public PeerSamplingService peerSampler = null;
-		
-	@View
-	public Set<Address> view = new HashSet<Address>();
-	
-	public TMan(PeerSamplingService peerSampler) {
-		this.peerSampler = peerSampler;
-	}
-	
-	@Override
-	public void update(Protocol that) {
-		Set<Address> buffer = new HashSet<Address>();
-		Address thisDescriptor = getAddress();
-		buffer.add(thisDescriptor);
-		buffer.addAll(view);
-		buffer.addAll(peerSampler.getRandomPeers());
-	}
-	
-	public abstract Set<Address> selectView(Set<Address> buffer);
+    public PeerSamplingService peerSampler = null;
+
+    @View
+    public Set<Address> view = new HashSet<Address>();
+
+    public TMan(PeerSamplingService peerSampler) {
+        this.peerSampler = peerSampler;
+    }
+
+    @Override
+    public void update(Protocol that) {
+        Set<Address> buffer = new HashSet<Address>();
+        Address thisDescriptor = getAddress();
+        buffer.add(thisDescriptor);
+        buffer.addAll(view);
+        buffer.addAll(peerSampler.getRandomPeers());
+    }
+
+    public abstract Set<Address> selectView(Set<Address> buffer);
 
 }

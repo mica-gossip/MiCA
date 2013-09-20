@@ -16,42 +16,38 @@ import org.princehouse.mica.util.Functional;
  * FIXME not complete
  * 
  * @author lonnie
- *
+ * 
  */
 public class RingOverlayBuilder extends BaseProtocol implements SinglyLinkedRingOverlay {
-	
-	private static final long serialVersionUID = 1L;
-	
-	
-	public Set<Address> candidates;
-	public Address succ;
-	public Overlay underlay;
-	
-	public RingOverlayBuilder(Overlay underlay) {
-		candidates = Functional.set();
-		succ = getAddress();
-		this.underlay = underlay;
-	}
-	
-	@Override
-	public Address getSuccessor() {
-		// TODO Auto-generated method stub
-		return null;
-	}
 
-	@Override
-	public Distribution<Address> getOverlay(RuntimeState rts)
-			throws SelectException {
-		// TODO Auto-generated method stub
-		return null;
-	}
+    private static final long serialVersionUID = 1L;
 
-	@Override
-	public void update(Protocol that) {
-		// TODO Auto-generated method stub
-		// NOT IMPLEMENTED
-	}
+    public Set<Address> candidates;
+    public Address succ;
+    public Overlay underlay;
 
-	
-	
+    public RingOverlayBuilder(Overlay underlay) {
+        candidates = Functional.set();
+        succ = getAddress();
+        this.underlay = underlay;
+    }
+
+    @Override
+    public Address getSuccessor() {
+        // TODO Auto-generated method stub
+        return null;
+    }
+
+    @Override
+    public Distribution<Address> getOverlay(RuntimeState rts) throws SelectException {
+        // TODO Auto-generated method stub
+        return null;
+    }
+
+    @Override
+    public void update(Protocol that) {
+        // TODO Auto-generated method stub
+        // NOT IMPLEMENTED
+    }
+
 }

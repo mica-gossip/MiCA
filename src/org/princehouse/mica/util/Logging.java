@@ -32,154 +32,143 @@ import com.google.gson.stream.JsonWriter;
  */
 public class Logging {
 
-	public static class SelectEvent {
-		public Address selected = null;
-		transient public Distribution<Address> view = null;
-	};
+    public static class SelectEvent {
+        public Address selected = null;
+        transient public Distribution<Address> view = null;
+    };
 
-	public static class StateEvent {
-		public Object state;
-		public Distribution<Address> view;
-		public String stateType;
-	};
+    public static class StateEvent {
+        public Object state;
+        public Distribution<Address> view;
+        public String stateType;
+    };
 
-	private static GsonBuilder gsonBuilder = null;
-	private static Gson gson = null;
+    private static GsonBuilder gsonBuilder = null;
+    private static Gson gson = null;
 
-	public static synchronized Gson getGson() {
-		if (gson == null) {
-			gson = getGsonBuilder().create();
-		}
-		return gson;
-	}
+    public static synchronized Gson getGson() {
+        if (gson == null) {
+            gson = getGsonBuilder().create();
+        }
+        return gson;
+    }
 
-	public static GsonBuilder getGsonBuilder() {
-		if (gsonBuilder == null) {
-			gsonBuilder = new GsonBuilder();
-			initGsonBuilder();
-		}
-		return gsonBuilder;
-	}
+    public static GsonBuilder getGsonBuilder() {
+        if (gsonBuilder == null) {
+            gsonBuilder = new GsonBuilder();
+            initGsonBuilder();
+        }
+        return gsonBuilder;
+    }
 
-	/**
-	 * Any custom support for json-serialization of various classes should
-	 * happen here
-	 */
-	private static void initGsonBuilder() {
+    /**
+     * Any custom support for json-serialization of various classes should
+     * happen here
+     */
+    private static void initGsonBuilder() {
 
-		// Custom serialization for addresses
-		JsonSerializer<Address> addressSerializer = new JsonSerializer<Address>() {
-			@Override
-			public JsonElement serialize(Address src, Type typeOfSrc,
-					JsonSerializationContext context) {
-				return new JsonPrimitive(src.toString());
-			}
-		};
-		getGsonBuilder().registerTypeHierarchyAdapter(Address.class,
-				addressSerializer);
+        // Custom serialization for addresses
+        JsonSerializer<Address> addressSerializer = new JsonSerializer<Address>() {
+            @Override
+            public JsonElement serialize(Address src, Type typeOfSrc, JsonSerializationContext context) {
+                return new JsonPrimitive(src.toString());
+            }
+        };
+        getGsonBuilder().registerTypeHierarchyAdapter(Address.class, addressSerializer);
 
-		JsonSerializer<Throwable> throwableSerializer = new JsonSerializer<Throwable>() {
-			@Override
-			public JsonElement serialize(Throwable throwable, Type typeOfSrc,
-					JsonSerializationContext context) {
-				String stacktrace = Exceptions.stackTraceToString(throwable);
-				return new JsonPrimitive(stacktrace);
-			}
-		};
-		getGsonBuilder().registerTypeHierarchyAdapter(Throwable.class,
-				throwableSerializer);
+        JsonSerializer<Throwable> throwableSerializer = new JsonSerializer<Throwable>() {
+            @Override
+            public JsonElement serialize(Throwable throwable, Type typeOfSrc, JsonSerializationContext context) {
+                String stacktrace = Exceptions.stackTraceToString(throwable);
+                return new JsonPrimitive(stacktrace);
+            }
+        };
+        getGsonBuilder().registerTypeHierarchyAdapter(Throwable.class, throwableSerializer);
 
-		getGsonBuilder().registerTypeAdapterFactory(new TypeAdapterFactory() {
+        getGsonBuilder().registerTypeAdapterFactory(new TypeAdapterFactory() {
 
-			private HashMap<Class<?>, TypeAdapter<?>> typeAdapterCache = new HashMap<Class<?>, TypeAdapter<?>>();
-			private HashMap<TypeToken<?>, TypeAdapter<?>> originalAdapterCache = new HashMap<TypeToken<?>, TypeAdapter<?>>();
+            private HashMap<Class<?>, TypeAdapter<?>> typeAdapterCache = new HashMap<Class<?>, TypeAdapter<?>>();
+            private HashMap<TypeToken<?>, TypeAdapter<?>> originalAdapterCache = new HashMap<TypeToken<?>, TypeAdapter<?>>();
 
-			@SuppressWarnings("unchecked")
-			@Override
-			public <T> TypeAdapter<T> create(final Gson gson,
-					final TypeToken<T> type) {
-				Class<?> rawType = type.getRawType();
-				try {
-					rawType.asSubclass(Protocol.class);
-				} catch (ClassCastException e) {
-					return null; // not a subclass of protocol
-				}
+            @SuppressWarnings("unchecked")
+            @Override
+            public <T> TypeAdapter<T> create(final Gson gson, final TypeToken<T> type) {
+                Class<?> rawType = type.getRawType();
+                try {
+                    rawType.asSubclass(Protocol.class);
+                } catch (ClassCastException e) {
+                    return null; // not a subclass of protocol
+                }
 
-				synchronized (typeAdapterCache) {
-					if (typeAdapterCache.containsKey(rawType)) {
-						return (TypeAdapter<T>) typeAdapterCache.get(rawType);
-					}
-				}
+                synchronized (typeAdapterCache) {
+                    if (typeAdapterCache.containsKey(rawType)) {
+                        return (TypeAdapter<T>) typeAdapterCache.get(rawType);
+                    }
+                }
 
-				final TypeAdapterFactory factory = this;
+                final TypeAdapterFactory factory = this;
 
-				TypeAdapter<T> ta = new TypeAdapter<T>() {
+                TypeAdapter<T> ta = new TypeAdapter<T>() {
 
-					@Override
-					public T read(JsonReader arg0) throws IOException {
-						throw new RuntimeException(); // not implemented
-					}
+                    @Override
+                    public T read(JsonReader arg0) throws IOException {
+                        throw new RuntimeException(); // not implemented
+                    }
 
-					@Override
-					public void write(JsonWriter writer, T src)
-							throws IOException {
-						JsonObject obj = new JsonObject();
-						obj.addProperty("stateType", src.getClass()
-								.getSimpleName());
+                    @Override
+                    public void write(JsonWriter writer, T src) throws IOException {
+                        JsonObject obj = new JsonObject();
+                        obj.addProperty("stateType", src.getClass().getSimpleName());
 
-						TypeAdapter<T> originalProtAdapter = null;
-						synchronized (originalAdapterCache) {
-							if (originalAdapterCache.containsKey(type)) {
-								originalProtAdapter = (TypeAdapter<T>) originalAdapterCache
-										.get(type);
-							} else {
-								originalProtAdapter = gson.getDelegateAdapter(
-										factory, type);
-								originalAdapterCache.put(type,
-										originalProtAdapter);
-							}
-						}
-						obj.add("state", originalProtAdapter.toJsonTree(src));
+                        TypeAdapter<T> originalProtAdapter = null;
+                        synchronized (originalAdapterCache) {
+                            if (originalAdapterCache.containsKey(type)) {
+                                originalProtAdapter = (TypeAdapter<T>) originalAdapterCache.get(type);
+                            } else {
+                                originalProtAdapter = gson.getDelegateAdapter(factory, type);
+                                originalAdapterCache.put(type, originalProtAdapter);
+                            }
+                        }
+                        obj.add("state", originalProtAdapter.toJsonTree(src));
 
-						if (LogFlag.view.test()) {
-							obj.add("view",
-									gson.toJsonTree(((Protocol) src).getView()));
-						}
-						gson.toJson(obj, writer);
-					}
+                        if (LogFlag.view.test()) {
+                            obj.add("view", gson.toJsonTree(((Protocol) src).getView()));
+                        }
+                        gson.toJson(obj, writer);
+                    }
 
-				};
+                };
 
-				synchronized (typeAdapterCache) {
-					typeAdapterCache.put(rawType, ta);
-				}
-				return ta;
-			}
-		});
+                synchronized (typeAdapterCache) {
+                    typeAdapterCache.put(rawType, ta);
+                }
+                return ta;
+            }
+        });
 
-	}
+    }
 
-	private static final boolean ENABLE_LOCATION = false;
+    private static final boolean ENABLE_LOCATION = false;
 
-	/**
-	 * Returns a "filename:lineno" string for the location in the call stack
-	 * corresponding to framesUp frames above the call site. framesUp == 0
-	 * corresponds with the location invoking getCodeLocation, 1 is the callsite
-	 * of that function, etc.
-	 * 
-	 * @param framesUp
-	 * @return
-	 */
-	public static String getLocation(int framesUp) {
-		if (ENABLE_LOCATION) {
-			// this is actually really expensive.  disabled by default
-			StackTraceElement frame = Thread.currentThread().getStackTrace()[2 + framesUp];
-			int line = frame.getLineNumber();
-			String file = frame.getFileName();
-			return String.format("(%s:%s)", file, line);
-		} else {
-			return "(Logging.ENABLE_LOCATION disabled)";
-		}
-	}
+    /**
+     * Returns a "filename:lineno" string for the location in the call stack
+     * corresponding to framesUp frames above the call site. framesUp == 0
+     * corresponds with the location invoking getCodeLocation, 1 is the callsite
+     * of that function, etc.
+     * 
+     * @param framesUp
+     * @return
+     */
+    public static String getLocation(int framesUp) {
+        if (ENABLE_LOCATION) {
+            // this is actually really expensive. disabled by default
+            StackTraceElement frame = Thread.currentThread().getStackTrace()[2 + framesUp];
+            int line = frame.getLineNumber();
+            String file = frame.getFileName();
+            return String.format("(%s:%s)", file, line);
+        } else {
+            return "(Logging.ENABLE_LOCATION disabled)";
+        }
+    }
 
 }

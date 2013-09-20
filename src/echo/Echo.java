@@ -8,36 +8,36 @@ import org.princehouse.mica.lib.abstractions.Broadcast;
 import org.princehouse.mica.lib.abstractions.Overlay;
 
 public class Echo extends BaseProtocol implements Broadcast<String> {
-	private static final long serialVersionUID = 1L;
+    private static final long serialVersionUID = 1L;
 
-	@View
-	public Overlay overlay;
+    @View
+    public Overlay overlay;
 
-	public volatile String message;
+    public volatile String message;
 
-	public Echo(Overlay overlay) {
-		this.overlay = overlay;
-		this.message = "hello from " + getAddress().toString();
-	}
+    public Echo(Overlay overlay) {
+        this.overlay = overlay;
+        this.message = "hello from " + getAddress().toString();
+    }
 
-	@Override
-	public void update(Protocol that) {
-		try {
-			Echo other = (Echo) that;
-			receiveMessage("pull " + other.message);
-			other.receiveMessage("push " + this.message);
-		} catch (Throwable t) {
-			t.printStackTrace();
-		}
-	}
+    @Override
+    public void update(Protocol that) {
+        try {
+            Echo other = (Echo) that;
+            receiveMessage("pull " + other.message);
+            other.receiveMessage("push " + this.message);
+        } catch (Throwable t) {
+            t.printStackTrace();
+        }
+    }
 
-	@Override
-	public void sendMessage(String m) {
-		this.message = m;
-	}
+    @Override
+    public void sendMessage(String m) {
+        this.message = m;
+    }
 
-	@Override
-	public void receiveMessage(String m) {
-		logJson(LogFlag.user, "echo-receive", m);
-	}
+    @Override
+    public void receiveMessage(String m) {
+        logJson(LogFlag.user, "echo-receive", m);
+    }
 }

@@ -20,64 +20,65 @@ import org.princehouse.mica.util.Functional;
  */
 public class TreeLabelNodes extends BaseProtocol {
 
-	public TreeLabelNodes() {}
-	
-	private static final long serialVersionUID = 1L;
+    public TreeLabelNodes() {
+    }
 
-	private TreeCountNodes count;
+    private static final long serialVersionUID = 1L;
 
-	public Distribution<Address> getView() {
-		return count.getView();
-	}
+    private TreeCountNodes count;
 
-	private int label = 1;
+    public Distribution<Address> getView() {
+        return count.getView();
+    }
 
-	public TreeLabelNodes(TreeCountNodes count) {
-		this.count = count;
-	}
+    private int label = 1;
 
-	public int getLabel() {
-		return label;
-	}
+    public TreeLabelNodes(TreeCountNodes count) {
+        this.count = count;
+    }
 
-	private Map<Address, Integer> getChildLabelMap() {
-		Map<Address, Integer> mp = Functional.map();
-		List<Address> children = Functional.list(count.getTree().getChildren());
-		Collections.sort(children);
-		Map<Address, Integer> subtreeSizes = count.getSummaries();
-		int i = label + 1;
-		for (Address child : children) {
-			Integer childSubtreeSize = subtreeSizes.get(child);
-			if (childSubtreeSize == null) {
-				childSubtreeSize = 1;
-			}
-			mp.put(child, i);
-			i += childSubtreeSize;
-		}
-		return mp;
-	}
+    public int getLabel() {
+        return label;
+    }
 
-	public void setLabel(int label) {
-		this.label = label;
-	}
+    private Map<Address, Integer> getChildLabelMap() {
+        Map<Address, Integer> mp = Functional.map();
+        List<Address> children = Functional.list(count.getTree().getChildren());
+        Collections.sort(children);
+        Map<Address, Integer> subtreeSizes = count.getSummaries();
+        int i = label + 1;
+        for (Address child : children) {
+            Integer childSubtreeSize = subtreeSizes.get(child);
+            if (childSubtreeSize == null) {
+                childSubtreeSize = 1;
+            }
+            mp.put(child, i);
+            i += childSubtreeSize;
+        }
+        return mp;
+    }
 
-	@Override
-	public void preUpdate(Address selected) {
-		super.preUpdate(selected);
-		if (count.getTree().isRoot()) {
-			label = 1;
-		}
-	}
+    public void setLabel(int label) {
+        this.label = label;
+    }
 
-	@GossipUpdate
-	@Override
-	public void update(Protocol that) {
-		TreeLabelNodes child = (TreeLabelNodes) that;
-		Integer childLabel = getChildLabelMap().get(child);
-		if (childLabel == null) {
-			childLabel = label + 1;
-		}
-		child.setLabel(childLabel);
-	}
+    @Override
+    public void preUpdate(Address selected) {
+        super.preUpdate(selected);
+        if (count.getTree().isRoot()) {
+            label = 1;
+        }
+    }
+
+    @GossipUpdate
+    @Override
+    public void update(Protocol that) {
+        TreeLabelNodes child = (TreeLabelNodes) that;
+        Integer childLabel = getChildLabelMap().get(child);
+        if (childLabel == null) {
+            childLabel = label + 1;
+        }
+        child.setLabel(childLabel);
+    }
 
 }

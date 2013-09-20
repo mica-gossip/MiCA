@@ -16,96 +16,92 @@ import com.sun.xml.internal.messaging.saaj.util.ByteOutputStream;
 
 public class Serialization {
 
-	public static byte[] serializeJava(Serializable obj) {
-		ByteOutputStream buffer = new ByteOutputStream();
-		try {
-			new ObjectOutputStream(buffer).writeObject(obj);
-		} catch (IOException e) {
-			throw new RuntimeException(e);
-		}
-		return buffer.getBytes();
-	}
+    public static byte[] serializeJava(Serializable obj) {
+        ByteOutputStream buffer = new ByteOutputStream();
+        try {
+            new ObjectOutputStream(buffer).writeObject(obj);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+        return buffer.getBytes();
+    }
 
-	public static Serializable deserializeJava(byte[] data) {
-		try {
-			return (Serializable) new ObjectInputStream(
-					new ByteArrayInputStream(data)).readObject();
-		} catch (ClassNotFoundException e) {
-			throw new RuntimeException(e);
-		} catch (IOException e) {
-			throw new RuntimeException(e);
-		}
-	}
+    public static Serializable deserializeJava(byte[] data) {
+        try {
+            return (Serializable) new ObjectInputStream(new ByteArrayInputStream(data)).readObject();
+        } catch (ClassNotFoundException e) {
+            throw new RuntimeException(e);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
 
-	public static byte[] serializeKryo(Serializable obj) {
-		return serializeKryo(obj, getKryo());
-	}
+    public static byte[] serializeKryo(Serializable obj) {
+        return serializeKryo(obj, getKryo());
+    }
 
-	public static byte[] serializeKryo(Serializable obj, Kryo k) {
+    public static byte[] serializeKryo(Serializable obj, Kryo k) {
 
-		ByteOutputStream buffer = new ByteOutputStream();
-		Output output = new Output(buffer);
-		try {
-			k.writeClassAndObject(output, obj);
-		} catch (KryoException ke) {
-			throw ke;
-		}
-		output.close();
-		byte[] bytes = buffer.getBytes();
-		assert(bytes != null);
-		return bytes;
-	}
+        ByteOutputStream buffer = new ByteOutputStream();
+        Output output = new Output(buffer);
+        try {
+            k.writeClassAndObject(output, obj);
+        } catch (KryoException ke) {
+            throw ke;
+        }
+        output.close();
+        byte[] bytes = buffer.getBytes();
+        assert (bytes != null);
+        return bytes;
+    }
 
-	public static Serializable deserializeKryo(byte[] data) {
-		return deserializeKryo(data, getKryo());
-	}
+    public static Serializable deserializeKryo(byte[] data) {
+        return deserializeKryo(data, getKryo());
+    }
 
-	public static Serializable deserializeKryo(byte[] data, Kryo k) {
-		
-		try {
-			Serializable obj = (Serializable) k.readClassAndObject(new Input(
-					new ByteArrayInputStream(data)));
-			return obj;
-		} catch (KryoException ke) {
-			throw ke;
-		}
-	}
+    public static Serializable deserializeKryo(byte[] data, Kryo k) {
 
-	public static byte[] serializeDefault(Serializable obj) {
-		String sOpt = MiCA.getOptions().serializer;
-		if (sOpt.equals("java")) {
-			return serializeJava(obj); 
-		} else if (sOpt.equals("kryo")) {
-			return serializeKryo(obj);
-		} else {
-			throw new RuntimeException(
-					"unrecognized default serializer option: " + sOpt);
-		}
-	}
+        try {
+            Serializable obj = (Serializable) k.readClassAndObject(new Input(new ByteArrayInputStream(data)));
+            return obj;
+        } catch (KryoException ke) {
+            throw ke;
+        }
+    }
 
-	public static Serializable deserializeDefault(byte[] data) {		
-		String sOpt = MiCA.getOptions().serializer;
-		if (sOpt.equals("java")) {
-			return deserializeJava(data); // fixme
-		} else if (sOpt.equals("kryo")) {
-			return deserializeKryo(data);
-		} else {
-			throw new RuntimeException(
-					"unrecognized default serializer option: " + sOpt);
-		}
-		
-	}
+    public static byte[] serializeDefault(Serializable obj) {
+        String sOpt = MiCA.getOptions().serializer;
+        if (sOpt.equals("java")) {
+            return serializeJava(obj);
+        } else if (sOpt.equals("kryo")) {
+            return serializeKryo(obj);
+        } else {
+            throw new RuntimeException("unrecognized default serializer option: " + sOpt);
+        }
+    }
 
-	private static ThreadLocal<Kryo> kryo = new ThreadLocal<Kryo>();
+    public static Serializable deserializeDefault(byte[] data) {
+        String sOpt = MiCA.getOptions().serializer;
+        if (sOpt.equals("java")) {
+            return deserializeJava(data); // fixme
+        } else if (sOpt.equals("kryo")) {
+            return deserializeKryo(data);
+        } else {
+            throw new RuntimeException("unrecognized default serializer option: " + sOpt);
+        }
 
-	private static Kryo getKryo() {
-		if (kryo.get() == null) {
-			Kryo k = KryoUtil.defaultKryo();
-			kryo.set(k);
-			return k;
-		} else {
-			return kryo.get();
-		}
-	}
+    }
+
+    private static ThreadLocal<Kryo> kryo = new ThreadLocal<Kryo>();
+
+    private static Kryo getKryo() {
+        if (kryo.get() == null) {
+            Kryo k = KryoUtil.defaultKryo();
+            kryo.set(k);
+            return k;
+        } else {
+            return kryo.get();
+        }
+    }
 
 }

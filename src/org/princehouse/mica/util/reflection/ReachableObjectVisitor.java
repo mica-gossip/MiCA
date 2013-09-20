@@ -16,130 +16,130 @@ import soot.Modifier;
 
 public abstract class ReachableObjectVisitor {
 
-	private Set<Object> visited = new HashSet<Object>();
+    private Set<Object> visited = new HashSet<Object>();
 
-	public ReachableObjectVisitor() {
-	}
+    public ReachableObjectVisitor() {
+    }
 
-	/**
-	 * Analyze an object, calling visit once on each unique reachable non-primitive object
-	 * 
-	 * @param root
-	 */
-	public void analyze(final Object root) {
-		try {
-			AccessController.doPrivileged(new PrivilegedExceptionAction<ReachableObjectVisitor>() {
-				@Override
-				public ReachableObjectVisitor run() throws Exception {
-					analyzeHelper(root);
-					return null;
-				}
-				
-			});
-		} catch (PrivilegedActionException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-	}
-	
-	private void analyzeHelper(Object root) {
-		visited.clear();
+    /**
+     * Analyze an object, calling visit once on each unique reachable
+     * non-primitive object
+     * 
+     * @param root
+     */
+    public void analyze(final Object root) {
+        try {
+            AccessController.doPrivileged(new PrivilegedExceptionAction<ReachableObjectVisitor>() {
+                @Override
+                public ReachableObjectVisitor run() throws Exception {
+                    analyzeHelper(root);
+                    return null;
+                }
 
-		Stack<Object> s = new Stack<Object>();
-		s.push(root);
+            });
+        } catch (PrivilegedActionException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        }
+    }
 
-		while (s.size() > 0) {
-			Object o = s.pop();
-			if (o == null || visited.contains(o) || o.getClass().isPrimitive()) {
-				continue;
-			}
-			visit(o);
-			visited.add(o);
-			pushChildren(o, s);
-		}
-	}
+    private void analyzeHelper(Object root) {
+        visited.clear();
 
-	/**
-	 * Called once for each unique object encountered
-	 * 
-	 * @param reachable
-	 */
-	public abstract void visit(Object reachable);
+        Stack<Object> s = new Stack<Object>();
+        s.push(root);
 
-	@SuppressWarnings("rawtypes")
-	public void pushChildren(Object o, Stack<Object> stack) {
-		if(o == null) {
-			return;
-		}
-		else if (o instanceof Object[]) {
-			Object[] array = (Object[]) o;
-			if (array.getClass().getComponentType().isPrimitive())
-				return;
-			else
-				for (Object c : array) {
-					stack.push(c);
-				}
-		} else if (o.getClass().isPrimitive()) {
-			return;
-		} else {
-			// normal objects, inc. collections
-			Class<?> klass = o.getClass();
-			for (Field field : getAllFields(klass)) {
-				if(field.getType().isPrimitive()) {
-					continue;
-				} else {
-					try {
-						stack.push(field.get(o));
-					} catch (IllegalArgumentException e) {
-						// TODO Auto-generated catch block
-						e.printStackTrace();
-					} catch (IllegalAccessException e) {
-						// TODO Auto-generated catch block
-						e.printStackTrace();
-					}
-				}
-			}
-			
-			if(o instanceof Iterable) {
-				for(Object c : (Iterable) o) {
-					stack.push(c);
-				}
-			}
-		}
+        while (s.size() > 0) {
+            Object o = s.pop();
+            if (o == null || visited.contains(o) || o.getClass().isPrimitive()) {
+                continue;
+            }
+            visit(o);
+            visited.add(o);
+            pushChildren(o, s);
+        }
+    }
 
-	}
+    /**
+     * Called once for each unique object encountered
+     * 
+     * @param reachable
+     */
+    public abstract void visit(Object reachable);
 
-	private static Map<Class<?>, List<Field>> allFieldsCache = Functional.map();
+    @SuppressWarnings("rawtypes")
+    public void pushChildren(Object o, Stack<Object> stack) {
+        if (o == null) {
+            return;
+        } else if (o instanceof Object[]) {
+            Object[] array = (Object[]) o;
+            if (array.getClass().getComponentType().isPrimitive())
+                return;
+            else
+                for (Object c : array) {
+                    stack.push(c);
+                }
+        } else if (o.getClass().isPrimitive()) {
+            return;
+        } else {
+            // normal objects, inc. collections
+            Class<?> klass = o.getClass();
+            for (Field field : getAllFields(klass)) {
+                if (field.getType().isPrimitive()) {
+                    continue;
+                } else {
+                    try {
+                        stack.push(field.get(o));
+                    } catch (IllegalArgumentException e) {
+                        // TODO Auto-generated catch block
+                        e.printStackTrace();
+                    } catch (IllegalAccessException e) {
+                        // TODO Auto-generated catch block
+                        e.printStackTrace();
+                    }
+                }
+            }
 
-	/**
-	 * Get all fields, including private, inherited, and inherited private
-	 * 
-	 * @param klass
-	 * @return
-	 */
-	public static List<Field> getAllFields(Class<?> klass) {
-		if (allFieldsCache.containsKey(klass)) {
-			return allFieldsCache.get(klass);
-		} else {
-			List<Field> rval = null;
-			if(klass.equals(Object.class) || klass.getName().startsWith("java.")) {
-				// recursive base
-				rval = Functional.list();
-			} else {
-				rval = Functional.list(klass.getDeclaredFields());
-				Class<?> superklass = klass.getSuperclass();
-				Functional.extend(rval, getAllFields(superklass));
-			}
-			
-			for(Field field : rval) {
-				if(!Modifier.isPublic(field.getModifiers())) {
-					field.setAccessible(true);
-				}
-			}
-			
-			allFieldsCache.put(klass,rval);
-			return rval;
-		}
-	}
+            if (o instanceof Iterable) {
+                for (Object c : (Iterable) o) {
+                    stack.push(c);
+                }
+            }
+        }
+
+    }
+
+    private static Map<Class<?>, List<Field>> allFieldsCache = Functional.map();
+
+    /**
+     * Get all fields, including private, inherited, and inherited private
+     * 
+     * @param klass
+     * @return
+     */
+    public static List<Field> getAllFields(Class<?> klass) {
+        if (allFieldsCache.containsKey(klass)) {
+            return allFieldsCache.get(klass);
+        } else {
+            List<Field> rval = null;
+            if (klass.equals(Object.class) || klass.getName().startsWith("java.")) {
+                // recursive base
+                rval = Functional.list();
+            } else {
+                rval = Functional.list(klass.getDeclaredFields());
+                Class<?> superklass = klass.getSuperclass();
+                Functional.extend(rval, getAllFields(superklass));
+            }
+
+            for (Field field : rval) {
+                if (!Modifier.isPublic(field.getModifiers())) {
+                    field.setAccessible(true);
+                }
+            }
+
+            allFieldsCache.put(klass, rval);
+            return rval;
+        }
+    }
 
 }

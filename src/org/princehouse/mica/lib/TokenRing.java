@@ -47,79 +47,80 @@ import org.princehouse.mica.lib.abstractions.SinglyLinkedRingOverlay;
  * ring counter-clockwise (i.e., from successor to predecessor)
  * 
  * Override act() if you want the node to do something when it has the token.
- *
- * Depends on several input services: 
- *   ring, a SinglyLinkedRingOverlay
- *   leader, a LeaderElection implementation
- *   networkSize, a NetworkSizeCounter implementation 
- *   
+ * 
+ * Depends on several input services: ring, a SinglyLinkedRingOverlay leader, a
+ * LeaderElection implementation networkSize, a NetworkSizeCounter
+ * implementation
+ * 
  * @author lonnie
  * 
  */
 public abstract class TokenRing extends BaseProtocol {
 
-	private static final long serialVersionUID = 1L;
+    private static final long serialVersionUID = 1L;
 
-	@View
-	public SinglyLinkedRingOverlay ring = null;
-	private LeaderElection leader = null;
-	private NetworkSizeCounter kcount = null;
+    @View
+    public SinglyLinkedRingOverlay ring = null;
+    private LeaderElection leader = null;
+    private NetworkSizeCounter kcount = null;
 
-	private int counter = 0;
-	private boolean hasTokenStatus = false;
+    private int counter = 0;
+    private boolean hasTokenStatus = false;
 
-	public boolean hasToken() {
-		return hasTokenStatus;
-	}
+    public boolean hasToken() {
+        return hasTokenStatus;
+    }
 
-	/**
-	 * 
-	 * @param ring A singly-linked ring overlay
-	 * @param leader A LeaderElection mechanism
-	 * @param k For correctness, k must be >= number of nodes in the network
-	 */
-	public TokenRing(SinglyLinkedRingOverlay ring, LeaderElection leader,
-			NetworkSizeCounter k) {
-		this.leader = leader;
-		this.ring = ring;
-		this.kcount = k; // size of network
-	}
+    /**
+     * 
+     * @param ring
+     *            A singly-linked ring overlay
+     * @param leader
+     *            A LeaderElection mechanism
+     * @param k
+     *            For correctness, k must be >= number of nodes in the network
+     */
+    public TokenRing(SinglyLinkedRingOverlay ring, LeaderElection leader, NetworkSizeCounter k) {
+        this.leader = leader;
+        this.ring = ring;
+        this.kcount = k; // size of network
+    }
 
-	@Override
-	public void preUpdate(Address selected) {
-		hasTokenStatus = false;
-	}
+    @Override
+    public void preUpdate(Address selected) {
+        hasTokenStatus = false;
+    }
 
-	@GossipUpdate
-	@Override
-	public void update(Protocol other) {
-		TokenRing that = (TokenRing) other;
-		int k = Math.max(1, kcount.size()) + 1;
-		counter %= k;
-		int thatCounter = that.counter % k;
-		if (leader.isLeader()) {
-			if (counter == thatCounter) {
-				hasTokenStatus = true;
-				counter = (counter + 1) % k;
-			}
-		} else if (counter != thatCounter) {
-			hasTokenStatus = true;
-			counter = thatCounter;
-		}
-	}
+    @GossipUpdate
+    @Override
+    public void update(Protocol other) {
+        TokenRing that = (TokenRing) other;
+        int k = Math.max(1, kcount.size()) + 1;
+        counter %= k;
+        int thatCounter = that.counter % k;
+        if (leader.isLeader()) {
+            if (counter == thatCounter) {
+                hasTokenStatus = true;
+                counter = (counter + 1) % k;
+            }
+        } else if (counter != thatCounter) {
+            hasTokenStatus = true;
+            counter = thatCounter;
+        }
+    }
 
-	@Override
-	public void postUpdate() {
-		if (hasToken())
-			act();
-	}
+    @Override
+    public void postUpdate() {
+        if (hasToken())
+            act();
+    }
 
-	/**
-	 * Called immediately following a gossip exchange if this node is holding
-	 * the token
-	 */
-	public void act() {
-		// override me
-	}
+    /**
+     * Called immediately following a gossip exchange if this node is holding
+     * the token
+     */
+    public void act() {
+        // override me
+    }
 
 }

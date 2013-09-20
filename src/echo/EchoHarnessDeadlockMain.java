@@ -6,10 +6,10 @@ import org.princehouse.mica.base.net.model.Address;
 import org.princehouse.mica.lib.abstractions.Overlay;
 import org.princehouse.mica.util.harness.TestHarness;
 
-public class EchoHarnessMain extends TestHarness {
+public class EchoHarnessDeadlockMain extends TestHarness {
 
     public static void main(String[] args) {
-        TestHarness test = new EchoHarnessMain();
+        TestHarness test = new EchoHarnessDeadlockMain();
         test.runMain(args);
     }
 
@@ -18,8 +18,8 @@ public class EchoHarnessMain extends TestHarness {
     public MicaOptions defaultOptions() {
         MicaOptions options = super.defaultOptions();
         options.implementation = "simple"; // change to "sim" for simulator
-        options.n = 25; // number of nodes to run
-        options.graphType = "random";
+        options.n = 2; // number of nodes to run
+        options.graphType = "complete";
         return options;
     }
 
