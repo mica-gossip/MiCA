@@ -378,9 +378,8 @@ public class SimpleRuntime extends MicaRuntime implements AcceptConnectionHandle
                         lock.unlock();
                         // ... do nothing, and on to the next round...
                     }
-                    // FIXME: ideally how long should we sleep to recover from
-                    // deadlock?
-                    int backoff = rng.nextInt(intervalLength);
+                    int maxBackoffMS = (int) (MiCA.getOptions().contentionBackoff * intervalLength);
+                    int backoff = rng.nextInt(maxBackoffMS);
                     Thread.sleep(backoff);
                 }
             } // end while

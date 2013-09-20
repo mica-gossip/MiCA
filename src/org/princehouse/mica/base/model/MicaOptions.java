@@ -44,6 +44,10 @@ public class MicaOptions {
     @Parameter(names = "-round", description = "Round length (ms)")
     public int roundLength = 5000;
 
+    // contentionBackoff = 1.0 means that we wait up to 1 round (rate adjusted) if our connection lock times out
+    @Parameter(names = "-contentionBackoff", description = "Max wait time for contention backoff as a fraction of rate-adjusted round length")
+    public double contentionBackoff = 0.5;
+    
     @Parameter(names = "-stopAfter", description = "Halt simulation after this many rounds (0 = run forever)")
     public double stopAfter = 0;
 
