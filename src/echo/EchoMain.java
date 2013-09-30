@@ -12,7 +12,6 @@ import org.princehouse.mica.base.net.tcpip.TCPAddress;
 import org.princehouse.mica.base.simple.SimpleRuntime;
 import org.princehouse.mica.base.simple.SimpleRuntimeInterface;
 import org.princehouse.mica.lib.abstractions.StaticOverlay;
-import org.princehouse.mica.util.Array;
 import org.princehouse.mica.util.jconverters.ArgsConverterFactory;
 
 import com.beust.jcommander.JCommander;
@@ -90,18 +89,6 @@ public class EchoMain {
         System.exit(1);
     }
 
-    private void failPrintUsage() {
-        System.err.println("Usage: Launcher <protocol class> [launcher args] [protocol args]");
-        if (jc != null) {
-            jc.usage();
-        } else {
-            jc = new JCommander(this);
-            jc.addConverterFactory(new ArgsConverterFactory());
-            jc.usage();
-        }
-        System.exit(1);
-    }
-
     private JCommander jc = null;
     private MicaOptions options;
     private SimpleRuntimeInterface runtimeInterface;
@@ -112,7 +99,6 @@ public class EchoMain {
         this.options.logdir = "C:/temp/MICALOG";
         MiCA.setOptions(this.options);
         // validate options and do option processing...
-        String runtimeName = "simple";
         runtimeInterface = new SimpleRuntimeInterface();
         MiCA.setCompiler(runtimeInterface.getDefaultCompiler());
         runtimeInterface.reset();
@@ -158,7 +144,7 @@ public class EchoMain {
         SimpleRuntime srt = new SimpleRuntime(address);
         MiCA.getRuntimeInterface().getRuntimeContextManager().setNativeRuntime(srt);
         SimpleRuntime.launch(srt, protocolInstance, false, intervalMS, randomSeed, timeout);
-        Thread.currentThread().sleep(1000);
+        Thread.sleep(1000);
 
         Integer count = 0;
         while (true) {
@@ -166,7 +152,7 @@ public class EchoMain {
             // srt.getProtocolInstanceLock().lock();
             echoHandler.sendMessage("Hello World " + count + " from " + thisaddr);
             // srt.getProtocolInstanceLock().unlock();
-            Thread.currentThread().sleep(3000);
+            Thread.sleep(3000);
             count++;
         }
     }

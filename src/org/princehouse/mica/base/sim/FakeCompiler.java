@@ -1,7 +1,5 @@
 package org.princehouse.mica.base.sim;
 
-import java.io.InputStream;
-import java.io.OutputStream;
 import java.io.Serializable;
 
 import org.princehouse.mica.base.RuntimeErrorCondition;
@@ -11,8 +9,8 @@ import org.princehouse.mica.base.exceptions.MicaException;
 import org.princehouse.mica.base.model.CommunicationPatternAgent;
 import org.princehouse.mica.base.model.Compiler;
 import org.princehouse.mica.base.model.MiCA;
-import org.princehouse.mica.base.model.Protocol;
 import org.princehouse.mica.base.model.MicaRuntime;
+import org.princehouse.mica.base.model.Protocol;
 
 public class FakeCompiler extends Compiler {
 

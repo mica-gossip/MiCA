@@ -1,7 +1,5 @@
 package org.princehouse.mica.base.model;
 
-import java.io.InputStream;
-import java.io.OutputStream;
 import java.io.Serializable;
 
 import org.princehouse.mica.base.exceptions.AbortRound;

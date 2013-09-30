@@ -10,6 +10,7 @@ import org.princehouse.mica.base.sugar.annotations.View;
 import org.princehouse.mica.lib.abstractions.PeerSamplingService;
 
 public abstract class TMan extends BaseProtocol {
+    private static final long serialVersionUID = 1L;
 
     public PeerSamplingService peerSampler = null;
 

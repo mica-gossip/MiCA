@@ -12,8 +12,6 @@ import org.princehouse.mica.lib.abstractions.MergeIndependent;
 import org.princehouse.mica.lib.abstractions.Overlay;
 import org.princehouse.mica.util.harness.TestHarness;
 
-import fj.F3;
-
 /**
  * Tests leader election + spanning tree + counting + labeling
  * 

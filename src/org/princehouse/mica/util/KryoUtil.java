@@ -20,7 +20,7 @@ public class KryoUtil {
         return new KryoReflectionFactorySupport() {
 
             @Override
-            public Serializer<?> getDefaultSerializer(final Class clazz) {
+            public Serializer<?> getDefaultSerializer(@SuppressWarnings("rawtypes") final Class clazz) {
                 if (EnumSet.class.isAssignableFrom(clazz)) {
                     return new EnumSetSerializer();
                 }

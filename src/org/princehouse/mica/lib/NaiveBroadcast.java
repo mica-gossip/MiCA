@@ -7,7 +7,6 @@ import java.util.Set;
 
 import org.princehouse.mica.base.BaseProtocol;
 import org.princehouse.mica.base.model.Protocol;
-import org.princehouse.mica.base.net.model.Address;
 import org.princehouse.mica.base.sugar.annotations.GossipUpdate;
 import org.princehouse.mica.base.sugar.annotations.ViewUniformRandom;
 import org.princehouse.mica.lib.abstractions.Broadcast;
@@ -70,8 +69,7 @@ public abstract class NaiveBroadcast<Message extends Serializable> extends BaseP
     public void update(Protocol that) {
         @SuppressWarnings("unchecked")
         NaiveBroadcast<Message> other = (NaiveBroadcast<Message>) that;
-        Address oa = other.getAddress();
-
+      
         LinkedList<MessageWithTTL<Message>> newout = new LinkedList<MessageWithTTL<Message>>();
 
         for (MessageWithTTL<Message> mt : outbox) {

@@ -229,6 +229,7 @@ public abstract class Merge extends BaseProtocol {
      * 
      * @return
      */
+    @SuppressWarnings("unchecked")
     private List<P2<String, Boolean>> collectLeafProtocolStatus() {
         List<P2<String, Boolean>> status = Functional.list();
         MergeSelectionCase choice = getSubProtocolGossipCase();

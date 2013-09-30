@@ -1,6 +1,5 @@
 package org.princehouse.mica.util.reflection;
 
-import java.lang.reflect.Method;
 import java.util.Set;
 
 import org.princehouse.mica.base.model.Protocol;
