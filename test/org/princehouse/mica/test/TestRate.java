@@ -44,7 +44,7 @@ public class TestRate extends TestHarness {
     @Override
     public MicaOptions defaultOptions() {
         MicaOptions options = super.defaultOptions();
-        options.implementation = "sim"; // change to "sim" for simulator
+        options.implementation = "simple"; // change to "sim" for simulator
         options.n = 25; // number of nodes to run
         options.graphType = "random";
         return options;

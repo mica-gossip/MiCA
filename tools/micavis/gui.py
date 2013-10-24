@@ -131,6 +131,9 @@ class GraphWindow(object):
         append_analysis_menuitem(
             "Gossip rate (leaves)", ignore_widget(self.micavis.plot_gossip_rate))
 
+        append_analysis_menuitem(
+            "Gossips per node" , ignore_widget(self.micavis.plot_gossip_per_node))
+
         for ne_suffix in self.micavis.notable_event_labels():
             append_analysis_menuitem(
                 "Notable events: %s" % ne_suffix, 

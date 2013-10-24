@@ -2,6 +2,7 @@ import logs, analysis, custom, os, sys
 import micavis.ipython as ipython
 import matplotlib.pyplot as plt
 import numpy as np
+import itertools
 
 # fields created on initialization:
 #
@@ -122,6 +123,21 @@ class MicaTrace(object):
         xlabel =  "Round"
         ylabel = "State changes per node per round"
         self.plot_2d(x,y, xlabel, ylabel)
+
+    def plot_gossip_per_node(self):
+        address_to_index = {a:i for i,a in enumerate(self.unique_addresses)}
+        gossip_histogram = [0] * len(self.unique_addresses)
+
+        assert(len(self.unique_addresses) > 0)
+
+        events = self.events
+
+        for e in events:
+            if e['event_type'] == 'mica-gossip':
+                gossip_histogram[address_to_index[e['address']]] += 1
+
+        ipython.analysis_plot_2d_curve(range(len(gossip_histogram)), gossip_histogram)
+
 
     def plot_gossip_rate(self):
         sequences = analysis.gossip_events(self.events)
