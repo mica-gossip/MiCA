@@ -175,7 +175,7 @@ def analysis_plot_hist_multiple(datasets, xlabel="value", ylabel = "count", lege
         ax.legend()
     plt.show()
 
-def analysis_plot_2d_curve(*matplotlib_args, **matplotlib_kw):
+def analysis_plot_1d_curve(*matplotlib_args, **matplotlib_kw):
     fig = plt.figure()
     ax = fig.add_subplot(111)
     ax.plot(*matplotlib_args, **matplotlib_kw)
