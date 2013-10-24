@@ -333,6 +333,7 @@ public class SimpleRuntime extends MicaRuntime implements AcceptConnectionHandle
                             }
 
                             MiCA.getRuntimeInterface().getRuntimeContextManager().setNativeRuntime(this);
+                            logJson(LogFlag.gossip, "mica-gossip", new Address[] { address, partner });
                             logState("gossip-initiator"); // sim-ok
                             MiCA.getRuntimeInterface().getRuntimeContextManager().clear();
 
