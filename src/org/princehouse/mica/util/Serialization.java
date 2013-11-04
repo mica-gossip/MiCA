@@ -30,7 +30,9 @@ public class Serialization {
 		try {
 			return (Serializable) new ObjectInputStream(
 					new ByteArrayInputStream(data)).readObject();
-		} catch (ClassNotFoundException | IOException e) {
+		} catch (ClassNotFoundException e) {
+	          throw new RuntimeException(e);
+		} catch (IOException e) {
 			throw new RuntimeException(e);
 		}
 	}

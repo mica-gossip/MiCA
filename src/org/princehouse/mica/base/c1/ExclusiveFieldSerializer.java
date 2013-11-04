@@ -9,7 +9,6 @@ import com.esotericsoftware.kryo.Kryo;
 
 public class ExclusiveFieldSerializer<T> extends ExtensibleFieldSerializer<T> {
 
-	//private Set<Class<?>> maskedTypes = Functional.set();
 	private Set<Field> allowedFields = Functional.set();
 	
 	/**

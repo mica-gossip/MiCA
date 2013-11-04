@@ -27,7 +27,7 @@ import com.esotericsoftware.kryo.util.Util;
 import com.esotericsoftware.reflectasm.FieldAccess;
 
 /*
- * This is an exact copy of Kryo's FieldSerializer, but modified to allow external modification of the "fields" field.
+ * This is a copy of Kryo's FieldSerializer, modified to allow external modification of the "fields" field.
  * 
  * This differs from the standard FieldSerializer in two ways:
  *   1. rebuildCachedFields is protected instead of private
