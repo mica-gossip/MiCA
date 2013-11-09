@@ -79,7 +79,7 @@ public class MicaOptions {
     public String serializer = "java";
 
     @Parameter(names = "-logErrorLocations", description = "Record error locations in the logs, default false")
-    public boolean logErrorLocations = false;
+    public boolean logErrorLocations = true;
 
     public String mainClassName = null;
 }

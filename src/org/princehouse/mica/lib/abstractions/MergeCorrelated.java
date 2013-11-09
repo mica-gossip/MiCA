@@ -110,7 +110,10 @@ public class MergeCorrelated extends Merge {
 
         Distribution<MergeSelectionCase> outcomes = new Distribution<MergeSelectionCase>();
 
+        
         // handle cases where one both protocols don't gossip
+        // FIXME not correct --- nodes with null views still need to "gossip" so they will call preUpdate
+        /*
         if (d1 == null) {
             if (d2 == null) {
                 outcomes.put(MergeSelectionCase.NEITHER, 1.0);
@@ -122,13 +125,24 @@ public class MergeCorrelated extends Merge {
         } else if (d2 == null) {
             outcomes.put(MergeSelectionCase.P1, 1.0);
             return outcomes;
-        }
-
+        }  */
         double rate1 = getP1().getRate();
         double rate2 = getP2().getRate();
 
-        double w = rate1 / (rate1 + rate2);
+        if(rate1 + rate2 < 10e-7) {
+            outcomes.put(MergeSelectionCase.NEITHER, 1.0);
+            return outcomes;
+        }
+        
+        if (d1 == null || d2 == null) {  
+            // pathological case where one or more protocols has a null view,
+            // indicating it doe snot want to gossip. We will still call preUpdate, though
+            outcomes.put(MergeSelectionCase.P1, rate1 / (rate1 + rate2));
+            outcomes.put(MergeSelectionCase.P2, rate2 / (rate1 + rate2));
+            return outcomes;
+        }
 
+        double w = rate1 / (rate1 + rate2);
         double p1 = d1.get(x) * w;
         double p2 = d2.get(x) * (1 - w);
 

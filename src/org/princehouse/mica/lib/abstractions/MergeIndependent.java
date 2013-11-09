@@ -109,6 +109,7 @@ public class MergeIndependent extends Merge {
         Distribution<MergeSelectionCase> outcomes = Distribution.create();
 
         // handle cases where one both protocols don't gossip
+        /*
         if (d1 == null) {
             if (d2 == null) {
                 outcomes.put(MergeSelectionCase.NEITHER, 1.0);
@@ -120,11 +121,26 @@ public class MergeIndependent extends Merge {
         } else if (d2 == null) {
             outcomes.put(MergeSelectionCase.P1, 1.0);
             return outcomes;
-        }
+        }*/
 
+   
+
+        if(rate1 + rate2 < 10e-7) {
+            outcomes.put(MergeSelectionCase.NEITHER, 1.0);
+            return outcomes;
+        }
+        
+        if (d1 == null || d2 == null) {  
+            // pathological case where one or more protocols has a null view,
+            // indicating it doe snot want to gossip. We will still call preUpdate, though
+            outcomes.put(MergeSelectionCase.P1, rate1 / (rate1 + rate2));
+            outcomes.put(MergeSelectionCase.P2, rate2 / (rate1 + rate2));
+            return outcomes;
+        }
+        
         double a = d1.get(x) * w;
         double b = d2.get(x) * (1 - w);
-
+        
         if (a < 1e-5 && b < 1e-5) {
             System.err.printf("Broken component distribution diagnostic for x=%s: d1=%s %s, d2=%s %s\n", x, a,
                     (d1.containsKey(x) ? "" : "(MISSING)"), b, (d2.containsKey(x) ? "" : "(MISSING)"));

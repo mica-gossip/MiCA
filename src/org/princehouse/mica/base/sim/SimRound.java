@@ -14,6 +14,7 @@ import org.princehouse.mica.base.model.MiCA;
 import org.princehouse.mica.base.model.MicaRuntime;
 import org.princehouse.mica.base.model.Protocol;
 import org.princehouse.mica.base.net.model.Address;
+import org.princehouse.mica.util.Distribution;
 import org.princehouse.mica.util.Logging.SelectEvent;
 
 public class SimRound {
@@ -329,7 +330,7 @@ public class SimRound {
             simulator.getRuntimeContextManager().setNativeRuntime(rta);
             try {
                 rta.getProtocolInstance().postUpdate();
-                rta.logState("preupdate");
+                rta.logState("postupdate");
             } catch (Throwable t) {
                 rta.handleError(RuntimeErrorCondition.POSTUDPATE_EXCEPTION, t);
             } finally {
@@ -377,8 +378,9 @@ public class SimRound {
         SelectEvent se = null;
         try {
             se = new SelectEvent();
-            se.selected = p.getView().sample(p.getRuntimeState().getRandom());
-            if (se.selected.equals(p.getAddress())) {
+            Distribution<Address> view = p.getView();
+            se.selected = (view != null ? view.sample(p.getRuntimeState().getRandom()) : null);
+            if (p.getAddress().equals(se.selected)) {
                 se.selected = null;
             }
         } catch (Throwable e) {
@@ -420,7 +422,7 @@ public class SimRound {
                 rta.getProtocolInstance().preUpdate(round.dst);
                 rta.logState("preupdate");
             } catch (Throwable th) {
-                rta.handleError(RuntimeErrorCondition.POSTUDPATE_EXCEPTION, th);
+                rta.handleError(RuntimeErrorCondition.PREUDPATE_EXCEPTION, th);
             } finally {
                 simulator.getRuntimeContextManager().clear();
             }

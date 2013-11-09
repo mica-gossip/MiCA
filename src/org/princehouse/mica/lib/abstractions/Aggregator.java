@@ -6,6 +6,7 @@ import org.princehouse.mica.base.FailureDetector;
 import org.princehouse.mica.base.model.Protocol;
 import org.princehouse.mica.base.net.model.Address;
 import org.princehouse.mica.base.sugar.annotations.GossipUpdate;
+import org.princehouse.mica.util.Distribution;
 import org.princehouse.mica.util.Functional;
 
 /**
@@ -128,7 +129,8 @@ public abstract class Aggregator<Summary, Aggregate> extends FailureDetector {
      * @return
      */
     public boolean summaryFilterKeep(Address addr, Summary s) {
-        return getView().get(addr) > 0;
+        Distribution<Address> view = getView();
+        return (view != null ? view.get(addr) > 0 : false);
     }
 
     /**

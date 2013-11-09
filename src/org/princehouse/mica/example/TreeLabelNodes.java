@@ -72,13 +72,13 @@ public class TreeLabelNodes extends BaseProtocol {
 
     @GossipUpdate
     @Override
-    public void update(Protocol that) {
-        TreeLabelNodes child = (TreeLabelNodes) that;
-        Integer childLabel = getChildLabelMap().get(child);
+    public void update(Protocol other) {
+        TreeLabelNodes that = (TreeLabelNodes) other;
+        Integer childLabel = getChildLabelMap().get(that.getAddress());
         if (childLabel == null) {
             childLabel = label + 1;
         }
-        child.setLabel(childLabel);
+        that.setLabel(childLabel);
     }
 
 }

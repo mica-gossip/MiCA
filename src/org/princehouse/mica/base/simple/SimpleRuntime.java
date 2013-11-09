@@ -31,6 +31,7 @@ import org.princehouse.mica.base.net.model.AcceptConnectionHandler;
 import org.princehouse.mica.base.net.model.Address;
 import org.princehouse.mica.base.net.model.Connection;
 import org.princehouse.mica.base.sim.StopWatch;
+import org.princehouse.mica.util.Distribution;
 import org.princehouse.mica.util.Logging.SelectEvent;
 
 /**
@@ -266,8 +267,9 @@ public class SimpleRuntime extends MicaRuntime implements AcceptConnectionHandle
                             MiCA.getRuntimeInterface().getRuntimeContextManager().setNativeRuntime(this);
                             try {
                                 se = new SelectEvent();
-                                se.selected = p.getView().sample(p.getRuntimeState().getRandom());
-                                if (se.selected.equals(p.getAddress())) {
+                                Distribution<Address> view = p.getView();
+                                se.selected = (view != null ? view.sample(p.getRuntimeState().getRandom()) : null);
+                                if (p.getAddress().equals(se.selected)) {
                                     se.selected = null;
                                 }
                             } catch (Throwable e) {
@@ -298,9 +300,11 @@ public class SimpleRuntime extends MicaRuntime implements AcceptConnectionHandle
 
                             if (getAddress().equals(partner)) {
                                 handleError(SELF_GOSSIP, null);
-                            } else if (partner == null) {
-                                handleError(NULL_SELECT, null);
-                            }
+                            } 
+                            
+                            if(partner == null) 
+                                continue;
+                           
 
                             try {
                                 connection = partner.openConnection();
