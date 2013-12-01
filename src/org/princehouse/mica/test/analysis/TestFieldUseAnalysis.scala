@@ -35,7 +35,7 @@ object TestFieldUseAnalysis {
 
     println("------------------ points to sets-----------------")
     var allLocals = collection.mutable.Set[Local]()
-    
+
     for (node <- cfg) {
       SootUtils.dumpUnit(node)
 
@@ -48,7 +48,7 @@ object TestFieldUseAnalysis {
             case x: soot.jimple.internal.JInstanceFieldRef =>
               val base = x.getBase()
               base match {
-                case b:soot.Local =>
+                case b: soot.Local =>
                   Some(pta.reachingObjects(node, b, x.getField()))
                 case _ =>
                   println("confusion: don't know how to handle base of class %s".format(base.getClass().getName()))
@@ -56,42 +56,39 @@ object TestFieldUseAnalysis {
               }
             case _ => None
           }
-          
+
           pointsTo match {
-            case Some(objSet) => 
-            	println("[%s set] = %s".format(value,(if(objSet.isEmpty) "empty" else objSet)))
-            case None => 
+            case Some(objSet) =>
+              println("[%s set] = %s".format(value, (if (objSet.isEmpty) "empty" else objSet)))
+            case None =>
           }
         }
       }
       println("")
     }
-    
+
     println("---------------------- all locals points-to info, no context")
-    for(local:Local <- allLocals.toSet) {
+    for (local: Local <- allLocals.toSet) {
       val rset = pta.reachingObjects(local)
       println("   %s : %s -->  %s ".format(local, rset.possibleTypes(), rset))
     }
 
     println("pta class is " + pta.getClass().getName())
-    
-    
+
     val cg = Scene.v().getCallGraph()
-    
+
     println("---- writing call graph to sootOutput/callgraph.dot")
-    SootViz.exportCallGraphToDot(cg,"sootOutput/callgraph.dot")
-    
-    println("number of call graph edges: %d\n".format( cg.size() ));
-    
-    
+    SootViz.exportCallGraphToDot(cg, "sootOutput/callgraph.dot")
+
+    println("number of call graph edges: %d\n".format(cg.size()));
+
     println("analyzing used fields of entry method")
-    for(field <- SootUtils.getUsedFields(entryMethod,cg)) {
+    for (field <- SootUtils.getUsedFields(entryMethod, cg)) {
       println("  field: " + field)
     }
-    
+
     // ------------------ analyze field usage
-    
-    
+
     // org.princehouse.mica.test.analysis
 
     //val sootArgs = Array[String]("-v","-w","-f","jimple","-dump-body","jb")
@@ -151,5 +148,4 @@ object TestFieldUseAnalysis {
     //flow.go
   }
 }
-
 

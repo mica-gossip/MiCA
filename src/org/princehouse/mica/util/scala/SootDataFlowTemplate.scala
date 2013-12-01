@@ -27,18 +27,18 @@ abstract class SootDataFlowTemplate[T](graph: ExceptionalUnitGraph, entryData: T
   }
 */
 
-  def matchValueBox(v:soot.ValueBox) : Unit = {
+  def matchValueBox(v: soot.ValueBox): Unit = {
     v match {
       case x: IdentityRefBox =>
       case x: ImmediateBox =>
-      case x: InvokeExprBox => 
+      case x: InvokeExprBox =>
       case x: JimpleLocalBox =>
       case x: VariableBox =>
       case _ =>
-    	  throw new RuntimeException("unrecognized value box " + (v.getClass().getName()))
+        throw new RuntimeException("unrecognized value box " + (v.getClass().getName()))
     }
   }
-  
+
   // template for matching against all jimple units
   def matchJimpleUnit(u: soot.Unit): Unit = {
     (u match {

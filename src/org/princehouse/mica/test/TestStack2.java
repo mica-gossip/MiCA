@@ -13,42 +13,35 @@ import org.princehouse.mica.util.harness.TestHarness;
 
 import fj.F3;
 
-
 /**
  * Tests leader election + spanning tree + counting
+ * 
  * @author lonnie
- *
+ * 
  */
 public class TestStack2 extends TestHarness {
 
-	/**
-	 * @param args
-	 * @throws UnknownHostException 
-	 */
-	public static void main(String[] args) {
+    /**
+     * @param args
+     * @throws UnknownHostException
+     */
+    public static void main(String[] args) {
 
+        F3<Integer, Address, Overlay, Protocol> createNodeFunc = new F3<Integer, Address, Overlay, Protocol>() {
+            @Override
+            public Protocol f(Integer i, Address address, Overlay view) {
+                MinAddressLeaderElection leaderElection = new MinAddressLeaderElection(view);
 
-		F3<Integer, Address, Overlay, Protocol> createNodeFunc = new F3<Integer, Address, Overlay, Protocol>() {
-			@Override
-			public Protocol f(Integer i, Address address,
-					Overlay view) {
-				MinAddressLeaderElection leaderElection = new MinAddressLeaderElection(view);
+                SpanningTreeOverlay tree = new SpanningTreeOverlay(leaderElection, view);
 
-				SpanningTreeOverlay tree = new SpanningTreeOverlay(leaderElection, view);
+                TreeCountNodes counting = new TreeCountNodes(tree);
 
-				TreeCountNodes counting = new TreeCountNodes(tree);
+                return MergeIndependent.merge(leaderElection, MergeIndependent.merge(tree, counting));
+            }
+        };
 
-				return MergeIndependent.merge(
-						leaderElection,
-						MergeIndependent.merge(
-								tree,
-								counting
-						));
-			}
-		};
+        new TestStack2().runMain(args, createNodeFunc);
 
-		new TestStack2().runMain(args, createNodeFunc);
-
-	}
+    }
 
 }

@@ -13,6 +13,5 @@ import org.princehouse.mica.lib.abstractions.Overlay;
  * @param
  */
 public interface ProtocolInstanceFactory {
-	public Protocol createProtocolInstance(int nodeId, Address address,
-			Overlay overlay);
+    public Protocol createProtocolInstance(int nodeId, Address address, Overlay overlay);
 }

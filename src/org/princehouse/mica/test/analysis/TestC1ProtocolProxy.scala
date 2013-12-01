@@ -7,7 +7,7 @@ import org.princehouse.mica.base.model.Protocol
 object TestC1ProtocolProxy {
 
   def main(args: Array[String]): Unit = {
-/*
+    /*
     val a: Protocol = new C1TestProtocol()
     val b: Protocol = new C1TestProtocol()
 
@@ -32,7 +32,7 @@ object TestC1ProtocolProxy {
     proxy.applyDiff(a)
     
   }*/
-    
+
   }
 
 }

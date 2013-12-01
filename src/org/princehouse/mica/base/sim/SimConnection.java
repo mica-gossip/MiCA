@@ -10,39 +10,39 @@ import org.princehouse.mica.base.net.model.Connection;
 
 public class SimConnection extends Connection {
 
-	@Override
-	public InputStream getInputStream() throws IOException {
-		// TODO Auto-generated method stub
-		return null;
-	}
+    @Override
+    public InputStream getInputStream() throws IOException {
+        // TODO Auto-generated method stub
+        return null;
+    }
 
-	@Override
-	public OutputStream getOutputStream() throws IOException {
-		// TODO Auto-generated method stub
-		return null;
-	}
+    @Override
+    public OutputStream getOutputStream() throws IOException {
+        // TODO Auto-generated method stub
+        return null;
+    }
 
-	@Override
-	public void close() throws IOException {
-		// TODO Auto-generated method stub
+    @Override
+    public void close() throws IOException {
+        // TODO Auto-generated method stub
 
-	}
+    }
 
-	@Override
-	public Address getSrc() {
-		// TODO Auto-generated method stub
-		return null;
-	}
+    @Override
+    public Address getSrc() {
+        // TODO Auto-generated method stub
+        return null;
+    }
 
-	@Override
-	public Address getDst() {
-		// TODO Auto-generated method stub
-		return null;
-	}
+    @Override
+    public Address getDst() {
+        // TODO Auto-generated method stub
+        return null;
+    }
 
-	public Protocol getRemoteNode() {
-		// TODO Auto-generated method stub
-		return null;
-	}
+    public Protocol getRemoteNode() {
+        // TODO Auto-generated method stub
+        return null;
+    }
 
 }

@@ -22,77 +22,65 @@ import fj.F3;
 
 /**
  * Tests leader election + spanning tree + counting + labeling
+ * 
  * @author lonnie
- *
+ * 
  */
 public class TestStack3DisruptLargerCorrelated extends TestHarness {
 
-	/**
-	 * @param args
-	 * @throws UnknownHostException 
-	 */
-	
-	public static long roundsToMs(int rounds, int intervalMS) {
-		return rounds * intervalMS;
-	}
-	
-	public static void main(String[] args) {
+    /**
+     * @param args
+     * @throws UnknownHostException
+     */
 
+    public static long roundsToMs(int rounds, int intervalMS) {
+        return rounds * intervalMS;
+    }
 
-		F3<Integer, Address, Overlay, Protocol> createNodeFunc = new F3<Integer, Address, Overlay, Protocol>() {
-			@Override
-			public Protocol f(Integer i, Address address,
-					Overlay view) {
+    public static void main(String[] args) {
 
-				
+        F3<Integer, Address, Overlay, Protocol> createNodeFunc = new F3<Integer, Address, Overlay, Protocol>() {
+            @Override
+            public Protocol f(Integer i, Address address, Overlay view) {
 
-				MinAddressLeaderElection leaderElection = new MinAddressLeaderElection(view);
-				
+                MinAddressLeaderElection leaderElection = new MinAddressLeaderElection(view);
 
-				SpanningTreeOverlay tree = new SpanningTreeOverlay(leaderElection,view);
+                SpanningTreeOverlay tree = new SpanningTreeOverlay(leaderElection, view);
 
-				TreeCountNodes counting = new TreeCountNodes(tree);
-			
-				TreeLabelNodes labeling = new TreeLabelNodes(counting);
+                TreeCountNodes counting = new TreeCountNodes(tree);
 
-				return MergeIndependent.merge(
-						MergeIndependent.merge(
-								leaderElection,
-								labeling
-								),
-								MergeIndependent.merge(
-										tree,
-										counting
-										));
-			}
-		};
+                TreeLabelNodes labeling = new TreeLabelNodes(counting);
 
+                return MergeIndependent.merge(MergeIndependent.merge(leaderElection, labeling),
+                        MergeIndependent.merge(tree, counting));
+            }
+        };
 
-		final TestStack3DisruptLargerCorrelated harness = new TestStack3DisruptLargerCorrelated();
-		
-		int totalRounds = 600;
-		
-		harness.addTimer(roundsToMs(totalRounds, harness.getOptions().roundLength), harness.taskStop());
+        final TestStack3DisruptLargerCorrelated harness = new TestStack3DisruptLargerCorrelated();
 
-		for(int i = totalRounds/2; i < totalRounds/2+1; i+=1) {
-			TimerTask disrupt = new TimerTask() {
-				@Override
-				public void run() {
-					MicaRuntime.debug.println("----> Leader sabotage!");
-					List<Address> addresses = new ArrayList<Address>();
-					for(MicaRuntime rt : harness.getRuntimes()) {
-						addresses.add(rt.getAddress());
-					}
-					for(MicaRuntime rt : harness.getRuntimes()) {
-						MergeIndependent temp = (MergeIndependent) ((Merge)rt.getProtocolInstance()).getP1();
-						MinAddressLeaderElection leader = (MinAddressLeaderElection) temp.getP1();
-						leader.setLeader(Randomness.choose(addresses));
-					}
-				}
-			};
-			harness.addTimer(roundsToMs(i, harness.getOptions().roundLength), disrupt);
-		}	
-		harness.runMain(args, createNodeFunc);
-	}
+        int totalRounds = 600;
+
+        harness.addTimer(roundsToMs(totalRounds, harness.getOptions().roundLength), harness.taskStop());
+
+        for (int i = totalRounds / 2; i < totalRounds / 2 + 1; i += 1) {
+            TimerTask disrupt = new TimerTask() {
+                @Override
+                public void run() {
+                    MicaRuntime.debug.println("----> Leader sabotage!");
+                    List<Address> addresses = new ArrayList<Address>();
+                    for (MicaRuntime rt : harness.getRuntimes()) {
+                        addresses.add(rt.getAddress());
+                    }
+                    for (MicaRuntime rt : harness.getRuntimes()) {
+                        MergeIndependent temp = (MergeIndependent) ((Merge) rt.getProtocolInstance()).getP1();
+                        MinAddressLeaderElection leader = (MinAddressLeaderElection) temp.getP1();
+                        leader.setLeader(Randomness.choose(addresses));
+                    }
+                }
+            };
+            harness.addTimer(roundsToMs(i, harness.getOptions().roundLength), disrupt);
+        }
+        harness.runMain(args, createNodeFunc);
+    }
 
 }

@@ -7,6 +7,7 @@ import org.princehouse.mica.base.exceptions.FatalErrorHalt;
 
 public interface AcceptConnectionHandler {
 
-	public void acceptConnection(Address recipient, Connection connection) throws IOException, FatalErrorHalt, AbortRound;
-	
+    public void acceptConnection(Address recipient, Connection connection) throws IOException, FatalErrorHalt,
+            AbortRound;
+
 }

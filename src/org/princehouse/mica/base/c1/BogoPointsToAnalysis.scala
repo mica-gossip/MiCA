@@ -39,7 +39,7 @@ class BogoEnvironment[OBJ] {
 
   def addRuntimeObject(k: java.lang.Object, p: OBJ) = {
     source += ((k, source.getOrElse(k, Set[OBJ]()) + p))
-    if(chatty) println("env add %s -> %s".format(k,p))
+    if (chatty) println("env add %s -> %s".format(k, p))
   }
 
   def getRuntimeObjects(k: java.lang.Object) = {
@@ -52,7 +52,7 @@ class BogoEnvironment[OBJ] {
   def setRuntimeObjects(k: java.lang.Object, p: Set[OBJ]) = {
     // overwrite other Ints.  used for assignment
     source += ((k, p))
-    if(chatty) println("env set %s -> %s".format(k,p))
+    if (chatty) println("env set %s -> %s".format(k, p))
   }
 
   override def equals(o: Any): Boolean = {
@@ -76,15 +76,15 @@ class BogoEnvironment[OBJ] {
   override def hashCode(): Int = {
     source.hashCode()
   }
-  
-  override def toString : String = {
-    var s:List[String] = Nil
-    for( (k,v) <- source.elements) {
-      s = ("%3s:  %s".format(k,v)) :: s
+
+  override def toString: String = {
+    var s: List[String] = Nil
+    for ((k, v) <- source.elements) {
+      s = ("%3s:  %s".format(k, v)) :: s
     }
     s match {
       case Nil => "(empty)"
-      case _ => s.reverse.reduceLeft(_+"\n"+_)
+      case _ => s.reverse.reduceLeft(_ + "\n" + _)
     }
   }
 }
@@ -93,7 +93,7 @@ class BogoEnvironment[OBJ] {
 class BogoPointsToAnalysis(graph: ExceptionalUnitGraph) extends ForwardFlowAnalysis[soot.Unit, BogoEnvironment[Int]](graph) {
 
   val chatty = true
-  
+
   var counter: Int = 1
 
   def newRuntimeObject: Int = {
@@ -118,7 +118,7 @@ class BogoPointsToAnalysis(graph: ExceptionalUnitGraph) extends ForwardFlowAnaly
       case None =>
         val x = Set(newRuntimeObject)
         identities.put(key, x)
-        if(chatty) println("identity put %s = %s".format(key,x))
+        if (chatty) println("identity put %s = %s".format(key, x))
         x
     }
   }
@@ -139,7 +139,7 @@ class BogoPointsToAnalysis(graph: ExceptionalUnitGraph) extends ForwardFlowAnaly
   def getValueObject(v: Value, env: BogoEnvironment[Int], unit: soot.Unit): Set[Int] = {
     getValueVariable(v) match {
       case Some(variable) =>
-       	env.getRuntimeObjects(variable)
+        env.getRuntimeObjects(variable)
       case None =>
         v match {
           case x: ThisRef => getIdentityObject("@this")

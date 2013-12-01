@@ -8,11 +8,10 @@ import soot.util._
 import soot.jimple.spark.ondemand.pautil.SootUtil
 import org.princehouse.mica.util.scala.SootUtils
 
+class IdentifyRefactorTargets(method: SootMethod, initialTargets: Set[Value]) {
+  val targets: (Set[Value], Boolean) = analyze
 
-class IdentifyRefactorTargets(method:SootMethod, initialTargets:Set[Value]) {
-	val targets:(Set[Value],Boolean) = analyze
-
-	def analyze:(Set[Value],Boolean) = {
-	  (initialTargets,false)
-	}
+  def analyze: (Set[Value], Boolean) = {
+    (initialTargets, false)
+  }
 }

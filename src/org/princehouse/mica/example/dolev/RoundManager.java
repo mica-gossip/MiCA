@@ -12,72 +12,72 @@ import org.princehouse.mica.util.Functional;
 
 public class RoundManager extends BaseProtocol {
 
-	/**
+    /**
 	 * 
 	 */
-	private static final long serialVersionUID = 1L;
+    private static final long serialVersionUID = 1L;
 
-	private int f = 0;
-	
-	public int getF() {
-		return f;
-	}
+    private int f = 0;
 
-	public void setF(int f) {
-		this.f = f;
-	}
+    public int getF() {
+        return f;
+    }
 
-	public int getN() {
-		return n;
-	}
+    public void setF(int f) {
+        this.f = f;
+    }
 
-	public void setN(int n) {
-		this.n = n;
-	}
+    public int getN() {
+        return n;
+    }
 
-	private Set<Address> reached = Functional.set();
-	
-	@View
-	public Overlay overlay = null;
-	
-	// number of nodes in network
-	private int n;
-	
-	private int round = 0;
-	
-	public RoundManager(Overlay overlay, int n, int f) {
-		this.f = f;
-		this.n = n;
-		this.overlay = overlay;
-	}
+    public void setN(int n) {
+        this.n = n;
+    }
 
-	public int getRound() {
-		return round;
-	}
+    private Set<Address> reached = Functional.set();
 
-	public void setRound(int round) {
-		this.round = round;
-	}
+    @View
+    public Overlay overlay = null;
 
-	@GossipUpdate
-	@Override
-	public void update(Protocol other) {
-		RoundManager that = (RoundManager) other;
-		reached.add(that.getAddress());
-		that.reached.add(this.getAddress());
-	}
+    // number of nodes in network
+    private int n;
 
-	public boolean ready() {
-		return getRemainingCount() <= 0;
-	}
-	
-	public int getRemainingCount() {
-		return (n - f) - reached.size();
-	}
-	
-	public void reset() {
-		reached.clear();
-		setRound(getRound()+1);
-	}
-	
+    private int round = 0;
+
+    public RoundManager(Overlay overlay, int n, int f) {
+        this.f = f;
+        this.n = n;
+        this.overlay = overlay;
+    }
+
+    public int getRound() {
+        return round;
+    }
+
+    public void setRound(int round) {
+        this.round = round;
+    }
+
+    @GossipUpdate
+    @Override
+    public void update(Protocol other) {
+        RoundManager that = (RoundManager) other;
+        reached.add(that.getAddress());
+        that.reached.add(this.getAddress());
+    }
+
+    public boolean ready() {
+        return getRemainingCount() <= 0;
+    }
+
+    public int getRemainingCount() {
+        return (n - f) - reached.size();
+    }
+
+    public void reset() {
+        reached.clear();
+        setRound(getRound() + 1);
+    }
+
 }

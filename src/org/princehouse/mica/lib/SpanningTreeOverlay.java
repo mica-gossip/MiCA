@@ -27,197 +27,194 @@ import org.princehouse.mica.util.Functional;
  * @author lonnie
  * 
  */
-public class SpanningTreeOverlay extends FailureDetector implements
-		RootedTree {
+public class SpanningTreeOverlay extends FailureDetector implements RootedTree {
 
-	public SpanningTreeOverlay() {}
-	
-	private static final long serialVersionUID = 1L;
+    public SpanningTreeOverlay() {
+    }
 
-	// remember self-reported distance-from-root of neighbors
-	private HashMap<Address, Integer> distanceFromRoot = new HashMap<Address, Integer>();
+    private static final long serialVersionUID = 1L;
 
-	private Set<Address> children = new HashSet<Address>();
+    // remember self-reported distance-from-root of neighbors
+    private HashMap<Address, Integer> distanceFromRoot = new HashMap<Address, Integer>();
 
-	private Address parent = null;
+    private Set<Address> children = new HashSet<Address>();
 
-	public LeaderElection leaderElection;
+    private Address parent = null;
 
-	@Override
-	public void failureDetected(Address peer) {
-		if (children.contains(peer)) {
-			children.remove(peer);
-		}
-		if (distanceFromRoot.containsKey(peer)) {
-			distanceFromRoot.remove(peer);
-		}
-		if (parent != null && parent.equals(peer)) {
-			parent = null;
-		}
-	}
+    public LeaderElection leaderElection;
 
-	/**
-	 * Create a new instance
-	 * 
-	 * @param leaderElection
-	 *            LeaderElection protocol instance
-	 * @param sourceOverlay
-	 *            The overlay this algorithm gossips on
-	 */
-	public SpanningTreeOverlay(LeaderElection leaderElection,
-			Overlay sourceOverlay) {
-		super();
-		this.view = sourceOverlay;
-		this.leaderElection = leaderElection;
-	}
+    @Override
+    public void failureDetected(Address peer) {
+        if (children.contains(peer)) {
+            children.remove(peer);
+        }
+        if (distanceFromRoot.containsKey(peer)) {
+            distanceFromRoot.remove(peer);
+        }
+        if (parent != null && parent.equals(peer)) {
+            parent = null;
+        }
+    }
 
-	@View
-	public Overlay view;
-	
-	@Override
-	public Collection<Address> getChildren() {
-		return children;
-	}
+    /**
+     * Create a new instance
+     * 
+     * @param leaderElection
+     *            LeaderElection protocol instance
+     * @param sourceOverlay
+     *            The overlay this algorithm gossips on
+     */
+    public SpanningTreeOverlay(LeaderElection leaderElection, Overlay sourceOverlay) {
+        super();
+        this.view = sourceOverlay;
+        this.leaderElection = leaderElection;
+    }
 
-	@Override
-	public Address getParent() {
-		return parent;
-	}
+    @View
+    public Overlay view;
 
-	private static final int MAXDIST = Integer.MAX_VALUE;
+    @Override
+    public Collection<Address> getChildren() {
+        return children;
+    }
 
-	private Collection<Address> getKnown() {
-		return distanceFromRoot.keySet();
-	}
+    @Override
+    public Address getParent() {
+        return parent;
+    }
 
-	/**
-	 * Get distance of a specified node to the root node Returns MAXDIST if
-	 * unknown.
-	 * 
-	 * @param address
-	 * @return
-	 */
-	public int distanceFromRoot(Address address) {
-		if (address.equals(leaderElection.getLeader())) {
-			return 0;
-		} else {
-			if (address.equals(getAddress())) {
-				// compute my address from root: nearest neighbor + 1
-				int d = Integer.MAX_VALUE / 2;
-				for (Address v : getKnown()) {
-					d = Math.min(d, distanceFromRoot(v) + 1);
-				}
-				return Math.min(MAXDIST, d);
-			} else {
-				if (distanceFromRoot.containsKey(address)) {
-					return distanceFromRoot.get(address);
-				} else {
-					return MAXDIST;
-				}
-			}
-		}
-	}
+    private static final int MAXDIST = Integer.MAX_VALUE;
 
-	/**
-	 * Local node's distance from root
-	 * 
-	 * @return
-	 */
-	public int distanceFromRoot() {
-		// what is MY distance from root?
-		return distanceFromRoot(getAddress());
-	}
+    private Collection<Address> getKnown() {
+        return distanceFromRoot.keySet();
+    }
 
-	private Address computeParent() {
-		if (isRoot())
-			return null;
+    /**
+     * Get distance of a specified node to the root node Returns MAXDIST if
+     * unknown.
+     * 
+     * @param address
+     * @return
+     */
+    public int distanceFromRoot(Address address) {
+        if (address.equals(leaderElection.getLeader())) {
+            return 0;
+        } else {
+            if (address.equals(getAddress())) {
+                // compute my address from root: nearest neighbor + 1
+                int d = Integer.MAX_VALUE / 2;
+                for (Address v : getKnown()) {
+                    d = Math.min(d, distanceFromRoot(v) + 1);
+                }
+                return Math.min(MAXDIST, d);
+            } else {
+                if (distanceFromRoot.containsKey(address)) {
+                    return distanceFromRoot.get(address);
+                } else {
+                    return MAXDIST;
+                }
+            }
+        }
+    }
 
-		List<Address> view = Functional.extend(Functional.<Address> list(),
-				getKnown());
+    /**
+     * Local node's distance from root
+     * 
+     * @return
+     */
+    public int distanceFromRoot() {
+        // what is MY distance from root?
+        return distanceFromRoot(getAddress());
+    }
 
-		if (view.size() == 0)
-			return null;
+    private Address computeParent() {
+        if (isRoot())
+            return null;
 
-		Collections.sort(view, new Comparator<Address>() {
-			@Override
-			public int compare(Address a, Address b) {
-				int t = ((Integer) distanceFromRoot(a))
-						.compareTo((Integer) distanceFromRoot(b));
-				if (t == 0)
-					t = a.compareTo(b); // break distance ties; sort by address
-				return t;
-			}
-		});
+        List<Address> view = Functional.extend(Functional.<Address> list(), getKnown());
 
-		return view.get(0);
-	}
+        if (view.size() == 0)
+            return null;
 
-	private int getDistanceFromRoot() {
-		if (isRoot())
-			return 0;
+        Collections.sort(view, new Comparator<Address>() {
+            @Override
+            public int compare(Address a, Address b) {
+                int t = ((Integer) distanceFromRoot(a)).compareTo((Integer) distanceFromRoot(b));
+                if (t == 0)
+                    t = a.compareTo(b); // break distance ties; sort by address
+                return t;
+            }
+        });
 
-		Address p = getParent();
-		if (p == null) {
-			int mx = 0;
-			for (int x : distanceFromRoot.values()) {
-				mx = Math.max(x, mx);
-			}
-			if (mx == 0)
-				return Integer.MAX_VALUE / 2; // at least nobody will think
-												// we're the root...
-			else
-				return mx;
-		}
+        return view.get(0);
+    }
 
-		return distanceFromRoot.get(p) + 1;
-	}
+    private int getDistanceFromRoot() {
+        if (isRoot())
+            return 0;
 
-	/**
-	 * Gossip update function
-	 * 
-	 * @param other
-	 */
-	@GossipUpdate
-	@Override
-	public void update(Protocol that) {
-		super.update(that);
-		SpanningTreeOverlay other = (SpanningTreeOverlay) that;
-		// record our neighbor's distance from the root
-		subup(other);
-		other.subup(this);
-	}
+        Address p = getParent();
+        if (p == null) {
+            int mx = 0;
+            for (int x : distanceFromRoot.values()) {
+                mx = Math.max(x, mx);
+            }
+            if (mx == 0)
+                return Integer.MAX_VALUE / 2; // at least nobody will think
+                                              // we're the root...
+            else
+                return mx;
+        }
 
-	// update helper function
-	private void subup(SpanningTreeOverlay other) {
-		distanceFromRoot.put(other.getAddress(), other.getDistanceFromRoot());
+        return distanceFromRoot.get(p) + 1;
+    }
 
-		parent = computeParent();
-		children.remove(parent);
+    /**
+     * Gossip update function
+     * 
+     * @param other
+     */
+    @GossipUpdate
+    @Override
+    public void update(Protocol that) {
+        super.update(that);
+        SpanningTreeOverlay other = (SpanningTreeOverlay) that;
+        // record our neighbor's distance from the root
+        subup(other);
+        other.subup(this);
+    }
 
-		if (getAddress().equals(other.getParent()))
-			children.add(other.getAddress());
-		else
-			children.remove(other.getAddress());
-	}
+    // update helper function
+    private void subup(SpanningTreeOverlay other) {
+        distanceFromRoot.put(other.getAddress(), other.getDistanceFromRoot());
 
-	@Override
-	public boolean isRoot() {
-		return leaderElection.isLeader() || (getView().keySet().size() == 0);
-	}
+        parent = computeParent();
+        children.remove(parent);
 
-	@Override
-	public Distribution<Address> getOverlay(RuntimeState rts) {
-		Set<Address> view = new HashSet<Address>();
-		Address parent = getParent();
-		if (parent != null)
-			view.add(parent);
-		Functional.extend(view, getChildren());
-		return Distribution.uniform(view);
-	}
+        if (getAddress().equals(other.getParent()))
+            children.add(other.getAddress());
+        else
+            children.remove(other.getAddress());
+    }
 
-	@Override
-	public Overlay getChildrenAsOverlay() {
-		return new RootedTree.ChildOverlay(this);
-	}
+    @Override
+    public boolean isRoot() {
+        return leaderElection.isLeader() || (getView().keySet().size() == 0);
+    }
+
+    @Override
+    public Distribution<Address> getOverlay(RuntimeState rts) {
+        Set<Address> view = new HashSet<Address>();
+        Address parent = getParent();
+        if (parent != null)
+            view.add(parent);
+        Functional.extend(view, getChildren());
+        return Distribution.uniform(view);
+    }
+
+    @Override
+    public Overlay getChildrenAsOverlay() {
+        return new RootedTree.ChildOverlay(this);
+    }
 
 }

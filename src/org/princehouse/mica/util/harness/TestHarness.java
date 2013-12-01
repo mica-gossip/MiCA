@@ -46,343 +46,326 @@ import fj.P2;
  */
 public class TestHarness implements ProtocolInstanceFactory {
 
-	private RuntimeInterface runtimeInterface = null;
-	public static final String LOG_NAMES = Array.join(", ", LogFlag.values());
-	private List<P2<Long, TimerTask>> timers = Functional.list();
-	
-	public void addTimer(long time, TimerTask task) {
-		timers.add(P.p(time, task));
-	}
+    private RuntimeInterface runtimeInterface = null;
+    public static final String LOG_NAMES = Array.join(", ", LogFlag.values());
+    private List<P2<Long, TimerTask>> timers = Functional.list();
 
-	private int getRoundMS() {
-		return getOptions().roundLength;
-	}
+    public void addTimer(long time, TimerTask task) {
+        timers.add(P.p(time, task));
+    }
 
-	public void addTimerRounds(double rounds, TimerTask task) {
-		addTimer((long) (rounds * getRoundMS()), task);
-	}
-	
-	public static int BASE_PORT = 8000;
-	public static F<Integer, Address> defaultAddressFunc = new F<Integer, Address>() {		
-		public Address f(Integer i) {
-			try {
-				return TCPAddress.valueOf(String.format("localhost:%d",
-						BASE_PORT + i));
-			} catch (UnknownHostException e) {
-				throw new RuntimeException(e);
-			}
-		}
-	};
+    private int getRoundMS() {
+        return getOptions().roundLength;
+    }
 
-	private Random random = null;
+    public void addTimerRounds(double rounds, TimerTask task) {
+        addTimer((long) (rounds * getRoundMS()), task);
+    }
 
-	public Random getRandom() {
-		if (random == null) {
-			random = new Random(getOptions().seed);
-		}
-		return random;
-	}
+    public static int BASE_PORT = 8000;
+    public static F<Integer, Address> defaultAddressFunc = new F<Integer, Address>() {
+        public Address f(Integer i) {
+            try {
+                return TCPAddress.valueOf(String.format("localhost:%d", BASE_PORT + i));
+            } catch (UnknownHostException e) {
+                throw new RuntimeException(e);
+            }
+        }
+    };
 
-	public TimerTask taskStop() {
-		final TestHarness harness = this;
-		return new TimerTask() {
-			@Override
-			public void run() {
-				harness.stop();
-				MicaRuntime.debug.println("End timer!");
-			}
-		};
-	}
+    private Random random = null;
 
-	public void launchProtocol() {
+    public Random getRandom() {
+        if (random == null) {
+            random = new Random(getOptions().seed);
+        }
+        return random;
+    }
 
-		TestHarnessGraph g = getGraph();
-		launchTimers(); // TODO lift to runtime interface
+    public TimerTask taskStop() {
+        final TestHarness harness = this;
+        return new TimerTask() {
+            @Override
+            public void run() {
+                harness.stop();
+                MicaRuntime.debug.println("End timer!");
+            }
+        };
+    }
 
-		int i = 0;
+    public void launchProtocol() {
 
-		for (Address addr : g.getAddresses()) {
-			Overlay neighbors = g.getOverlay(addr);
-			MicaOptions options = getOptions();
-			int stagger = rng.nextInt(options.stagger);
-			int lockTimeout = options.timeout;
-			long seed = getRandom().nextLong();
-			MicaRuntime rt = runtimeInterface.addRuntime(addr, seed,
-					options.roundLength, stagger, lockTimeout);
+        TestHarnessGraph g = getGraph();
+        launchTimers(); // TODO lift to runtime interface
 
-			MiCA.getRuntimeInterface().getRuntimeContextManager()
-					.setNativeRuntime(rt);
-			Protocol pinstance = createProtocolInstance(i++, addr,
-					neighbors);
-			MiCA.getRuntimeInterface().getRuntimeContextManager().clear();
-			rt.setProtocolInstance(pinstance);
-		}
-	}
+        int i = 0;
 
-	private void launchTimers() {
-		for (P2<Long, TimerTask> tt : timers) {
-			long delay = tt._1();
-			TimerTask task = tt._2();
-			runtimeInterface.scheduleTask(delay, task);
-		}
-	}
+        for (Address addr : g.getAddresses()) {
+            Overlay neighbors = g.getOverlay(addr);
+            MicaOptions options = getOptions();
+            int stagger = rng.nextInt(options.stagger);
+            int lockTimeout = options.timeout;
+            long seed = getRandom().nextLong();
+            MicaRuntime rt = runtimeInterface.addRuntime(addr, seed, options.roundLength, stagger, lockTimeout);
 
-	private Random rng;
+            MiCA.getRuntimeInterface().getRuntimeContextManager().setNativeRuntime(rt);
+            Protocol pinstance = createProtocolInstance(i++, addr, neighbors);
+            MiCA.getRuntimeInterface().getRuntimeContextManager().clear();
+            rt.setProtocolInstance(pinstance);
+        }
+    }
 
-	/*
-	public void launchProtocolRandomGraph(int n, int degree,
-			ProtocolInstanceFactory factory) {
-		launchProtocol(factory, new RandomGraph(n, defaultAddressFunc, degree,
-				rng));
-	} */
-	
-	/*
-	public void launchProtocolCompleteGraph(int n,
-			ProtocolInstanceFactory factory) {
-		launchProtocol(factory, new CompleteGraph(n, defaultAddressFunc));
-	} */
+    private void launchTimers() {
+        for (P2<Long, TimerTask> tt : timers) {
+            long delay = tt._1();
+            TimerTask task = tt._2();
+            runtimeInterface.scheduleTask(delay, task);
+        }
+    }
 
-	public List<MicaRuntime> getRuntimes() {
-		return MiCA.getRuntimeInterface().getRuntimes();
-	}
+    private Random rng;
 
-	private void run() {
-		runtimeInterface.run();
-		System.out.println("Done");
-	}
+    /*
+     * public void launchProtocolRandomGraph(int n, int degree,
+     * ProtocolInstanceFactory factory) { launchProtocol(factory, new
+     * RandomGraph(n, defaultAddressFunc, degree, rng)); }
+     */
 
-	public void runGraph() {
-		launchProtocol(); //getFactory(), getGraph());
-		run();
-	}
+    /*
+     * public void launchProtocolCompleteGraph(int n, ProtocolInstanceFactory
+     * factory) { launchProtocol(factory, new CompleteGraph(n,
+     * defaultAddressFunc)); }
+     */
 
-	public void stop() {
-		runtimeInterface.stop();
-	}
+    public List<MicaRuntime> getRuntimes() {
+        return MiCA.getRuntimeInterface().getRuntimes();
+    }
 
-	// backwards compatibility method; do not use
-	public static ProtocolInstanceFactory factoryFromCNF(
-			final F3<Integer, Address, Overlay, Protocol> createNodeFunc) {
-		return new ProtocolInstanceFactory() {
-			@Override
-			public Protocol createProtocolInstance(int nodeId, Address address,
-					Overlay overlay) {
-				return createNodeFunc.f(nodeId, address, overlay);
-			}
-		};
-	}
+    private void run() {
+        runtimeInterface.run();
+        System.out.println("Done");
+    }
 
-	// backwards compatibility
-	public static void main(String[] argv,
-			F3<Integer, Address, Overlay, Protocol> createNodeFunc) {
-		TestHarness.main(argv, TestHarness.factoryFromCNF(createNodeFunc));
-	}
+    public void runGraph() {
+        launchProtocol(); // getFactory(), getGraph());
+        run();
+    }
 
-	public static void main(String[] argv, ProtocolInstanceFactory factory) {
-		TestHarness harness = new TestHarness();
-		harness.runMain(argv, factory);
-	}
+    public void stop() {
+        runtimeInterface.stop();
+    }
 
-	public MicaOptions defaultOptions() {
-		return new MicaOptions();
-	}
+    // backwards compatibility method; do not use
+    public static ProtocolInstanceFactory factoryFromCNF(final F3<Integer, Address, Overlay, Protocol> createNodeFunc) {
+        return new ProtocolInstanceFactory() {
+            @Override
+            public Protocol createProtocolInstance(int nodeId, Address address, Overlay overlay) {
+                return createNodeFunc.f(nodeId, address, overlay);
+            }
+        };
+    }
 
-	public MicaOptions parseOptions(String[] argv) {
-		MicaOptions options = defaultOptions();
-		new JCommander(options, argv); // parse command line options
-		return options;
-	}
+    // backwards compatibility
+    public static void main(String[] argv, F3<Integer, Address, Overlay, Protocol> createNodeFunc) {
+        TestHarness.main(argv, TestHarness.factoryFromCNF(createNodeFunc));
+    }
 
-	
-	public void runMain(String[] argv, ProtocolInstanceFactory factory) {
-		MicaOptions options = parseOptions(argv);
-		runMain(options, factory);
-	}
+    public static void main(String[] argv, ProtocolInstanceFactory factory) {
+        TestHarness harness = new TestHarness();
+        harness.runMain(argv, factory);
+    }
 
-	public void runMain(String[] argv) {
-		// will throw an invalid cast exception of this harness doesn't
-		// implement ProtocolInstanceFactory
-		ProtocolInstanceFactory factory = this;
-		MicaOptions options = parseOptions(argv);
-		runMain(options, factory);
-	}
+    public MicaOptions defaultOptions() {
+        return new MicaOptions();
+    }
 
-	public void runMain(String[] argv,
-			F3<Integer, Address, Overlay, Protocol> createNodeFunc) {
-		runMain(argv, TestHarness.factoryFromCNF(createNodeFunc));
-	}
+    public MicaOptions parseOptions(String[] argv) {
+        MicaOptions options = defaultOptions();
+        new JCommander(options, argv); // parse command line options
+        return options;
+    }
 
-	/**
-	 * Instantiate nodes and create RunTime instances.
-	 * 
-	 * Legacy method for backwards compatibility. Use runGraph directly or
-	 * runMain.
-	 * 
-	 * @param seed
-	 * @param n
-	 * @param nodeDegree
-	 * @param createNodeFunc
-	 */
-	/*
-	public void runRandomGraph(long seed, int n, int nodeDegree,
-			ProtocolInstanceFactory factory) {
-		rng = new Random(seed);
-		TestHarnessGraph graph = new RandomGraph(n, defaultAddressFunc,
-				nodeDegree, rng);
-		runGraph(factory, graph);
-	} */
+    public void runMain(String[] argv, ProtocolInstanceFactory factory) {
+        MicaOptions options = parseOptions(argv);
+        runMain(options, factory);
+    }
 
-	private TestHarnessGraph graph = null;
+    public void runMain(String[] argv) {
+        // will throw an invalid cast exception of this harness doesn't
+        // implement ProtocolInstanceFactory
+        ProtocolInstanceFactory factory = this;
+        MicaOptions options = parseOptions(argv);
+        runMain(options, factory);
+    }
 
-	public TestHarnessGraph getGraph() {
-		return graph;
-	}
+    public void runMain(String[] argv, F3<Integer, Address, Overlay, Protocol> createNodeFunc) {
+        runMain(argv, TestHarness.factoryFromCNF(createNodeFunc));
+    }
 
-	public void setGraph(TestHarnessGraph graph) {
-		this.graph = graph;
-	}
+    /**
+     * Instantiate nodes and create RunTime instances.
+     * 
+     * Legacy method for backwards compatibility. Use runGraph directly or
+     * runMain.
+     * 
+     * @param seed
+     * @param n
+     * @param nodeDegree
+     * @param createNodeFunc
+     */
+    /*
+     * public void runRandomGraph(long seed, int n, int nodeDegree,
+     * ProtocolInstanceFactory factory) { rng = new Random(seed);
+     * TestHarnessGraph graph = new RandomGraph(n, defaultAddressFunc,
+     * nodeDegree, rng); runGraph(factory, graph); }
+     */
 
-	private MicaOptions options = null;
+    private TestHarnessGraph graph = null;
 
-	public MicaOptions getOptions() {
-		return options;
-	}
+    public TestHarnessGraph getGraph() {
+        return graph;
+    }
 
-	private void setOptions(MicaOptions options) {
-		this.options = options;
-		// validate options and do option processing...
-		String runtimeName = options.implementation;
-		if (runtimeName.equals("simple")) {
-			runtimeInterface = new SimpleRuntimeInterface();
-		} else if (runtimeName.equals("sim")) {
-			runtimeInterface = Simulator.v();
-		} else {
-			throw new InvalidOption("implementation", options.implementation);
-		}
+    public void setGraph(TestHarnessGraph graph) {
+        this.graph = graph;
+    }
 
-		if (options.compiler.equals("default")) {
-			MiCA.setCompiler(runtimeInterface.getDefaultCompiler());
-		} else if (options.compiler.equals("simple")) {
-			MiCA.setCompiler(new SimpleCompiler());
-		} else if (options.compiler.equals("fake")) {
-			MiCA.setCompiler(new FakeCompiler());
-//		} else if (options.compiler.equals("c1")) {
-//			MiCA.setCompiler(new C1Compiler());
-		} else {
-			throw new InvalidOption("compiler", options.compiler);
-		}
+    private MicaOptions options = null;
 
-		runtimeInterface.reset();
-		MiCA.setRuntimeInterface(runtimeInterface);
-		MiCA.setOptions(options);
-	}
+    public MicaOptions getOptions() {
+        return options;
+    }
 
-	@SuppressWarnings({ "unchecked", "rawtypes" })
-	public void processOptions() {
-		MicaOptions options = getOptions();
-		options.mainClassName = this.getClass().getName();
+    private void setOptions(MicaOptions options) {
+        this.options = options;
+        // validate options and do option processing...
+        String runtimeName = options.implementation;
+        if (runtimeName.equals("simple")) {
+            runtimeInterface = new SimpleRuntimeInterface();
+        } else if (runtimeName.equals("sim")) {
+            runtimeInterface = Simulator.v();
+        } else {
+            throw new InvalidOption("implementation", options.implementation);
+        }
 
-		if (options.stopAfter > 0) {
-			addTimerRounds(options.stopAfter, taskStop());
-		}
+        if (options.compiler.equals("default")) {
+            MiCA.setCompiler(runtimeInterface.getDefaultCompiler());
+        } else if (options.compiler.equals("simple")) {
+            MiCA.setCompiler(new SimpleCompiler());
+        } else if (options.compiler.equals("fake")) {
+            MiCA.setCompiler(new FakeCompiler());
+            // } else if (options.compiler.equals("c1")) {
+            // MiCA.setCompiler(new C1Compiler());
+        } else {
+            throw new InvalidOption("compiler", options.compiler);
+        }
 
-		// initialize random number generator
-		rng = new Random(options.seed);
+        runtimeInterface.reset();
+        MiCA.setRuntimeInterface(runtimeInterface);
+        MiCA.setOptions(options);
+    }
 
-		F<Integer, Address> addressFunc = runtimeInterface.getAddressFunc();
+    @SuppressWarnings({ "unchecked", "rawtypes" })
+    public void processOptions() {
+        MicaOptions options = getOptions();
+        options.mainClassName = this.getClass().getName();
 
-		if (addressFunc == null) {
-			addressFunc = defaultAddressFunc;
-		}
+        if (options.stopAfter > 0) {
+            addTimerRounds(options.stopAfter, taskStop());
+        }
 
-		List<Address> addresses = Functional.list(Functional.map(
-				Functional.range(options.n), addressFunc));
+        // initialize random number generator
+        rng = new Random(options.seed);
 
-		// initialize communications graph
-		if (options.graphType.equals("random")) {
-			setGraph(new RandomGraph(addresses, options.rdegree, rng));
-		} else if (options.graphType.equals("complete")) {
-			setGraph(new CompleteGraph(addresses));
-		} else if (options.graphType.equals("singlering")) {
-			setGraph(new SinglyLinkedRingGraph(addresses));
-		}
+        F<Integer, Address> addressFunc = runtimeInterface.getAddressFunc();
 
-		// initialize log
-		if (options.clearLogdir) {
-			clearLogdir();
-		}
+        if (addressFunc == null) {
+            addressFunc = defaultAddressFunc;
+        }
 
-		// logging options
-		LogFlag.setCurrentLogMask(LogFlag.set(LogFlag.getCurrentLogMask(),
-				(List) options.logsEnable));
-		LogFlag.setCurrentLogMask(LogFlag.unset(LogFlag.getCurrentLogMask(),
-				(List) options.logsDisable));
-		
-		TestHarness.BASE_PORT = options.port;
-		
-		if (getGraph() == null) {
-			throw new RuntimeException(
-					"Invalid graph.  graphType options \"complete\" and \"random\"");
-		}
-	}
+        List<Address> addresses = Functional.list(Functional.map(Functional.range(options.n), addressFunc));
 
-	/**
-	 * Delete any files in the logdir directory ending with the suffix ".log"
-	 */
-	public void clearLogdir() {
-		File logdir = new File(options.logdir);
-		if (!logdir.exists())
-			return;
-		if (!logdir.isDirectory())
-			throw new RuntimeException(String.format(
-					"Logdir %s not a directory", logdir));
+        // initialize communications graph
+        if (options.graphType.equals("random")) {
+            setGraph(new RandomGraph(addresses, options.rdegree, rng));
+        } else if (options.graphType.equals("complete")) {
+            setGraph(new CompleteGraph(addresses));
+        } else if (options.graphType.equals("singlering")) {
+            setGraph(new SinglyLinkedRingGraph(addresses));
+        }
 
-		for (String logfilename : logdir.list(new FilenameFilter() {
-			@Override
-			public boolean accept(File dir, String filename) {
-				return filename.endsWith(".log");
-			}
-		})) {
-			File f = new File(logdir, logfilename);
-			f.delete();
-		}
-	}
+        // initialize log
+        if (options.clearLogdir) {
+            clearLogdir();
+        }
 
-	public void runMain(MicaOptions options, ProtocolInstanceFactory factory) {
-		assert (options != null);
-		setOptions(options);
-		setFactory(factory);
-		processOptions();
+        // logging options
+        LogFlag.setCurrentLogMask(LogFlag.set(LogFlag.getCurrentLogMask(), (List) options.logsEnable));
+        LogFlag.setCurrentLogMask(LogFlag.unset(LogFlag.getCurrentLogMask(), (List) options.logsDisable));
 
-		configure();
-		
-		runGraph();
-	}
-	
-	
-	/**
-	 * Perform experiment-specific setup after options are processed but before execution
-	 */
-	public void configure() {}
-	
-	public void runMain(MicaOptions options) {
-		runMain(options,this);
-	}
+        TestHarness.BASE_PORT = options.port;
 
-	private ProtocolInstanceFactory factory = null;
-	
-	public ProtocolInstanceFactory getFactory() {
-		return factory;
-	}
+        if (getGraph() == null) {
+            throw new RuntimeException("Invalid graph.  graphType options \"complete\" and \"random\"");
+        }
+    }
 
-	public void setFactory(ProtocolInstanceFactory factory) {
-		this.factory = factory;
-	}
+    /**
+     * Delete any files in the logdir directory ending with the suffix ".log"
+     */
+    public void clearLogdir() {
+        File logdir = new File(options.logdir);
+        if (!logdir.exists())
+            return;
+        if (!logdir.isDirectory())
+            throw new RuntimeException(String.format("Logdir %s not a directory", logdir));
 
-	@Override
-	public Protocol createProtocolInstance(int nodeId, Address address,
-			Overlay overlay) {
-		return factory.createProtocolInstance(nodeId, address, overlay);
-	}
+        for (String logfilename : logdir.list(new FilenameFilter() {
+            @Override
+            public boolean accept(File dir, String filename) {
+                return filename.endsWith(".log");
+            }
+        })) {
+            File f = new File(logdir, logfilename);
+            f.delete();
+        }
+    }
+
+    public void runMain(MicaOptions options, ProtocolInstanceFactory factory) {
+        assert (options != null);
+        setOptions(options);
+        setFactory(factory);
+        processOptions();
+
+        configure();
+
+        runGraph();
+    }
+
+    /**
+     * Perform experiment-specific setup after options are processed but before
+     * execution
+     */
+    public void configure() {
+    }
+
+    public void runMain(MicaOptions options) {
+        runMain(options, this);
+    }
+
+    private ProtocolInstanceFactory factory = null;
+
+    public ProtocolInstanceFactory getFactory() {
+        return factory;
+    }
+
+    public void setFactory(ProtocolInstanceFactory factory) {
+        this.factory = factory;
+    }
+
+    @Override
+    public Protocol createProtocolInstance(int nodeId, Address address, Overlay overlay) {
+        return factory.createProtocolInstance(nodeId, address, overlay);
+    }
 
 }

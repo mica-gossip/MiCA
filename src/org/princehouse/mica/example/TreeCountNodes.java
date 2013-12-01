@@ -16,59 +16,60 @@ import org.princehouse.mica.lib.abstractions.RootedTree;
  */
 public class TreeCountNodes extends Aggregator<Integer, Integer> {
 
-	public TreeCountNodes() { super(); }
-	
-	private static final long serialVersionUID = 1L;
+    public TreeCountNodes() {
+        super();
+    }
 
-	@View
-	public Overlay overlay = null;
+    private static final long serialVersionUID = 1L;
 
-	private RootedTree tree = null;
+    @View
+    public Overlay overlay = null;
 
-	public RootedTree getTree() {
-		return tree;
-	}
+    private RootedTree tree = null;
 
-	public void setTree(RootedTree tree) {
-		this.tree = tree;
-	}
+    public RootedTree getTree() {
+        return tree;
+    }
 
-	public TreeCountNodes(RootedTree tree) {
-		super(Protocol.Direction.PULL);
-		this.tree = tree;
-		this.overlay = tree.getChildrenAsOverlay();
-	}
+    public void setTree(RootedTree tree) {
+        this.tree = tree;
+    }
 
-	// 1 + size of child subtrees
-	@Override
-	public Integer getAggregate() {
-		filterSummaries();
-		
-		int total = 1;
-		for (int i : getSummaries().values()) {
-			total += i;
-		}
-		aggregate = total; // persistent value only used for logging
-		return total;
-	}
+    public TreeCountNodes(RootedTree tree) {
+        super(Protocol.Direction.PULL);
+        this.tree = tree;
+        this.overlay = tree.getChildrenAsOverlay();
+    }
 
-	public int getSubtreeSize() {
-		return getAggregate();
-	}
+    // 1 + size of child subtrees
+    @Override
+    public Integer getAggregate() {
+        filterSummaries();
 
-	@Override
-	public Integer getSummary() {
-		return getSubtreeSize();
-	}
+        int total = 1;
+        for (int i : getSummaries().values()) {
+            total += i;
+        }
+        aggregate = total; // persistent value only used for logging
+        return total;
+    }
 
-	// this is just here so the aggregate is recorded in the logs... it's really
-	// computed on-the-fly any time getAggregate is called
-	public int aggregate = -23;
+    public int getSubtreeSize() {
+        return getAggregate();
+    }
 
-	
-	@Override
-	public void preUpdate(Address selected) {
-		getAggregate();
-	}
-	
+    @Override
+    public Integer getSummary() {
+        return getSubtreeSize();
+    }
+
+    // this is just here so the aggregate is recorded in the logs... it's really
+    // computed on-the-fly any time getAggregate is called
+    public int aggregate = -23;
+
+    @Override
+    public void preUpdate(Address selected) {
+        getAggregate();
+    }
+
 }

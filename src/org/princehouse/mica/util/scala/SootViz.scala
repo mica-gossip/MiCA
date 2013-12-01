@@ -92,10 +92,10 @@ object SootViz {
       val src = map.get(asMethod(mmc))
       for (e <- cg.edgesOutOf(mmc)) {
         val s = asMethod(e.getTgt())
-        if(!map.containsKey(s)) {
+        if (!map.containsKey(s)) {
           val n = unitToNode(s)
           jgraph.addVertex(n)
-          map.put(s,n)
+          map.put(s, n)
         }
         val dst = map.get(asMethod(s))
 

@@ -18,317 +18,314 @@ import fj.F;
 
 public abstract class LogStructuredStateMachine extends RoundManager {
 
-	public int settingsTransitionLimit() { return 1; }
-	public boolean settingsTransitionForbidRepeat() { return true; }
-	
-	public abstract List<LSSMTransitionRule> getTransitions();
+    public int settingsTransitionLimit() {
+        return 1;
+    }
 
-	/**
-	 * log messages old than this will be purged default value = 5 rounds
-	 */
-	private int messageLifetimeMS;
+    public boolean settingsTransitionForbidRepeat() {
+        return true;
+    }
 
-	public int getMessageLifetimeMS() {
-		return messageLifetimeMS;
-	}
+    public abstract List<LSSMTransitionRule> getTransitions();
 
-	public void setMessageLifetimeMS(int messageLifetimeMS) {
-		this.messageLifetimeMS = messageLifetimeMS;
-	}
+    /**
+     * log messages old than this will be purged default value = 5 rounds
+     */
+    private int messageLifetimeMS;
 
-	private static final long serialVersionUID = 1L;
+    public int getMessageLifetimeMS() {
+        return messageLifetimeMS;
+    }
 
-	// kept sorted newest to oldest
-	private List<LSSMMessage> log = Functional.list();
+    public void setMessageLifetimeMS(int messageLifetimeMS) {
+        this.messageLifetimeMS = messageLifetimeMS;
+    }
 
-	private Object defaultState = null;
+    private static final long serialVersionUID = 1L;
 
-	public LogStructuredStateMachine(Overlay overlay, int n, int f,
-			Object initialState) {
-		super(overlay, n, f);
-		this.defaultState = initialState;
-		setState(initialState);
-		setDefaultMessageLifetimeMS();
-	}
+    // kept sorted newest to oldest
+    private List<LSSMMessage> log = Functional.list();
 
-	private void setDefaultMessageLifetimeMS() {
-		int intervalLengthMS = getRuntimeState().getIntervalMS();
-		int nRoundsDefault = 5;
-		double currentRate = getRate();
-		setMessageLifetimeMS((int) (((double) intervalLengthMS) / currentRate * ((double) nRoundsDefault)));
-	}
+    private Object defaultState = null;
 
-	/**
-	 * Return the most recent state entry for a given address Returns the whole
-	 * PulseMessage instance so that the timestamp can be inspected
-	 * 
-	 * @param address
-	 * @param messages
-	 * @return
-	 */
-	public LSSMMessage getCurrentState(Address address,
-			List<LSSMMessage> messages) {
-		for (LSSMMessage m : messages) {
-			if (m.peer.equals(address)) {
-				return m;
-			}
-		}
-		return null;
-	}
+    public LogStructuredStateMachine(Overlay overlay, int n, int f, Object initialState) {
+        super(overlay, n, f);
+        this.defaultState = initialState;
+        setState(initialState);
+        setDefaultMessageLifetimeMS();
+    }
 
-	/**
-	 * shorthand for getState(this.getAddress(), this.getLog())
-	 * 
-	 * @return
-	 */
-	public LSSMMessage getState() {
-		return getCurrentState(getAddress(), getLog());
-	}
+    private void setDefaultMessageLifetimeMS() {
+        int intervalLengthMS = getRuntimeState().getIntervalMS();
+        int nRoundsDefault = 5;
+        double currentRate = getRate();
+        setMessageLifetimeMS((int) (((double) intervalLengthMS) / currentRate * ((double) nRoundsDefault)));
+    }
 
-	public List<LSSMMessage> getLog() {
-		return log;
-	}
+    /**
+     * Return the most recent state entry for a given address Returns the whole
+     * PulseMessage instance so that the timestamp can be inspected
+     * 
+     * @param address
+     * @param messages
+     * @return
+     */
+    public LSSMMessage getCurrentState(Address address, List<LSSMMessage> messages) {
+        for (LSSMMessage m : messages) {
+            if (m.peer.equals(address)) {
+                return m;
+            }
+        }
+        return null;
+    }
 
-	public void setState(Object state) {
-		Address addr = getAddress();
-		assert (addr != null);
+    /**
+     * shorthand for getState(this.getAddress(), this.getLog())
+     * 
+     * @return
+     */
+    public LSSMMessage getState() {
+        return getCurrentState(getAddress(), getLog());
+    }
 
-		log.add(0, new LSSMMessage(getAddress(), getNow(), state,
-				LSSMMessage.MessageSource.ORIGIN));
-	}
+    public List<LSSMMessage> getLog() {
+        return log;
+    }
 
-	private long getNow() {
-		return (new Date()).getTime();
-	}
+    public void setState(Object state) {
+        Address addr = getAddress();
+        assert (addr != null);
 
-	@GossipUpdate
-	public void update(LogStructuredStateMachine that) {
-		super.update(that);
-		List<LSSMMessage> msgcopy = Functional.concatenate(that.log);
-		// update both nodes
-		that.assimilateInformation(getAddress(), log);
-		assimilateInformation(that.getAddress(), msgcopy);
-	}
+        log.add(0, new LSSMMessage(getAddress(), getNow(), state, LSSMMessage.MessageSource.ORIGIN));
+    }
 
-	
-	public Map<Address, LinkedList<LSSMMessage>> getHistory() {
-		// TODO should be cached; transition rules call it many times between log modifications
-		return buildHistory();
-	}
-	
-	/**
-	 * History is a map from address -> list of state change messages The list
-	 * of states is sorted from new to old, so the first message represents
-	 * current state.
-	 * 
-	 * Redundant messages are deleted: If there are two consecutive messages
-	 * (m1,s1,new_timestamp,), (m2,s2,old_timestamp) are encountered, the new
-	 * one is thrown out. The 'old' message is assigned the most direct source
-	 * of the two. (FIXME: this is *probably* the correct behavior...)
-	 * 
-	 * @return
-	 */
-	private Map<Address, LinkedList<LSSMMessage>> buildHistory() {
-		// precondition: message list is sorted by timestamps descending (the
-		// natural sort for pulsemessage)
+    private long getNow() {
+        return (new Date()).getTime();
+    }
 
-		Map<Address, LinkedList<LSSMMessage>> history = Functional.map();
+    @GossipUpdate
+    public void update(LogStructuredStateMachine that) {
+        super.update(that);
+        List<LSSMMessage> msgcopy = Functional.concatenate(that.log);
+        // update both nodes
+        that.assimilateInformation(getAddress(), log);
+        assimilateInformation(that.getAddress(), msgcopy);
+    }
 
-		for (LSSMMessage m : getLog()) {
-			if (!history.containsKey(m.peer)) {
-				LinkedList<LSSMMessage> temp = new LinkedList<LSSMMessage>();
-				temp.addLast(m);
-				history.put(m.peer, temp);
-				continue;
-			}
+    public Map<Address, LinkedList<LSSMMessage>> getHistory() {
+        // TODO should be cached; transition rules call it many times between
+        // log modifications
+        return buildHistory();
+    }
 
-			LinkedList<LSSMMessage> peerhist = history.get(m.peer);
+    /**
+     * History is a map from address -> list of state change messages The list
+     * of states is sorted from new to old, so the first message represents
+     * current state.
+     * 
+     * Redundant messages are deleted: If there are two consecutive messages
+     * (m1,s1,new_timestamp,), (m2,s2,old_timestamp) are encountered, the new
+     * one is thrown out. The 'old' message is assigned the most direct source
+     * of the two. (FIXME: this is *probably* the correct behavior...)
+     * 
+     * @return
+     */
+    private Map<Address, LinkedList<LSSMMessage>> buildHistory() {
+        // precondition: message list is sorted by timestamps descending (the
+        // natural sort for pulsemessage)
 
-			LSSMMessage last = peerhist.getLast();
-			if (!last.state.equals(m.state)) {
-				// state change
-				peerhist.addLast(m);
-			} else {
-				// same state. retain the older message
-				if (m.source.compareTo(last.source) > 0) {
-					// replace indirect with direct sources (verified working)
-					//logJson("lssm-debug-swap", String.format(
-					//		"replace origin %s with %s", m.source, last.source));
-					m.source = last.source;
-				}
-				peerhist.pollLast();
-				peerhist.addLast(m);
-			}
-		}
-		return history;
+        Map<Address, LinkedList<LSSMMessage>> history = Functional.map();
 
-	}
+        for (LSSMMessage m : getLog()) {
+            if (!history.containsKey(m.peer)) {
+                LinkedList<LSSMMessage> temp = new LinkedList<LSSMMessage>();
+                temp.addLast(m);
+                history.put(m.peer, temp);
+                continue;
+            }
 
-	/**
-	 * precondition: log is sorted by ascending timestamp
-	 */
-	private void deleteRedundantMessages() {
-		if (log.size() <= 1) {
-			return;
-		}
+            LinkedList<LSSMMessage> peerhist = history.get(m.peer);
 
-		int debug_ss = log.size();
+            LSSMMessage last = peerhist.getLast();
+            if (!last.state.equals(m.state)) {
+                // state change
+                peerhist.addLast(m);
+            } else {
+                // same state. retain the older message
+                if (m.source.compareTo(last.source) > 0) {
+                    // replace indirect with direct sources (verified working)
+                    // logJson("lssm-debug-swap", String.format(
+                    // "replace origin %s with %s", m.source, last.source));
+                    m.source = last.source;
+                }
+                peerhist.pollLast();
+                peerhist.addLast(m);
+            }
+        }
+        return history;
 
-		Map<Address, LinkedList<LSSMMessage>> history = buildHistory();
+    }
 
-		historyToLog(history);
+    /**
+     * precondition: log is sorted by ascending timestamp
+     */
+    private void deleteRedundantMessages() {
+        if (log.size() <= 1) {
+            return;
+        }
 
-		int debug_ns = log.size();
+        int debug_ss = log.size();
 
-		logJson("lssm-debug-delete-redundant", String.format(
-				"log redundancy size %s -> %s; history for %s nodes", debug_ss,
-				debug_ns, history.size()));
-	}
+        Map<Address, LinkedList<LSSMMessage>> history = buildHistory();
 
-	/**
-	 * rewrite the log using the given history
-	 * @param history
-	 */
-	private void historyToLog(Map<Address, LinkedList<LSSMMessage>> history) {
+        historyToLog(history);
 
-		log = new ArrayList<LSSMMessage>();
+        int debug_ns = log.size();
 
-		for (List<LSSMMessage> peerhist : history.values()) {
-			log = Functional.extend(log, peerhist);
-		}
-		Collections.sort(log);
-	}
+        logJson("lssm-debug-delete-redundant",
+                String.format("log redundancy size %s -> %s; history for %s nodes", debug_ss, debug_ns, history.size()));
+    }
 
-	private void assimilateInformation(Address source, List<LSSMMessage> news) {
+    /**
+     * rewrite the log using the given history
+     * 
+     * @param history
+     */
+    private void historyToLog(Map<Address, LinkedList<LSSMMessage>> history) {
 
-		// TODO combine messages
-		// ...
+        log = new ArrayList<LSSMMessage>();
 
-		for (LSSMMessage m : news) {
-			// make indirect
-			log.add(0, m.tell());
-		}
+        for (List<LSSMMessage> peerhist : history.values()) {
+            log = Functional.extend(log, peerhist);
+        }
+        Collections.sort(log);
+    }
 
-		Collections.sort(log);
+    private void assimilateInformation(Address source, List<LSSMMessage> news) {
 
-		// delete duplicate messages
-		deleteRedundantMessages();
+        // TODO combine messages
+        // ...
 
-		// special rules:
-		// receving "recover N" for some node N deletes all previous N messages
+        for (LSSMMessage m : news) {
+            // make indirect
+            log.add(0, m.tell());
+        }
 
-		// latest status - current state of a node, message received within last
-		// 2d
-		// within T --- within a window of time T. must continuously state in
-		// state for whole window T; T may have begun before moving to current
-		// state
-		// 'in' without window of time - meaning had received it since hte last
-		// time the speicic state variable was reset
-		// 'via gossip' -- indirect
-		// longest wait: 3d (pulse to detect problem), +d for others to switch
-		// to recover, +d for node in wait to see all in wait
-		// one round == d time (during which all correct nodes talk with each
-		// other)
-	}
+        Collections.sort(log);
 
-	@Override
-	public void postUpdate() {
+        // delete duplicate messages
+        deleteRedundantMessages();
 
-		if (ready()) {
-			logJson(LogFlag.user, "lssm-ready");
-			reset();
-			doRound();
-		} else {
-			logJson("lssm-not-ready",
-					String.format("waiting to hear from %s peers",
-							this.getRemainingCount()));
-		}
+        // special rules:
+        // receving "recover N" for some node N deletes all previous N messages
 
-		// prevent our own state from expiring by re-adding it to the log if
-		// it's getting old
-		LSSMMessage stateMsg = getState();
-		if (stateMsg == null) {
-			setState(defaultState);
-		} else {
-			long now = getNow();
-			long age = now - stateMsg.timestamp;
-			if (age > getMessageLifetimeMS() / 2) {
-				setState(stateMsg.state);
-			}
-		}
-	}
+        // latest status - current state of a node, message received within last
+        // 2d
+        // within T --- within a window of time T. must continuously state in
+        // state for whole window T; T may have begun before moving to current
+        // state
+        // 'in' without window of time - meaning had received it since hte last
+        // time the speicic state variable was reset
+        // 'via gossip' -- indirect
+        // longest wait: 3d (pulse to detect problem), +d for others to switch
+        // to recover, +d for node in wait to see all in wait
+        // one round == d time (during which all correct nodes talk with each
+        // other)
+    }
 
-	// having received info from n-f peers, we attempt a state transition
-	public void doRound() {
-		// purgeExpiredMessages();
-		final LogStructuredStateMachine thisFinal = this;
-		int completedTransitions = 0;
+    @Override
+    public void postUpdate() {
 
-		// To prevent infinite loops, do not allow the same transition to be
-		// applied twice in one round
-		final Set<LSSMTransitionRule> applied = Functional.set();
+        if (ready()) {
+            logJson(LogFlag.user, "lssm-ready");
+            reset();
+            doRound();
+        } else {
+            logJson("lssm-not-ready", String.format("waiting to hear from %s peers", this.getRemainingCount()));
+        }
 
-		List<LSSMTransitionRule> transitions = getTransitions();
-		
-		int limit = settingsTransitionLimit();
-		
-		while (true) {
-			List<LSSMTransitionRule> readyTransitions = Functional
-					.list(Functional.filter(transitions,
-							new F<LSSMTransitionRule, Boolean>() {
-								@Override
-								public Boolean f(LSSMTransitionRule t) {
-									return !applied.contains(t)
-											&& t.ready(thisFinal);
-								}
-							}));
+        // prevent our own state from expiring by re-adding it to the log if
+        // it's getting old
+        LSSMMessage stateMsg = getState();
+        if (stateMsg == null) {
+            setState(defaultState);
+        } else {
+            long now = getNow();
+            long age = now - stateMsg.timestamp;
+            if (age > getMessageLifetimeMS() / 2) {
+                setState(stateMsg.state);
+            }
+        }
+    }
 
-			thisFinal.logJson("lssm-debug-transitions", String.format("transitions:%d ready:%d", transitions.size(), readyTransitions.size()));
-			
-			if (readyTransitions.size() > 1) {
-				logJson("lssm-error-transition-conflict", String.format(
-						"%d conflicting transitions; selecting first",
-						readyTransitions.size()));
-			} else if (readyTransitions.size() == 0) {
-				break;
-			}
+    // having received info from n-f peers, we attempt a state transition
+    public void doRound() {
+        // purgeExpiredMessages();
+        final LogStructuredStateMachine thisFinal = this;
+        int completedTransitions = 0;
 
-			// readyTransitions == 1
-			LSSMTransitionRule t = readyTransitions.get(0);
-			completedTransitions++;
-			logJson("lssm-transition", t.getName());
-			t.apply(this);
-			
-			if(settingsTransitionForbidRepeat()) {
-				applied.add(t);
-			}
-			if(limit > 0 && completedTransitions >= limit) {
-				break;
-			}
-		}
+        // To prevent infinite loops, do not allow the same transition to be
+        // applied twice in one round
+        final Set<LSSMTransitionRule> applied = Functional.set();
 
-		if (completedTransitions == 0) {
-			logJson(LogFlag.user, "lssm-error-no-transitions");
-		}
-	}
+        List<LSSMTransitionRule> transitions = getTransitions();
 
-	@SuppressWarnings("unused")
-	private void purgeExpiredMessages() {
-		final long now = getNow();
-		final int expiration = getMessageLifetimeMS();
+        int limit = settingsTransitionLimit();
 
-		int s = log.size();
-		log = Functional.list(Functional.filter(getLog(),
-				new F<LSSMMessage, Boolean>() {
-					@Override
-					public Boolean f(LSSMMessage m) {
-						return (now - m.timestamp) < expiration;
-					}
-				}));
+        while (true) {
+            List<LSSMTransitionRule> readyTransitions = Functional.list(Functional.filter(transitions,
+                    new F<LSSMTransitionRule, Boolean>() {
+                        @Override
+                        public Boolean f(LSSMTransitionRule t) {
+                            return !applied.contains(t) && t.ready(thisFinal);
+                        }
+                    }));
 
-		s -= log.size();
-		if (s > 0) {
-			this.logJson(LogFlag.user, "purged-log-messages", s);
-		}
-	}
+            thisFinal.logJson("lssm-debug-transitions",
+                    String.format("transitions:%d ready:%d", transitions.size(), readyTransitions.size()));
+
+            if (readyTransitions.size() > 1) {
+                logJson("lssm-error-transition-conflict",
+                        String.format("%d conflicting transitions; selecting first", readyTransitions.size()));
+            } else if (readyTransitions.size() == 0) {
+                break;
+            }
+
+            // readyTransitions == 1
+            LSSMTransitionRule t = readyTransitions.get(0);
+            completedTransitions++;
+            logJson("lssm-transition", t.getName());
+            t.apply(this);
+
+            if (settingsTransitionForbidRepeat()) {
+                applied.add(t);
+            }
+            if (limit > 0 && completedTransitions >= limit) {
+                break;
+            }
+        }
+
+        if (completedTransitions == 0) {
+            logJson(LogFlag.user, "lssm-error-no-transitions");
+        }
+    }
+
+    @SuppressWarnings("unused")
+    private void purgeExpiredMessages() {
+        final long now = getNow();
+        final int expiration = getMessageLifetimeMS();
+
+        int s = log.size();
+        log = Functional.list(Functional.filter(getLog(), new F<LSSMMessage, Boolean>() {
+            @Override
+            public Boolean f(LSSMMessage m) {
+                return (now - m.timestamp) < expiration;
+            }
+        }));
+
+        s -= log.size();
+        if (s > 0) {
+            this.logJson(LogFlag.user, "purged-log-messages", s);
+        }
+    }
 }

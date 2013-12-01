@@ -15,72 +15,68 @@ import org.princehouse.mica.util.harness.TestHarness;
  * @author lonnie
  * 
  */
-public class DilationGrowthRingD0 extends TestHarness implements
-		ProtocolInstanceFactory {
+public class DilationGrowthRingD0 extends TestHarness implements ProtocolInstanceFactory {
 
-	public int i;
-	public int dilation = 0;
-	public Protocol.Direction direction = Protocol.Direction.PUSHPULL;
+    public int i;
+    public int dilation = 0;
+    public Protocol.Direction direction = Protocol.Direction.PUSHPULL;
 
-	public static double minn = 10;
-	public static double minpow = Math.log(minn) / Math.log(2);
-	public static double maxn = 1000;
-	public static double maxpow = Math.log(maxn) / Math.log(2);
-	public static int experiments = 40;
-	
-	public static void main(String[] args) {
-		for (int i = 0; i < experiments; i++) {
-			DilationGrowthRingD0 test = new DilationGrowthRingD0(i);
-			test.runMain(args);
-		}
-	}
-	
-	
-	@Override
-	public MicaOptions defaultOptions() {
-		dilation = 1;
+    public static double minn = 10;
+    public static double minpow = Math.log(minn) / Math.log(2);
+    public static double maxn = 1000;
+    public static double maxpow = Math.log(maxn) / Math.log(2);
+    public static int experiments = 40;
 
-		MicaOptions options = super.defaultOptions();
-		//options.n = 1000;
-		options.implementation = "sim";
-		options.graphType = "singlering";
-		options.timeout = 10000;
-		options.simUpdateDuration = 0;
-		// set very high to prevent high dilation from timing out and aborting
-		options.roundLength = 100000;
-		options.stagger = options.roundLength;
-		options.stopAfter = 400;
-		options.logsDisable = Functional.list(new String[] { "state", "rate",
-				"select", "merge", "error" });
-		options.reflectionCache = true;
-		
-		if (i > 0) {
-			options.clearLogdir = false;
-		}
-		
-		options.n = (int) Math.pow(2,minpow + (maxpow-minpow) * ((double)i) / ((double)(experiments-1)));
-		String graphname = options.graphType;
-		if(graphname.equals("random")) 
-			graphname += String.format("-%s",options.rdegree);
-		options.expname = String.format("%s_d%s_n%s", graphname, dilation, options.n);
+    public static void main(String[] args) {
+        for (int i = 0; i < experiments; i++) {
+            DilationGrowthRingD0 test = new DilationGrowthRingD0(i);
+            test.runMain(args);
+        }
+    }
 
-		options.logdir = String.format("%s_%s",graphname,dilation);
-		
-		return options;
-	}
+    @Override
+    public MicaOptions defaultOptions() {
+        dilation = 1;
 
-	public DilationGrowthRingD0(int i) {
-		this.i = i;
-	}
+        MicaOptions options = super.defaultOptions();
+        // options.n = 1000;
+        options.implementation = "sim";
+        options.graphType = "singlering";
+        options.timeout = 10000;
+        options.simUpdateDuration = 0;
+        // set very high to prevent high dilation from timing out and aborting
+        options.roundLength = 100000;
+        options.stagger = options.roundLength;
+        options.stopAfter = 400;
+        options.logsDisable = Functional.list(new String[] { "state", "rate", "select", "merge", "error" });
+        options.reflectionCache = true;
 
-	@Override
-	public Protocol createProtocolInstance(int nodeId, Address address,
-			Overlay overlay) {
-		Protocol p = new FindMinChatty(nodeId, overlay, direction, getOptions().expname);
-		if (dilation > 0) {
-			p = Dilator.dilate(dilation, p);
-		}
-		return p;
-	}
+        if (i > 0) {
+            options.clearLogdir = false;
+        }
+
+        options.n = (int) Math.pow(2, minpow + (maxpow - minpow) * ((double) i) / ((double) (experiments - 1)));
+        String graphname = options.graphType;
+        if (graphname.equals("random"))
+            graphname += String.format("-%s", options.rdegree);
+        options.expname = String.format("%s_d%s_n%s", graphname, dilation, options.n);
+
+        options.logdir = String.format("%s_%s", graphname, dilation);
+
+        return options;
+    }
+
+    public DilationGrowthRingD0(int i) {
+        this.i = i;
+    }
+
+    @Override
+    public Protocol createProtocolInstance(int nodeId, Address address, Overlay overlay) {
+        Protocol p = new FindMinChatty(nodeId, overlay, direction, getOptions().expname);
+        if (dilation > 0) {
+            p = Dilator.dilate(dilation, p);
+        }
+        return p;
+    }
 
 }

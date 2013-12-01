@@ -17,44 +17,43 @@ import org.princehouse.mica.util.harness.TestHarness;
  * Test the pulse protocol
  * 
  * @author lonnie
- *
+ * 
  */
 public class RunTestMain {
-	
-	
-	/** 
-	 * See TestHarness.TestHarnessOptions for command line options 
-	 * @param args
-	 */
-	public static void main(String[] args) {
-		final TestHarness harness = new TestHarness();
-		
-		MicaOptions options = harness.parseOptions(args);
-		options.graphType = "complete";
-		
-		final int f = options.n / 4;
-				
-		ProtocolInstanceFactory factory = new ProtocolInstanceFactory() {
-			@Override
-			public Protocol createProtocolInstance(int nodeId, Address address,
-					Overlay overlay) {
-			
-						List<Address> neighborList;
-						try {
-							neighborList = Functional.list(overlay.getOverlay(null).keySet());
-						} catch (SelectException e) {
-							throw new RuntimeException(e);
-						}
-						
-						List<Address> neighborListShuffled = Randomness.shuffle(Randomness.random, neighborList);
-						
-						Overlay rr = new RoundRobinOverlay(neighborListShuffled);
-						int n = neighborList.size();
-						TestStateMachine bc = new TestStateMachine(rr, n, f);
-						return bc;
-			}
-			
-		};
-		harness.runMain(options, factory);
-	}
+
+    /**
+     * See TestHarness.TestHarnessOptions for command line options
+     * 
+     * @param args
+     */
+    public static void main(String[] args) {
+        final TestHarness harness = new TestHarness();
+
+        MicaOptions options = harness.parseOptions(args);
+        options.graphType = "complete";
+
+        final int f = options.n / 4;
+
+        ProtocolInstanceFactory factory = new ProtocolInstanceFactory() {
+            @Override
+            public Protocol createProtocolInstance(int nodeId, Address address, Overlay overlay) {
+
+                List<Address> neighborList;
+                try {
+                    neighborList = Functional.list(overlay.getOverlay(null).keySet());
+                } catch (SelectException e) {
+                    throw new RuntimeException(e);
+                }
+
+                List<Address> neighborListShuffled = Randomness.shuffle(Randomness.random, neighborList);
+
+                Overlay rr = new RoundRobinOverlay(neighborListShuffled);
+                int n = neighborList.size();
+                TestStateMachine bc = new TestStateMachine(rr, n, f);
+                return bc;
+            }
+
+        };
+        harness.runMain(options, factory);
+    }
 }

@@ -9,54 +9,54 @@ import org.princehouse.mica.base.net.model.NotBoundException;
 
 public class SimAddress implements Address {
 
-	private String id = null;
-	
-	protected String getId() {
-		return id;
-	}
+    private String id = null;
 
-	protected void setId(String id) {
-		this.id = id;
-	}
+    protected String getId() {
+        return id;
+    }
 
-	public SimAddress(String id) {
-		this.id = id;
-	}
-	
-	/**
+    protected void setId(String id) {
+        this.id = id;
+    }
+
+    public SimAddress(String id) {
+        this.id = id;
+    }
+
+    /**
 	 * 
 	 */
-	private static final long serialVersionUID = 1L;
+    private static final long serialVersionUID = 1L;
 
-	@Override
-	public String toString() {
-		return id;
-	}
-	
-	@Override
-	public int compareTo(Address a) {
-		if(!(a instanceof SimAddress)) {
-			return 0;
-		} else {
-			return getId().compareTo(((SimAddress)a).getId());
-		}
-	}
+    @Override
+    public String toString() {
+        return id;
+    }
 
-	@Override
-	public void bind(AcceptConnectionHandler h) throws IOException {
-		// TODO Auto-generated method stub
-	}
+    @Override
+    public int compareTo(Address a) {
+        if (!(a instanceof SimAddress)) {
+            return 0;
+        } else {
+            return getId().compareTo(((SimAddress) a).getId());
+        }
+    }
 
-	@Override
-	public void unbind() throws NotBoundException {
-		// TODO Auto-generated method stub
+    @Override
+    public void bind(AcceptConnectionHandler h) throws IOException {
+        // TODO Auto-generated method stub
+    }
 
-	}
+    @Override
+    public void unbind() throws NotBoundException {
+        // TODO Auto-generated method stub
 
-	@Override
-	public Connection openConnection() throws IOException {
-		// TODO Auto-generated method stub
-		return null;
-	}
+    }
+
+    @Override
+    public Connection openConnection() throws IOException {
+        // TODO Auto-generated method stub
+        return null;
+    }
 
 }

@@ -18,17 +18,17 @@ object SootUtils {
    * Return all fields that might be read or written (depending on params) by a call to method.
    *
    * Interprocedural version; runs recursively on the supplied call graph.
-   * 
+   *
    * @param method The entry point method
    * @param cg Call graph to use for recursive inter-procedural evaluation
    * @param mayRead If true, include fields that may be read
    * @param mayWrite If true, include fields that may be written
    * @param visited For internal use; used to remember visited methods
-   * 
-   * FIXME clearly describe sources of imprecision and possibly throw exceptions or configure behavior for native methods and 
+   *
+   * FIXME clearly describe sources of imprecision and possibly throw exceptions or configure behavior for native methods and
    * methods whose bodies are otherwise unavailable.
    */
-  def getUsedFields(method: SootMethod, cg: CallGraph, mayRead:Boolean=true, mayWrite:Boolean=true, visited: collection.mutable.Set[SootMethod] = collection.mutable.Set[SootMethod]()): Set[SootField] = {
+  def getUsedFields(method: SootMethod, cg: CallGraph, mayRead: Boolean = true, mayWrite: Boolean = true, visited: collection.mutable.Set[SootMethod] = collection.mutable.Set[SootMethod]()): Set[SootField] = {
     // precondition: method is not in visited
 
     visited += method

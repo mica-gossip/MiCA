@@ -11,7 +11,7 @@ import org.princehouse.mica.util.Distribution
 object TestC1 {
 
   def main(args: Array[String]): Unit = {
-    
+
     // Instantiate a protocol and set up its runtime environment (need to guarantee getRuntimeState is going to return something)
     val dist = new Distribution[Address]
     dist.put(new SimAddress("1"), 1)
@@ -21,21 +21,21 @@ object TestC1 {
     dist.ipnormalize()
 
     val p = new C1TestProtocol()
-    
+
     val sim = new Simulator
     MiCA setRuntimeInterface sim
-    
+
     val rt: MicaRuntime = sim.addRuntime(new SimAddress("0"), 0,
       1000, 1000, 500);
 
     sim.getRuntimeContextManager().setNativeRuntime(rt)
     val rts = p.getRuntimeState
-    
+
     testCompiler(p)
     sim.getRuntimeContextManager.clear
   }
 
-  def testCompiler(p:Protocol) = {
+  def testCompiler(p: Protocol) = {
     // Now run it through the C1 compiler
     val compiler = new C1Compiler
     val agent = compiler compile p

@@ -28,130 +28,131 @@ import org.princehouse.mica.util.Functional;
  * @param <Aggregate>
  */
 public abstract class Aggregator<Summary, Aggregate> extends FailureDetector {
-	public Aggregator() {}
-	
-	private static final long serialVersionUID = 1L;
+    public Aggregator() {
+    }
 
-	private Map<Address, Summary> summaries = null;
-	private Protocol.Direction direction;
+    private static final long serialVersionUID = 1L;
 
-	/**
-	 * Aggregate constructor. The direction of aggregation is given by constants
-	 * from Protocol.Direction. PUSH : Push summary of initiating gossip node to
-	 * recipient; compute new remote aggregate PULL : Pull summary of recipient
-	 * to initiator; compute new local aggregate PUSHPULL: Both
-	 * 
-	 * @param overlay
-	 *            The overlay to gossip along.
-	 * @param direction
-	 *            PUSH, PULL, or PUSHPULL
-	 * @param initialAggregateValue
-	 */
-	public Aggregator(Protocol.Direction direction) {
-		initializeSummaries();
-		this.direction = direction;
-	}
+    private Map<Address, Summary> summaries = null;
+    private Protocol.Direction direction;
 
-	@Override
-	public void failureDetected(Address peer) {
-		if(getSummaries().containsKey(peer)) {
-			getSummaries().remove(peer);
-		}
-	}
-	
-	/**
-	 * Creates a PUSHPULL aggregate with a null initial value.
-	 * 
-	 * @param overlay
-	 *            The overlay to gossip along.
-	 */
-	// public Aggregator(Overlay overlay) {
-	// this(overlay, Protocol.Direction.PUSHPULL, null);
-	// }
+    /**
+     * Aggregate constructor. The direction of aggregation is given by constants
+     * from Protocol.Direction. PUSH : Push summary of initiating gossip node to
+     * recipient; compute new remote aggregate PULL : Pull summary of recipient
+     * to initiator; compute new local aggregate PUSHPULL: Both
+     * 
+     * @param overlay
+     *            The overlay to gossip along.
+     * @param direction
+     *            PUSH, PULL, or PUSHPULL
+     * @param initialAggregateValue
+     */
+    public Aggregator(Protocol.Direction direction) {
+        initializeSummaries();
+        this.direction = direction;
+    }
 
-	/**
-	 * Initialize the summary map
-	 */
-	public void initializeSummaries() {
-		summaries = Functional.map();
-	}
+    @Override
+    public void failureDetected(Address peer) {
+        if (getSummaries().containsKey(peer)) {
+            getSummaries().remove(peer);
+        }
+    }
 
-	/**
-	 * Return the current aggregate value
-	 * 
-	 * @return
-	 */
-	public abstract Aggregate getAggregate();
+    /**
+     * Creates a PUSHPULL aggregate with a null initial value.
+     * 
+     * @param overlay
+     *            The overlay to gossip along.
+     */
+    // public Aggregator(Overlay overlay) {
+    // this(overlay, Protocol.Direction.PUSHPULL, null);
+    // }
 
-	@Override
-	public void preUpdate(Address selected) {
-		super.preUpdate(selected);
-		filterSummaries();
-	}
+    /**
+     * Initialize the summary map
+     */
+    public void initializeSummaries() {
+        summaries = Functional.map();
+    }
 
-	/**
-	 * Gossip update function
-	 * 
-	 * @param neighbor
-	 */
-	@GossipUpdate
-	@Override
-	public void update(Protocol that) {
-		super.update(that);
-		@SuppressWarnings("unchecked")
-		Aggregator<Summary, Aggregate> neighbor = (Aggregator<Summary, Aggregate>) that;
-		if (direction.pull()) {
-			updatePull(neighbor);
-		}
-		if (direction.push()) {
-			updatePush(neighbor);
-		}
-	}
+    /**
+     * Return the current aggregate value
+     * 
+     * @return
+     */
+    public abstract Aggregate getAggregate();
 
-	public void updatePull(Aggregator<Summary, Aggregate> neighbor) {
-		summaries.put(neighbor.getAddress(), neighbor.getSummary());
-	}
+    @Override
+    public void preUpdate(Address selected) {
+        super.preUpdate(selected);
+        filterSummaries();
+    }
 
-	public void updatePush(Aggregator<Summary, Aggregate> neighbor) {
-		neighbor.updatePull(this);
-	}
+    /**
+     * Gossip update function
+     * 
+     * @param neighbor
+     */
+    @GossipUpdate
+    @Override
+    public void update(Protocol that) {
+        super.update(that);
+        @SuppressWarnings("unchecked")
+        Aggregator<Summary, Aggregate> neighbor = (Aggregator<Summary, Aggregate>) that;
+        if (direction.pull()) {
+            updatePull(neighbor);
+        }
+        if (direction.push()) {
+            updatePush(neighbor);
+        }
+    }
 
-	/**
-	 * 
-	 * If summaryFilterKeep returns false, the specified summary will be purged
-	 * from the summary cache. Otherwise it is kept. Default behavior is to keep
-	 * everything.
-	 * 
-	 * @param addr
-	 * @param s
-	 * @return
-	 */
-	public boolean summaryFilterKeep(Address addr, Summary s) {
-		return getView().get(addr) > 0;
-	}
+    public void updatePull(Aggregator<Summary, Aggregate> neighbor) {
+        summaries.put(neighbor.getAddress(), neighbor.getSummary());
+    }
 
-	/**
-	 * Return a map of all cached summaries
-	 * 
-	 * @return
-	 */
-	public Map<Address, Summary> getSummaries() {
-		return summaries;
-	}
+    public void updatePush(Aggregator<Summary, Aggregate> neighbor) {
+        neighbor.updatePull(this);
+    }
 
-	public void filterSummaries() {
-		for (Address addr : Functional.list(summaries.keySet())) {
-			Summary value = summaries.get(addr);
-			if (!summaryFilterKeep(addr, value))
-				summaries.remove(addr);
-		}
-	}
+    /**
+     * 
+     * If summaryFilterKeep returns false, the specified summary will be purged
+     * from the summary cache. Otherwise it is kept. Default behavior is to keep
+     * everything.
+     * 
+     * @param addr
+     * @param s
+     * @return
+     */
+    public boolean summaryFilterKeep(Address addr, Summary s) {
+        return getView().get(addr) > 0;
+    }
 
-	/**
-	 * Compute the local summary
-	 * 
-	 * @return
-	 */
-	public abstract Summary getSummary();
+    /**
+     * Return a map of all cached summaries
+     * 
+     * @return
+     */
+    public Map<Address, Summary> getSummaries() {
+        return summaries;
+    }
+
+    public void filterSummaries() {
+        for (Address addr : Functional.list(summaries.keySet())) {
+            Summary value = summaries.get(addr);
+            if (!summaryFilterKeep(addr, value))
+                summaries.remove(addr);
+        }
+    }
+
+    /**
+     * Compute the local summary
+     * 
+     * @return
+     */
+    public abstract Summary getSummary();
 
 }

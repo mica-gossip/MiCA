@@ -15,19 +15,18 @@ object TestFieldUseAnalysisLocal {
 
     val protocolClass = classOf[C1TestProtocol]
     Scene.v().loadClassAndSupport(protocolClass.getName())
-        val c = SootUtils.forceResolveJavaClass(protocolClass, SootClass.BODIES)
+    val c = SootUtils.forceResolveJavaClass(protocolClass, SootClass.BODIES)
     c.setApplicationClass()
     Scene.v().loadNecessaryClasses()
 
     val entryMethod: SootMethod = c.getMethodByName("update")
     entryMethod.retrieveActiveBody()
     Scene.v().setEntryPoints(List(entryMethod))
-   
+
     println("analyzing local used fields of entry method")
-    for(field <- SootUtils.getUsedFields(entryMethod, mayRead=true, mayWrite=true)) {
+    for (field <- SootUtils.getUsedFields(entryMethod, mayRead = true, mayWrite = true)) {
       println("  field: " + field)
     }
-   }
+  }
 }
-
 

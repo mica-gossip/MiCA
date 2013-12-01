@@ -19,24 +19,23 @@ import fj.F3;
  */
 public class TestStack1 extends TestHarness {
 
-	/**
-	 * @param args
-	 * @throws UnknownHostException
-	 */
-	public static void main(String[] args) {
+    /**
+     * @param args
+     * @throws UnknownHostException
+     */
+    public static void main(String[] args) {
 
-		F3<Integer, Address, Overlay, Protocol> createNodeFunc = new F3<Integer, Address, Overlay, Protocol>() {
-			@Override
-			public Protocol f(Integer i, Address address, Overlay view) {
-				MinAddressLeaderElection leaderElection = new MinAddressLeaderElection(
-						view);
-				Protocol tree = new SpanningTreeOverlay(leaderElection, view);
-				return new MergeIndependent(leaderElection, tree);
-			}
-		};
+        F3<Integer, Address, Overlay, Protocol> createNodeFunc = new F3<Integer, Address, Overlay, Protocol>() {
+            @Override
+            public Protocol f(Integer i, Address address, Overlay view) {
+                MinAddressLeaderElection leaderElection = new MinAddressLeaderElection(view);
+                Protocol tree = new SpanningTreeOverlay(leaderElection, view);
+                return new MergeIndependent(leaderElection, tree);
+            }
+        };
 
-		new TestStack1().runMain(args, createNodeFunc);
+        new TestStack1().runMain(args, createNodeFunc);
 
-	}
+    }
 
 }

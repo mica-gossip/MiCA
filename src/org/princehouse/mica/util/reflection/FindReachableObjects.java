@@ -10,15 +10,15 @@ package org.princehouse.mica.util.reflection;
  */
 public abstract class FindReachableObjects<T> extends ReachableObjectVisitor {
 
-	@SuppressWarnings("unchecked")
-	@Override
-	public void visit(Object reachable) {
-		if (match(reachable)) {
-			add((T) reachable);
-		}
-	}
+    @SuppressWarnings("unchecked")
+    @Override
+    public void visit(Object reachable) {
+        if (match(reachable)) {
+            add((T) reachable);
+        }
+    }
 
-	public abstract void add(T obj);
+    public abstract void add(T obj);
 
-	public abstract boolean match(Object obj);
+    public abstract boolean match(Object obj);
 }

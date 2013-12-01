@@ -4,9 +4,9 @@ import java.io.IOException;
 
 public class AlreadyBoundException extends IOException {
 
-	/**
+    /**
 	 * 
 	 */
-	private static final long serialVersionUID = -5895301390852953992L;
+    private static final long serialVersionUID = -5895301390852953992L;
 
 }

@@ -14,85 +14,79 @@ import org.princehouse.mica.util.Serialization;
 
 import com.esotericsoftware.kryo.Kryo;
 
-public class C1CommunicationPatternAgent implements
-		CommunicationPatternAgent {
+public class C1CommunicationPatternAgent implements CommunicationPatternAgent {
 
-	private Kryo kryo = null;
-	
-	public C1CommunicationPatternAgent(Kryo kryo) {
-		this.kryo = kryo;
-	}
-	
-	
-	@SuppressWarnings("serial")
-	protected static class C1Message implements Serializable {
-		public C1Message() {} 
-	
-		public C1Message(Protocol p, RuntimeState runtimeState) {
-			this.p = p;
-			this.runtimeState = runtimeState;
-		}
+    private Kryo kryo = null;
 
-		private Protocol p;
+    public C1CommunicationPatternAgent(Kryo kryo) {
+        this.kryo = kryo;
+    }
 
-		public Protocol getP() {
-			return p;
-		}
+    @SuppressWarnings("serial")
+    protected static class C1Message implements Serializable {
+        public C1Message() {
+        }
 
-		public RuntimeState getRuntimeState() {
-			return runtimeState;
-		}
+        public C1Message(Protocol p, RuntimeState runtimeState) {
+            this.p = p;
+            this.runtimeState = runtimeState;
+        }
 
-		private RuntimeState runtimeState;
-	}
+        private Protocol p;
 
-	@Override
-	public Serializable f1(MicaRuntime initiatorRuntime) {
-		try {
-			return new C1Message(initiatorRuntime.getProtocolInstance(),
-					initiatorRuntime.getRuntimeState());
-		} finally {
-			MiCA.getRuntimeInterface().getRuntimeContextManager().clear();
-		}
-	}
+        public Protocol getP() {
+            return p;
+        }
 
-	@Override
-	public Serializable f2(MicaRuntime receiverRuntime, Serializable o)
-			throws FatalErrorHalt, AbortRound {
-		C1Message m1 = (C1Message) o;
-		MiCA.getRuntimeInterface().getRuntimeContextManager()
-				.setNativeRuntime(receiverRuntime);
-		try {
-			MiCA.getRuntimeInterface().getRuntimeContextManager()
-					.setForeignRuntimeState(m1.p, m1.runtimeState);
-			try {
-				m1.p.update(receiverRuntime.getProtocolInstance());
-			} catch (Throwable t) {
-				receiverRuntime.handleError(
-						RuntimeErrorCondition.UPDATE_EXCEPTION, t);
-			}
-			return m1;
-		} finally {
-			MiCA.getRuntimeInterface().getRuntimeContextManager().clear();
-		}
-	}
+        public RuntimeState getRuntimeState() {
+            return runtimeState;
+        }
 
-	@Override
-	public void f3(MicaRuntime initiatorRuntime, Serializable o) {
-		C1Message m2 = (C1Message) o;
-		initiatorRuntime.setProtocolInstance(m2.p);
-		initiatorRuntime.setRuntimeState(m2.runtimeState);
-	}
+        private RuntimeState runtimeState;
+    }
 
-	@Override
-	public byte[] serialize(Serializable obj) {
-		return Serialization.serializeKryo(obj, kryo);
-	}
+    @Override
+    public Serializable f1(MicaRuntime initiatorRuntime) {
+        try {
+            return new C1Message(initiatorRuntime.getProtocolInstance(), initiatorRuntime.getRuntimeState());
+        } finally {
+            MiCA.getRuntimeInterface().getRuntimeContextManager().clear();
+        }
+    }
 
-	@SuppressWarnings("unchecked")
-	@Override
-	public <T extends Serializable> T deserialize(byte[] data) {
-		return (T) Serialization.deserializeKryo(data, kryo);
-	}
+    @Override
+    public Serializable f2(MicaRuntime receiverRuntime, Serializable o) throws FatalErrorHalt, AbortRound {
+        C1Message m1 = (C1Message) o;
+        MiCA.getRuntimeInterface().getRuntimeContextManager().setNativeRuntime(receiverRuntime);
+        try {
+            MiCA.getRuntimeInterface().getRuntimeContextManager().setForeignRuntimeState(m1.p, m1.runtimeState);
+            try {
+                m1.p.update(receiverRuntime.getProtocolInstance());
+            } catch (Throwable t) {
+                receiverRuntime.handleError(RuntimeErrorCondition.UPDATE_EXCEPTION, t);
+            }
+            return m1;
+        } finally {
+            MiCA.getRuntimeInterface().getRuntimeContextManager().clear();
+        }
+    }
+
+    @Override
+    public void f3(MicaRuntime initiatorRuntime, Serializable o) {
+        C1Message m2 = (C1Message) o;
+        initiatorRuntime.setProtocolInstance(m2.p);
+        initiatorRuntime.setRuntimeState(m2.runtimeState);
+    }
+
+    @Override
+    public byte[] serialize(Serializable obj) {
+        return Serialization.serializeKryo(obj, kryo);
+    }
+
+    @SuppressWarnings("unchecked")
+    @Override
+    public <T extends Serializable> T deserialize(byte[] data) {
+        return (T) Serialization.deserializeKryo(data, kryo);
+    }
 
 }

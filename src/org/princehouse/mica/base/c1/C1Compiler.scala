@@ -47,7 +47,7 @@ class C1Compiler extends Compiler {
     val c = SootUtils.forceResolveJavaClass(pclass, SootClass.BODIES)
     c.setApplicationClass()
     Scene.v().loadNecessaryClasses()
-    
+
     val entryMethod: SootMethod = SootUtils.getInheritedMethodByName(c, "update") match {
       case Some(x) => x
       case None => throw new RuntimeException("No update method found in protocol")
@@ -57,7 +57,7 @@ class C1Compiler extends Compiler {
     PackManager.v.runPacks
     val pta = Scene.v().getPointsToAnalysis()
     val cg = Scene.v().getCallGraph()
-    val usedFieldsSoot = SootUtils.getUsedFields(entryMethod, cg, mayRead=true, mayWrite=true);
+    val usedFieldsSoot = SootUtils.getUsedFields(entryMethod, cg, mayRead = true, mayWrite = true);
 
     val protocolClasses = ReflectionUtil.getAllProtocolClasses()
 
@@ -71,27 +71,27 @@ class C1Compiler extends Compiler {
     val kryo = new Kryo()
     for (cls <- protocolClasses) {
       // TODO there's some scala build bug here.  If you get "C1Compiler not found" errors, comment then uncomment the following line...
-      kryo.register(cls,new ExclusiveFieldSerializer(kryo, cls, usedFieldsJava))
-          // This kryo.register line was causing a mysterious "illegal cyclic reference" scala build error.  Commented out and in 
+      kryo.register(cls, new ExclusiveFieldSerializer(kryo, cls, usedFieldsJava))
+      // This kryo.register line was causing a mysterious "illegal cyclic reference" scala build error.  Commented out and in 
       // and everything's fine now.      
-     
+
     }
 
     return new AnalysisResult(kryo)
   }
 
-  def dumpUsedGossipFields(usedFieldsScala:Set[Field],protocolClasses:java.util.Set[Class[_ <: Protocol]]) = {
-	  for(pc <- protocolClasses) {
-	    println("USED fields for class " + pc + ":")
-	    for(f:Field <- usedFieldsScala) { 
-	      if(pc == f.getDeclaringClass()) {
-	        println("    " + f)
-	      }
-	    }
-	  }
+  def dumpUsedGossipFields(usedFieldsScala: Set[Field], protocolClasses: java.util.Set[Class[_ <: Protocol]]) = {
+    for (pc <- protocolClasses) {
+      println("USED fields for class " + pc + ":")
+      for (f: Field <- usedFieldsScala) {
+        if (pc == f.getDeclaringClass()) {
+          println("    " + f)
+        }
+      }
+    }
   }
 }
-    /*
+/*
     println("C1Compiler: analyze " + pclass.getName)
 
     val result = new AnalysisResult
@@ -130,14 +130,14 @@ class C1Compiler extends Compiler {
     result
 */
 
-    // limit the singletons to this chunk of code, so they can possibly be replaced later with something more sustainable
-    // -w is whole program mode for inter-procedural analysis
-    // dump body causes errors -- does it terminate execution at the named phase??
-    //val sootArgs = Array[String]("-v","-w","-f","jimple","-dump-body","jb")
-    //val sootArgs = Array[String]("-w", "-f", "jimple")
-    // note: -dump-cfg ALL prints out a lotta spam...  view with dotview script
-    //val sootArgs = Array[String]("-w", "-f", "jimple")
-    /*
+// limit the singletons to this chunk of code, so they can possibly be replaced later with something more sustainable
+// -w is whole program mode for inter-procedural analysis
+// dump body causes errors -- does it terminate execution at the named phase??
+//val sootArgs = Array[String]("-v","-w","-f","jimple","-dump-body","jb")
+//val sootArgs = Array[String]("-w", "-f", "jimple")
+// note: -dump-cfg ALL prints out a lotta spam...  view with dotview script
+//val sootArgs = Array[String]("-w", "-f", "jimple")
+/*
     val sootArgs = Array[String]("-f", "jimple")
     SootUtils.options.parse(sootArgs)
     val sclass = SootUtils.forceResolveJavaClass(pclass, SootClass.BODIES)
@@ -155,16 +155,15 @@ class C1Compiler extends Compiler {
     }
     println("Done") */
 
-    //pdg.constructPDG()
-    // Initial flow info
-    //val entryData = new UnitData()
-    //entryData.addPath(new soot.jimple.ThisRef(smethod.getDeclaringClass().getType()), new Location("A"))
-    //entryData.addPath(new soot.jimple.ParameterRef(smethod.getParameterType(0), 0), new Location("B"))
-    //val flow = new TestDataFlow(cfg, entryData)
-    //flow.go
-  
+//pdg.constructPDG()
+// Initial flow info
+//val entryData = new UnitData()
+//entryData.addPath(new soot.jimple.ThisRef(smethod.getDeclaringClass().getType()), new Location("A"))
+//entryData.addPath(new soot.jimple.ParameterRef(smethod.getParameterType(0), 0), new Location("B"))
+//val flow = new TestDataFlow(cfg, entryData)
+//flow.go
 
- /* private var sootInitialized = false
+/* private var sootInitialized = false
 
   def initializeSoot: Unit = {
     //    PackManager.v().getPack("jtp").add(new
@@ -175,7 +174,6 @@ class C1Compiler extends Compiler {
       // SootUtils.packManager.getPack("jap").add(new C1MayUseFieldAnalysis)
     }
   } */
-
 
 /*
  * 
@@ -332,7 +330,6 @@ class C1MayUseFieldAnalysis extends Transform("jap.c1fieldanalysis", new C1Trans
 }
  */
 
-
 /*
  * 
 class ObjectReference {
@@ -356,4 +353,4 @@ class Read(ref: ObjectReference) {
 class ReadField(ref: ObjectReference, fieldName: String) {
 }
 
-*/
+*/ 
