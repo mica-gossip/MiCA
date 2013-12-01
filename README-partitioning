@@ -1,0 +1,35 @@
+
+1. selective field serializer 
+2. selective field deserializer  (i.e., object patching)
+
+3. may-use field analysis <-----------------------
+    ideas: hack-hint to analysis that update parameter always has same runtime type
+
+
+
+
+
+    update(a,b) {
+        if cond(a)                 <--------------- current a func of b b/c we need address
+            update(a.p1, b.p1)
+        else
+            update(a.p2, b.p2)
+    }
+
+
+
+    update(a,b) {
+        if cond(a)                 
+            if cond(a.p1)                
+                update(a.p1.p1, b.p1.p1)
+            else
+                update(a.p1.p2, b.p1.p2)
+        else
+            if cond(a.p1)                
+                update(a.p2.p1, b.p2.p1)
+            else
+                update(a.p2.p2, b.p2.p2)
+    }
+
+want to lazy-evaluate the static analysis?
+
