@@ -1,5 +1,6 @@
 *~
 *.orig
+*.tar.gz
 *.log
 *.csv
 *.pyc
