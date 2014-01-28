@@ -39,11 +39,18 @@ public class RingOverlayBuilder extends BaseProtocol implements SinglyLinkedRing
     }
 
     @Override
-    public Distribution<Address> getOverlay(RuntimeState rts) throws SelectException {
+    public Distribution<Address> getView(RuntimeState rts) throws SelectException {
         // TODO Auto-generated method stub
-        return null;
+        throw new RuntimeException("not implemented");
+        //return null;
     }
 
+    @Override
+    public
+    Distribution<Address> getView() {
+        throw new RuntimeException("not implemented");
+    }
+    
     @Override
     public void update(Protocol that) {
         // TODO Auto-generated method stub

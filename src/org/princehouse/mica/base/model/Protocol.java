@@ -118,8 +118,28 @@ public interface Protocol {
      */
     public Object getLogState();
 
+    /**
+     * Convenience method for logging only an event type
+     * Flags is an enum from LogFlag enum.
+     * 
+     * @param flags  An enum from LogFlag class; describes the category of the log message.
+     * @param eventType An arbitrary string that will be written in the "event_type" attribute of the logged JSON message.  
+     */
     void logJson(Object flags, String eventType);
 
+
+    /**
+     * @param flags
+     *            An enum from LogFlag class; describes the category of the log
+     *            message.
+     * @param evenType
+     *            An arbitrary string that will be written in the "event_type"
+     *            attribute of the logged JSON message.
+     * @param obj
+     *            An object to include with the log message. MiCA will attempt
+     *            to serialize the object into JSON, but this may fail for
+     *            custom data types.
+     */
     void logJson(Object flags, String eventType, Object obj);
 
 }

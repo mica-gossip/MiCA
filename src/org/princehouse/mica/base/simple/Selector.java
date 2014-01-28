@@ -35,7 +35,7 @@ public abstract class Selector {
             return Distribution.uniform((Collection<Address>) obj);
         } else if (obj instanceof Overlay) {
 
-            Distribution<Address> view = ((Overlay) obj).getOverlay(rts);
+            Distribution<Address> view = ((Overlay) obj).getView(rts);
             if (view != null && !view.isOne()) {
                 throw new MalformedViewException(obj, view);
             }
@@ -55,7 +55,7 @@ public abstract class Selector {
             // TODO add sanity check for addresses
             return (Collection<Address>) value;
         } else if (value instanceof Overlay) {
-            Distribution<Address> dist = ((Overlay) value).getOverlay(rts);
+            Distribution<Address> dist = ((Overlay) value).getView(rts);
             return dist.keySet();
         } else {
             throw new RuntimeException(String.format("Don't know how to extract view from %s instance", value
@@ -128,7 +128,7 @@ public abstract class Selector {
         }
     }
 
-    // used to associate Select* annotations with their Selector classes
+    // used to associate View* annotations with their Selector classes
     public static List<SelectorAnnotationDecider> registeredDeciders = Functional.list(new SelectorAnnotationDecider[] {
             new SelectDecider(), new SelectUniformRandomDecider() });
 }

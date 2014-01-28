@@ -19,6 +19,14 @@ import fj.F;
 import fj.P2;
 
 public class AnnotationInspector {
+    
+    public static final boolean debugAnnotationInspector = false;
+    public static void debug(String str) {
+        if(debugAnnotationInspector) {
+            System.out.println(str);
+        }
+    }
+    
     public static Method locateUpdateMethod(Class<?> pclass) throws TooManyException, NotFoundException {
         // TODO sanity check that update has the right signature
         try {
@@ -73,6 +81,8 @@ public class AnnotationInspector {
          * Select annotations
          */
 
+        debug(String.format("locateSelectMethod: klass=%s",klass.getName()));
+        
         // first class function that tells us if an AnnotatedElement has any of
         // the registered select annotations
         F<AnnotatedElement, Boolean> hasSelectAnnotation1 = Functional.<F<AnnotatedElement, Boolean>> foldl(

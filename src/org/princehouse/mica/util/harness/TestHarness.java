@@ -36,8 +36,7 @@ import fj.P2;
  * TestHarness is used for running local experiments with many nodes on a
  * randomly-generated graph See examples.DemoCompositeProtocol for an example
  * 
- * Command line options for TestHarness are in the TestHarnessOptions inner
- * class
+ * Command line options for TestHarness are in the MicaOptions class
  * 
  * @author lonnie
  * 

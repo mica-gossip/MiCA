@@ -32,7 +32,7 @@ public abstract class BaseProtocol implements Protocol, Serializable {
     public BaseProtocol() {
     }
 
-    // clunky mechanism to register "foreign" objects when they are deserialized
+    // Clunky mechanism to register "foreign" objects when they are deserialized
     // at a remote node
     private void readObject(ObjectInputStream in) throws IOException, ClassNotFoundException {
         in.defaultReadObject();
@@ -41,6 +41,10 @@ public abstract class BaseProtocol implements Protocol, Serializable {
         }
     }
 
+    /**
+     * RuntimeState stores information associated with a running protocol
+     * instance, such as the current address and a random number generator seed.
+     */
     @Override
     public RuntimeState getRuntimeState() {
         return MiCA.getRuntimeInterface().getRuntimeContextManager().getRuntimeState(this);
@@ -55,18 +59,26 @@ public abstract class BaseProtocol implements Protocol, Serializable {
         }
     }
 
+    /**
+     * The view contains probability-weighted list of neighbors for gossip.
+     */
     @Override
     public Distribution<Address> getView() {
         return Sugar.v().executeSugarView(this);
     }
 
+    /**
+     * Rate is a multiplier for how fast a node gossips. getRate() is called by
+     * the MiCA runtime to determine how long to wait between gossips.
+     */
     @Override
     public double getRate() {
         return Sugar.v().executeSugarRate(this);
     }
 
     /**
-     * Get the current node's address. This is part of Runtime state.
+     * Get the current node's address. This is part of RuntimeState. This method
+     * is here for convenience; it is the same as getRuntimeState().getAddress()
      * 
      * @return Current node's address
      */
@@ -75,10 +87,9 @@ public abstract class BaseProtocol implements Protocol, Serializable {
         return getRuntimeState().getAddress();
     }
 
-    // TODO "local_timestamp": Is that in ms or rounds?
     /**
-     * Write a message to the log. Log messages are comma-separated fields of
-     * the format:
+     * Reserved for internal use. Write a message to the log. Log messages are
+     * comma-separated fields of the format:
      * 
      * "local_timestamp,local_event_number,address,classname,name,MESSAGE"
      * 
@@ -87,21 +98,38 @@ public abstract class BaseProtocol implements Protocol, Serializable {
      * @param formatStr
      * @param arguments
      */
-
     public static class InstanceLogObject {
         public Object data;
     }
 
     /**
-     * Convenience method for logging only an event type
+     * Convenience method for logging only an event type Flags is an enum from
+     * LogFlag enum.
      * 
+     * @param flags
+     *            An enum from LogFlag class; describes the category of the log
+     *            message.
      * @param eventType
+     *            An arbitrary string that will be written in the "event_type"
+     *            attribute of the logged JSON message.
      */
     @Override
     public void logJson(Object flags, String eventType) {
         logJson(flags, eventType, null);
     }
 
+    /**
+     * @param flags
+     *            An enum from LogFlag class; describes the category of the log
+     *            message.
+     * @param evenType
+     *            An arbitrary string that will be written in the "event_type"
+     *            attribute of the logged JSON message.
+     * @param obj
+     *            An object to include with the log message. MiCA will attempt
+     *            to serialize the object into JSON, but this may fail for
+     *            custom data types.
+     */
     @Override
     public void logJson(Object flags, String eventType, final Object obj) {
         MiCA.getRuntimeInterface().logJson(flags, getAddress(), eventType, obj);
@@ -112,26 +140,43 @@ public abstract class BaseProtocol implements Protocol, Serializable {
      * specifically want to make this protocol gossip at a non-uniform rate
      * (i.e., merge operators do this)
      * 
-     * @return
+     * @return Current gossip rate.
      */
     @GossipRate
     public double rate() {
         return 1.0;
     }
 
+    /**
+     * Returns an object that will be serialized when logging state update
+     * messages. By default, this object is the protocol instance itself, but
+     * overriding this method can serialize an arbitrary object instead.
+     */
     @Override
     public Object getLogState() {
         return this;
     }
 
+    /**
+     * Called after getView, prior to initiating gossip. preUpdate will be
+     * called even if the sampled address is null.
+     */
     @Override
     public void preUpdate(Address selected) {
     }
 
+    /**
+     * Called on the node that initiates gossip after it has completed executing
+     * the gossip exchange.
+     */
     @Override
     public void postUpdate() {
     }
 
+    /**
+     * Called when MiCA fails to reach a peer for gossip, either due to timeout
+     * or connection refused
+     */
     @Override
     public void unreachable(Address peer) {
     }

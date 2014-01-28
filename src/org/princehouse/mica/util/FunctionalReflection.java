@@ -11,6 +11,8 @@ import java.lang.reflect.Method;
 import java.util.Comparator;
 import java.util.List;
 
+import org.princehouse.mica.base.sugar.annotations.AnnotationInspector;
+
 import fj.F;
 import fj.F2;
 
@@ -57,6 +59,7 @@ public class FunctionalReflection {
         return new F<C, Boolean>() {
             @Override
             public Boolean f(C arg0) {
+                AnnotationInspector.debug(String.format("FunctionalReflection.debug: hasAnnotation(%s,%s)?\n",arg0.getClass().getName(),annotationClass.getName()));
                 for (Annotation a : arg0.getAnnotations()) {
                     if (a.annotationType().equals(annotationClass))
                         return true;

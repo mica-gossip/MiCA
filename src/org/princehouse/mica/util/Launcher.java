@@ -16,11 +16,9 @@ import com.beust.jcommander.Parameter;
  * The Launcher class starts a single instance of a MiCA protocol on the local
  * machine.
  * 
- * Command line arguments can easily be passed to the protocol using JCommander
- * for parsing
- * 
- * See the Launcher tutorial on the MiCA wiki.
- * 
+ * Command line arguments can be passed to the protocol using JCommander
+ * for parsing.  To do this, mark up your Protocol class with JCommander's @Parameter annotations.
+ *  
  * @author lonnie
  * 
  */

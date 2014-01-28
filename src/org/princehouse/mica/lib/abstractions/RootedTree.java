@@ -34,8 +34,13 @@ public interface RootedTree extends TreeOverlay {
         }
 
         @Override
-        public Distribution<Address> getOverlay(RuntimeState rts) {
+        public Distribution<Address> getView(RuntimeState rts) {
             return Distribution.uniform(tree.getChildren());
+        }
+
+        @Override
+        public Distribution<Address> getView() {
+           return getView(null);
         }
     }
 

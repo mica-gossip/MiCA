@@ -9,6 +9,23 @@ import java.util.Set;
 import fj.F;
 import fj.F2;
 
+/**
+ * Distribution represents a probability-weighted collection of objects.
+ * 
+ * In MiCA, this is almost always used with the type parameter
+ *    Distribution<Address> 
+ * to represent a set of neighbors to gossip with.
+ * 
+ * The values in a Distribution should always sum to one, although this
+ * is not enforced.  Methods such as normalize() and ipnormalize() can be
+ * used to bring a distribution back a sum of one.
+ * 
+ * Distribution extends HashMap.
+ * 
+ * @author lonnie
+ *
+ * @param <T>
+ */
 public class Distribution<T> extends HashMap<T, Double> {
 
     public static final double MAGNITUDE_EPS = 10e-7;

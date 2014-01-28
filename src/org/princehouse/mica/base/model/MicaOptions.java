@@ -6,6 +6,12 @@ import org.princehouse.mica.util.Functional;
 
 import com.beust.jcommander.Parameter;
 
+/**
+ * Command line options that can be given to MiCA's TestHarness class.
+ * 
+ * @author lonnie
+ *
+ */
 public class MicaOptions {
 
     @Parameter(names = "-stagger", description = "amount of time (ms) to stagger starting runtimes")

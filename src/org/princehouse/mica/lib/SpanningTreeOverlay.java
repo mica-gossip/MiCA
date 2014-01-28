@@ -203,7 +203,7 @@ public class SpanningTreeOverlay extends FailureDetector implements RootedTree {
     }
 
     @Override
-    public Distribution<Address> getOverlay(RuntimeState rts) {
+    public Distribution<Address> getView(RuntimeState rts) {
         Set<Address> view = new HashSet<Address>();
         Address parent = getParent();
         if (parent != null)

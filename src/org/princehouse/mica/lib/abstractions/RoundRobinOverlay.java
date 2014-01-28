@@ -7,6 +7,7 @@ import org.princehouse.mica.base.model.RuntimeState;
 import org.princehouse.mica.base.net.model.Address;
 import org.princehouse.mica.util.Distribution;
 
+
 public class RoundRobinOverlay implements Overlay, Serializable {
     private static final long serialVersionUID = 1L;
 
@@ -25,10 +26,15 @@ public class RoundRobinOverlay implements Overlay, Serializable {
     }
 
     @Override
-    public Distribution<Address> getOverlay(RuntimeState rts) {
+    public Distribution<Address> getView(RuntimeState rts) {
         if (sequence == null || sequence.size() == 0)
             return null;
         return Distribution.singleton(sequence.get(rts.getRound() % sequence.size()));
+    }
+
+    @Override
+    public Distribution<Address> getView() {
+       throw new RuntimeException("This overlay requires RuntimeState object to compute View");
     }
 
 }

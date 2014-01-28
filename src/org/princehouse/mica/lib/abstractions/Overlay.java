@@ -6,16 +6,36 @@ import org.princehouse.mica.base.simple.SelectException;
 import org.princehouse.mica.util.Distribution;
 
 /**
- * An overlay is an object that exports a set of addresses for uniform random
- * gossip
  * 
- * TODO: implement a distribution-based overlay
+ * The Overlay object is implemented by classes that export a view
+ * for use by a Protocol.  For example, a protocol that builds an 
+ * overlay network might implement the Overlay interface; this could
+ * then be passed 
  * 
+ * Overlay can be used in place of getView using the @View syntactic sugar:
+ * 
+ *   @View
+ *   public Overlay view;
+ *  
  * @author lonnie
  * 
  */
 public interface Overlay {
 
-    public Distribution<Address> getOverlay(RuntimeState rts) throws SelectException;
+    /** 
+     * Get the Overlay's exported view
+     * @return A view
+     */
+    public Distribution<Address> getView();
+
+    /**
+     * This method is used by the MiCA runtime, but users should use the no-parameter variant.
+     * Returns the exported view, which may be dependent on protocol runtime state.
+     * 
+     * @param rts A protocol instance's bound runtime state 
+     * @return
+     * @throws SelectException
+     */
+    public Distribution<Address> getView(RuntimeState rts) throws SelectException;
 
 }

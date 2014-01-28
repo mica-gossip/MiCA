@@ -4,6 +4,11 @@ import java.util.List;
 
 import org.princehouse.mica.util.Functional;
 
+/**
+ * LogFlag's enums are passed as flags to Protocol.logJson.  Different log levels can be suppressed with command line flags to Launcher and TestHarness to custom-tailor the level of verbosity. 
+ * @author lonnie
+ *
+ */
 public enum LogFlag {
     init(0, true), state(1, true), view(2, true), rate(3, true), select(4, true), error(5, true), runtime(6, true), user(
             7, true), merge(8, true), debug(9, true), state_initial(10, true), detectFailure(11, true), gossip(12, true), serialization(

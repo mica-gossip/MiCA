@@ -4,7 +4,6 @@ import static org.princehouse.mica.base.RuntimeErrorCondition.ACTIVE_GOSSIP_EXCE
 import static org.princehouse.mica.base.RuntimeErrorCondition.BIND_ADDRESS_EXCEPTION;
 import static org.princehouse.mica.base.RuntimeErrorCondition.GOSSIP_IO_ERROR;
 import static org.princehouse.mica.base.RuntimeErrorCondition.INITIATOR_LOCK_TIMEOUT;
-import static org.princehouse.mica.base.RuntimeErrorCondition.NULL_SELECT;
 import static org.princehouse.mica.base.RuntimeErrorCondition.OPEN_CONNECTION_FAIL;
 import static org.princehouse.mica.base.RuntimeErrorCondition.POSTUDPATE_EXCEPTION;
 import static org.princehouse.mica.base.RuntimeErrorCondition.PREUDPATE_EXCEPTION;

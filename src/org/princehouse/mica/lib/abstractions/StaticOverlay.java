@@ -30,7 +30,7 @@ public class StaticOverlay implements Overlay, Serializable {
 
         // sanity check
         try {
-            Distribution<Address> sanityCheck = getOverlay(null);
+            Distribution<Address> sanityCheck = getView(null);
             if (sanityCheck != null && !sanityCheck.isOne()) {
                 throw new MalformedViewException(view, sanityCheck);
             }
@@ -41,7 +41,7 @@ public class StaticOverlay implements Overlay, Serializable {
     }
 
     @Override
-    public Distribution<Address> getOverlay(RuntimeState rts) throws NeedsRuntimeException {
+    public Distribution<Address> getView(RuntimeState rts) throws NeedsRuntimeException {
         try {
             return Selector.asDistribution(view, rts);
         } catch (SelectException e) {
@@ -51,6 +51,17 @@ public class StaticOverlay implements Overlay, Serializable {
 
     public void setView(Object view) {
         this.view = view;
+    }
+
+    @Override
+    public Distribution<Address> getView() {
+        try {
+            return getView(null);
+        } catch (NeedsRuntimeException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+            return null;
+        }
     }
 
 }
