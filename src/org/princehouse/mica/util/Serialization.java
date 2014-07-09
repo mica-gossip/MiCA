@@ -12,11 +12,12 @@ import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.KryoException;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
-import com.sun.xml.internal.messaging.saaj.util.ByteOutputStream;
+//import com.sun.xml.internal.messaging.saaj.util.ByteOutputStream;
 
 public class Serialization {
 
     public static byte[] serializeJava(Serializable obj) {
+        /*
         ByteOutputStream buffer = new ByteOutputStream();
         try {
             new ObjectOutputStream(buffer).writeObject(obj);
@@ -24,6 +25,8 @@ public class Serialization {
             throw new RuntimeException(e);
         }
         return buffer.getBytes();
+        */ 
+        throw new RuntimeException("fixme: ByteOutputStream deprecated");
     }
 
     public static Serializable deserializeJava(byte[] data) {
@@ -41,7 +44,8 @@ public class Serialization {
     }
 
     public static byte[] serializeKryo(Serializable obj, Kryo k) {
-
+        throw new RuntimeException("fixme: ByteOutputStream deprecated");
+        /*
         ByteOutputStream buffer = new ByteOutputStream();
         Output output = new Output(buffer);
         try {
@@ -53,6 +57,7 @@ public class Serialization {
         byte[] bytes = buffer.getBytes();
         assert (bytes != null);
         return bytes;
+        */
     }
 
     public static Serializable deserializeKryo(byte[] data) {

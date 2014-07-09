@@ -1,5 +1,6 @@
 package org.princehouse.mica.lib.abstractions;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import org.princehouse.mica.base.BaseProtocol;
@@ -28,7 +29,7 @@ import fj.P2;
  * @author lonnie
  * 
  */
-public abstract class Merge extends BaseProtocol {
+public abstract class Merge extends BaseProtocol implements BinaryCompositeProtocol {
 
     private Protocol p1;
 
@@ -51,6 +52,29 @@ public abstract class Merge extends BaseProtocol {
     }
 
     @Override
+    public List<Protocol> getSubProtocols() {
+    	List<Protocol> l = new ArrayList<Protocol>(2);
+    	if(p1 != null) { 
+    		l.add(p1);
+    	}
+    	if(p2 != null) {
+    		l.add(p2);
+    	}
+    	return l;
+    }
+    
+    @Override
+    public void addSubProtocol(Protocol p) {
+    	if(p1 == null) {
+    		p1 = p;
+    	} else if(p2 == null) {
+    		p2 = p;
+    	} else {
+    		throw new RuntimeException("Binary compsition operator already has two subprotocols");
+    	}
+    }
+    
+    @Override
     public void busy(Address peer) {
         // FIXME should this get called even for subprotocols that didn't gossip
         // to peer??
@@ -69,6 +93,7 @@ public abstract class Merge extends BaseProtocol {
      * 
      * @return
      */
+    @Override
     public Protocol getP1() {
         return p1;
     }
@@ -78,6 +103,7 @@ public abstract class Merge extends BaseProtocol {
      * 
      * @param p1
      */
+    @Override
     public void setP1(Protocol p1) {
         this.p1 = p1;
     }
@@ -87,6 +113,7 @@ public abstract class Merge extends BaseProtocol {
      * 
      * @return
      */
+    @Override
     public Protocol getP2() {
         return p2;
     }
@@ -96,6 +123,7 @@ public abstract class Merge extends BaseProtocol {
      * 
      * @param p2
      */
+    @Override
     public void setP2(Protocol p2) {
         this.p2 = p2;
     }
@@ -337,4 +365,6 @@ public abstract class Merge extends BaseProtocol {
     public abstract Distribution<MergeSelectionCase> decideSelectionCase(Address x);
 
     private static final long serialVersionUID = 1L;
+    
+   
 }
