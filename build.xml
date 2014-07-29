@@ -18,23 +18,18 @@
                 <include name="*.jar"/>
             </fileset>
         </path>
-	<echo message="My build-path is ${toString:jars}" />
-
         <javac srcdir="${src}" includeantruntime="false" destdir="${build}">
             <classpath refid="jars"/>
         </javac>
     </target>
 
-
-
-
-    <target name="create_run_jar" depends="init">
+    <target name="create_run_jar" depends="compile">
         <jar destfile="${basedir}/mica-runnable.jar" filesetmanifest="mergewithoutmain">
             <manifest>
                 <attribute name="Main-Class" value="org.princehouse.mica.util.Launcher"/>
                 <attribute name="Class-Path" value="."/>
             </manifest>
-            <fileset dir="${basedir}/bin"/>
+            <fileset dir="${basedir}/build"/>
             <zipfileset excludes="META-INF/*.SF" src="${libdir}/functionaljava.jar"/>
             <zipfileset excludes="META-INF/*.SF" src="${libdir}/jgrapht0.8.jar"/>
             <zipfileset excludes="META-INF/*.SF" src="${libdir}/soot-2.5.0.jar"/>
