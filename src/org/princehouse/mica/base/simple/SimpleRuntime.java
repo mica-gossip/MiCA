@@ -326,6 +326,7 @@ public class SimpleRuntime extends MicaRuntime implements AcceptConnectionHandle
                                 throw feh;
                             } catch (Throwable t) {
                                 // May be a serialization problem
+                            	System.err.print(t);
                                 handleError(ACTIVE_GOSSIP_EXCEPTION, t);
                             } finally {
                                 try {

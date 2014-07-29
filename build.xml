@@ -24,7 +24,7 @@
     </target>
 
     <target name="create_run_jar" depends="compile">
-        <jar destfile="${basedir}/mica-runnable.jar" filesetmanifest="mergewithoutmain">
+        <jar destfile="${basedir}/mica-0.1.jar" filesetmanifest="mergewithoutmain">
             <manifest>
                 <attribute name="Main-Class" value="org.princehouse.mica.util.Launcher"/>
                 <attribute name="Class-Path" value="."/>
