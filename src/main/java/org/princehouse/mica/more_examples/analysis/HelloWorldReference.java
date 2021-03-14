@@ -2,24 +2,24 @@ package org.princehouse.mica.more_examples.analysis;
 
 public class HelloWorldReference {
 
-    public HelloWorldReference() {
-        super();
+  public HelloWorldReference() {
+    super();
+  }
+
+  /**
+   * @param args
+   */
+  public static void main(String[] args) {
+
+    System.out.println("howdy");
+
+    boolean c = (args.length > 1);
+
+    if (c) {
+      System.out.println("foo");
+    } else {
+      System.out.println("bar");
     }
-
-    /**
-     * @param args
-     */
-    public static void main(String[] args) {
-
-        System.out.println("howdy");
-
-        boolean c = (args.length > 1);
-
-        if (c) {
-            System.out.println("foo");
-        } else {
-            System.out.println("bar");
-        }
-    }
+  }
 
 }

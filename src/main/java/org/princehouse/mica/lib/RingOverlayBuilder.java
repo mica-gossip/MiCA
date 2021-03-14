@@ -1,7 +1,6 @@
 package org.princehouse.mica.lib;
 
 import java.util.Set;
-
 import org.princehouse.mica.base.BaseProtocol;
 import org.princehouse.mica.base.model.Protocol;
 import org.princehouse.mica.base.model.RuntimeState;
@@ -14,47 +13,45 @@ import org.princehouse.mica.util.Functional;
 
 /**
  * FIXME not complete
- * 
+ *
  * @author lonnie
- * 
  */
 public class RingOverlayBuilder extends BaseProtocol implements SinglyLinkedRingOverlay {
 
-    private static final long serialVersionUID = 1L;
+  private static final long serialVersionUID = 1L;
 
-    public Set<Address> candidates;
-    public Address succ;
-    public Overlay underlay;
+  public Set<Address> candidates;
+  public Address succ;
+  public Overlay underlay;
 
-    public RingOverlayBuilder(Overlay underlay) {
-        candidates = Functional.set();
-        succ = getAddress();
-        this.underlay = underlay;
-    }
+  public RingOverlayBuilder(Overlay underlay) {
+    candidates = Functional.set();
+    succ = getAddress();
+    this.underlay = underlay;
+  }
 
-    @Override
-    public Address getSuccessor() {
-        // TODO Auto-generated method stub
-        return null;
-    }
+  @Override
+  public Address getSuccessor() {
+    // TODO Auto-generated method stub
+    return null;
+  }
 
-    @Override
-    public Distribution<Address> getView(RuntimeState rts) throws SelectException {
-        // TODO Auto-generated method stub
-        throw new RuntimeException("not implemented");
-        //return null;
-    }
+  @Override
+  public Distribution<Address> getView(RuntimeState rts) throws SelectException {
+    // TODO Auto-generated method stub
+    throw new RuntimeException("not implemented");
+    //return null;
+  }
 
-    @Override
-    public
-    Distribution<Address> getView() {
-        throw new RuntimeException("not implemented");
-    }
-    
-    @Override
-    public void update(Protocol that) {
-        // TODO Auto-generated method stub
-        // NOT IMPLEMENTED
-    }
+  @Override
+  public Distribution<Address> getView() {
+    throw new RuntimeException("not implemented");
+  }
+
+  @Override
+  public void update(Protocol that) {
+    // TODO Auto-generated method stub
+    // NOT IMPLEMENTED
+  }
 
 }

@@ -8,23 +8,23 @@ import org.princehouse.mica.util.harness.TestHarness;
 
 public class EchoHarnessMain extends TestHarness {
 
-    public static void main(String[] args) {
-        TestHarness test = new EchoHarnessMain();
-        test.runMain(args);
-    }
+  public static void main(String[] args) {
+    TestHarness test = new EchoHarnessMain();
+    test.runMain(args);
+  }
 
-    // Override the default options. Command line flags will override these.
-    @Override
-    public MicaOptions defaultOptions() {
-        MicaOptions options = super.defaultOptions();
-        options.implementation = "simple"; // change to "sim" for simulator
-        options.n = 25; // number of nodes to run
-        options.graphType = "random";
-        return options;
-    }
+  // Override the default options. Command line flags will override these.
+  @Override
+  public MicaOptions defaultOptions() {
+    MicaOptions options = super.defaultOptions();
+    options.implementation = "simple"; // change to "sim" for simulator
+    options.n = 25; // number of nodes to run
+    options.graphType = "random";
+    return options;
+  }
 
-    @Override
-    public Protocol createProtocolInstance(int i, Address address, Overlay view) {
-        return new Echo(view);
-    }
+  @Override
+  public Protocol createProtocolInstance(int i, Address address, Overlay view) {
+    return new Echo(view);
+  }
 }

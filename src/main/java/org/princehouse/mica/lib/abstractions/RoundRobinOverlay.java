@@ -2,39 +2,40 @@ package org.princehouse.mica.lib.abstractions;
 
 import java.io.Serializable;
 import java.util.List;
-
 import org.princehouse.mica.base.model.RuntimeState;
 import org.princehouse.mica.base.net.model.Address;
 import org.princehouse.mica.util.Distribution;
 
 
 public class RoundRobinOverlay implements Overlay, Serializable {
-    private static final long serialVersionUID = 1L;
 
-    private List<Address> sequence = null;
+  private static final long serialVersionUID = 1L;
 
-    public void setSequence(List<Address> sequence) {
-        this.sequence = sequence;
+  private List<Address> sequence = null;
+
+  public void setSequence(List<Address> sequence) {
+    this.sequence = sequence;
+  }
+
+  public List<Address> getSequence() {
+    return sequence;
+  }
+
+  public RoundRobinOverlay(List<Address> sequence) {
+    setSequence(sequence);
+  }
+
+  @Override
+  public Distribution<Address> getView(RuntimeState rts) {
+    if (sequence == null || sequence.size() == 0) {
+      return null;
     }
+    return Distribution.singleton(sequence.get(rts.getRound() % sequence.size()));
+  }
 
-    public List<Address> getSequence() {
-        return sequence;
-    }
-
-    public RoundRobinOverlay(List<Address> sequence) {
-        setSequence(sequence);
-    }
-
-    @Override
-    public Distribution<Address> getView(RuntimeState rts) {
-        if (sequence == null || sequence.size() == 0)
-            return null;
-        return Distribution.singleton(sequence.get(rts.getRound() % sequence.size()));
-    }
-
-    @Override
-    public Distribution<Address> getView() {
-       throw new RuntimeException("This overlay requires RuntimeState object to compute View");
-    }
+  @Override
+  public Distribution<Address> getView() {
+    throw new RuntimeException("This overlay requires RuntimeState object to compute View");
+  }
 
 }

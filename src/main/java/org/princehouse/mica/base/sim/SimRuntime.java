@@ -1,70 +1,69 @@
 package org.princehouse.mica.base.sim;
 
 import java.util.concurrent.locks.ReentrantLock;
-
 import org.princehouse.mica.base.model.MiCA;
-import org.princehouse.mica.base.model.Protocol;
 import org.princehouse.mica.base.model.MicaRuntime;
+import org.princehouse.mica.base.model.Protocol;
 import org.princehouse.mica.base.net.model.Address;
 
 public class SimRuntime extends MicaRuntime {
 
-    private Protocol protocol = null;
+  private Protocol protocol = null;
 
-    public SimRuntime(Address address) {
-        setAddress(address);
-    }
+  public SimRuntime(Address address) {
+    setAddress(address);
+  }
 
-    @Override
-    public String getLogFilename() {
-        return String.format("%ssim_%s.log", MiCA.getOptions().logprefix, MiCA.getOptions().expname);
-    }
+  @Override
+  public String getLogFilename() {
+    return String.format("%ssim_%s.log", MiCA.getOptions().logprefix, MiCA.getOptions().expname);
+  }
 
-    @Override
-    public ReentrantLock getProtocolInstanceLock() {
-        throw new RuntimeException(); // not yet supported in simulator! use
-                                      // -implementation simple
-    }
+  @Override
+  public ReentrantLock getProtocolInstanceLock() {
+    throw new RuntimeException(); // not yet supported in simulator! use
+    // -implementation simple
+  }
 
-    @Override
-    public void setProtocolInstance(Protocol pinstance) {
-        protocol = pinstance;
-    }
+  @Override
+  public void setProtocolInstance(Protocol pinstance) {
+    protocol = pinstance;
+  }
 
-    @Override
-    public void stop() {
-        getSimulator().stopRuntime(this);
-    }
+  @Override
+  public void stop() {
+    getSimulator().stopRuntime(this);
+  }
 
-    @Override
-    public Address getAddress() {
-        return getRuntimeState().getAddress();
-    }
+  @Override
+  public Address getAddress() {
+    return getRuntimeState().getAddress();
+  }
 
-    @Override
-    public void setAddress(Address address) {
-        getRuntimeState().setAddress(address);
-    }
+  @Override
+  public void setAddress(Address address) {
+    getRuntimeState().setAddress(address);
+  }
 
-    @Override
-    public long getRuntimeClock() {
-        return getSimulator().getClock();
-    }
+  @Override
+  public long getRuntimeClock() {
+    return getSimulator().getClock();
+  }
 
-    protected Simulator getSimulator() {
-        return Simulator.v();
-    }
+  protected Simulator getSimulator() {
+    return Simulator.v();
+  }
 
-    @Override
-    public void start() {
-        initLog();
-        MiCA.getRuntimeInterface().getRuntimeContextManager().setNativeRuntime(this);
-        logState("initial");
-        MiCA.getRuntimeInterface().getRuntimeContextManager().clear();
-    }
+  @Override
+  public void start() {
+    initLog();
+    MiCA.getRuntimeInterface().getRuntimeContextManager().setNativeRuntime(this);
+    logState("initial");
+    MiCA.getRuntimeInterface().getRuntimeContextManager().clear();
+  }
 
-    @Override
-    public Protocol getProtocolInstance() {
-        return protocol;
-    }
+  @Override
+  public Protocol getProtocolInstance() {
+    return protocol;
+  }
 }

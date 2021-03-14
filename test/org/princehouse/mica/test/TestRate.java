@@ -10,49 +10,50 @@ import org.princehouse.mica.util.harness.TestHarness;
 
 public class TestRate extends TestHarness {
 
-    public static class TestProtocol extends BaseProtocol {
-        private static final long serialVersionUID = 1L;
+  public static class TestProtocol extends BaseProtocol {
 
-        public double rate = 1.0;
-        
-        @View
-        public Overlay view = null;
-        
-        public TestProtocol(Overlay view, double rate) {
-            this.rate = rate;
-            this.view = view;
-        }
-        
-        @Override
-        public double getRate() {
-            return rate;
-        }
-        
-        @Override
-        public void update(Protocol that) {
-            // do nothing
-        }
-        
-    }
-    
-    public static void main(String[] args) {
-        TestHarness test = new TestRate();
-        test.runMain(args);
-    }
+    private static final long serialVersionUID = 1L;
 
-    // Override the default options. Command line flags will override these.
-    @Override
-    public MicaOptions defaultOptions() {
-        MicaOptions options = super.defaultOptions();
-        options.implementation = "simple"; // change to "sim" for simulator
-        options.n = 25; // number of nodes to run
-        options.graphType = "random";
-        return options;
+    public double rate = 1.0;
+
+    @View
+    public Overlay view = null;
+
+    public TestProtocol(Overlay view, double rate) {
+      this.rate = rate;
+      this.view = view;
     }
 
     @Override
-    public Protocol createProtocolInstance(int i, Address address, Overlay view) {
-        double rate = 1.0 + (double)(i % 3);
-        return new TestProtocol(view, rate);
+    public double getRate() {
+      return rate;
     }
+
+    @Override
+    public void update(Protocol that) {
+      // do nothing
+    }
+
+  }
+
+  public static void main(String[] args) {
+    TestHarness test = new TestRate();
+    test.runMain(args);
+  }
+
+  // Override the default options. Command line flags will override these.
+  @Override
+  public MicaOptions defaultOptions() {
+    MicaOptions options = super.defaultOptions();
+    options.implementation = "simple"; // change to "sim" for simulator
+    options.n = 25; // number of nodes to run
+    options.graphType = "random";
+    return options;
+  }
+
+  @Override
+  public Protocol createProtocolInstance(int i, Address address, Overlay view) {
+    double rate = 1.0 + (double) (i % 3);
+    return new TestProtocol(view, rate);
+  }
 }

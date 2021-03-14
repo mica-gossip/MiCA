@@ -3,7 +3,6 @@ package org.princehouse.mica.base.sim;
 import static org.princehouse.mica.base.RuntimeErrorCondition.INITIATOR_LOCK_TIMEOUT;
 
 import java.io.Serializable;
-
 import org.princehouse.mica.base.LogFlag;
 import org.princehouse.mica.base.RuntimeErrorCondition;
 import org.princehouse.mica.base.exceptions.AbortRound;
@@ -19,433 +18,440 @@ import org.princehouse.mica.util.Logging.SelectEvent;
 
 public class SimRound {
 
-    private Address src;
-    private Address dst = null;
-    private Simulator sim;
-    private SimRound round;
-    private boolean cancelled = false;
-    private long roundStartTime = 0L;
-    private boolean haveLockSrc = false;
-    private boolean haveLockDst = false;
+  private Address src;
+  private Address dst = null;
+  private Simulator sim;
+  private SimRound round;
+  private boolean cancelled = false;
+  private long roundStartTime = 0L;
+  private boolean haveLockSrc = false;
+  private boolean haveLockDst = false;
 
-    private StopWatch stopwatch = new StopWatch();
+  private StopWatch stopwatch = new StopWatch();
 
-    public int getTimeoutMS() {
-        return sim.getRuntime(src).getLockWaitTimeout();
+  public int getTimeoutMS() {
+    return sim.getRuntime(src).getLockWaitTimeout();
+  }
+
+  public SimRound(Address src, Simulator sim) {
+    this(src, sim, 0L);
+  }
+
+  public SimRound(Address src, Simulator sim, long sleepTime) {
+    this.sim = sim;
+    this.src = src;
+    this.round = this;
+    // schedule lock acquisition for beginning of round
+    roundStartTime = sim.getClock() + sleepTime;
+    sim.scheduleRelative(new AcquireSrcLock(), sleepTime);
+  }
+
+  private void cancel() {
+    // System.out.printf("     --------------> cancel round at %s\n", src);
+    cancelled = true;
+  }
+
+  public void abortRound(long releaseLockOffset) {
+    assert (!cancelled); // no reason we should be cancelled more than once
+
+    cancel();
+
+    long clock = sim.getClock();
+
+    if (haveLockSrc) {
+      sim.scheduleRelative(new ReleaseSrcLock(), releaseLockOffset);
+    }
+    if (haveLockDst) {
+      sim.scheduleRelative(new ReleaseDstLock(), releaseLockOffset);
     }
 
-    public SimRound(Address src, Simulator sim) {
-        this(src, sim, 0L);
+    // System.err.printf("  abort round %s\n", src);
+
+    SimRuntime rta = sim.getRuntime(src);
+    rta.logJson(LogFlag.user, "notable-event-abort", MiCA.getOptions().expname);
+
+    sim.getRuntimeContextManager().setNativeRuntime(rta);
+    double rate = 1.0;
+    try {
+      rate = rta.getProtocolInstance().getRate();
+    } catch (Throwable t) {
+      rta.logJson(LogFlag.user, "notable-event-ratefail");
+      // Suppress error; default interval will be used
+    } finally {
+      sim.getRuntimeContextManager().clear();
     }
 
-    public SimRound(Address src, Simulator sim, long sleepTime) {
-        this.sim = sim;
-        this.src = src;
-        this.round = this;
-        // schedule lock acquisition for beginning of round
-        roundStartTime = sim.getClock() + sleepTime;
-        sim.scheduleRelative(new AcquireSrcLock(), sleepTime);
+    long abortedRoundElapsed = clock - roundStartTime;
+    long interval = (long) (((double) rta.getInterval()) / rate);
+
+    long normalTime = interval - abortedRoundElapsed;
+    long lateTime = releaseLockOffset + 1;
+
+    long sleepTime = normalTime;
+
+    if (normalTime < lateTime) {
+      rta.logJson(LogFlag.user, "notable-event-late", MiCA.getOptions().expname);
+      sleepTime = lateTime;
     }
 
-    private void cancel() {
-        // System.out.printf("     --------------> cancel round at %s\n", src);
-        cancelled = true;
+    reschedule(sleepTime);
+  }
+
+  public class RoundEvent extends SimulatorEvent {
+
+    @Override
+    public boolean isCancelled() {
+      return super.isCancelled() || round.cancelled;
     }
 
-    public void abortRound(long releaseLockOffset) {
-        assert (!cancelled); // no reason we should be cancelled more than once
-
-        cancel();
-
-        long clock = sim.getClock();
-
-        if (haveLockSrc) {
-            sim.scheduleRelative(new ReleaseSrcLock(), releaseLockOffset);
-        }
-        if (haveLockDst) {
-            sim.scheduleRelative(new ReleaseDstLock(), releaseLockOffset);
-        }
-
-        // System.err.printf("  abort round %s\n", src);
-
-        SimRuntime rta = sim.getRuntime(src);
-        rta.logJson(LogFlag.user, "notable-event-abort", MiCA.getOptions().expname);
-
-        sim.getRuntimeContextManager().setNativeRuntime(rta);
-        double rate = 1.0;
-        try {
-            rate = rta.getProtocolInstance().getRate();
-        } catch (Throwable t) {
-            rta.logJson(LogFlag.user, "notable-event-ratefail");
-            // Suppress error; default interval will be used
-        } finally {
-            sim.getRuntimeContextManager().clear();
-        }
-
-        long abortedRoundElapsed = clock - roundStartTime;
-        long interval = (long) (((double) rta.getInterval()) / rate);
-
-        long normalTime = interval - abortedRoundElapsed;
-        long lateTime = releaseLockOffset + 1;
-
-        long sleepTime = normalTime;
-
-        if (normalTime < lateTime) {
-            rta.logJson(LogFlag.user, "notable-event-late", MiCA.getOptions().expname);
-            sleepTime = lateTime;
-        }
-
-        reschedule(sleepTime);
+    public RoundEvent(Address src) {
+      super(src);
     }
 
-    public class RoundEvent extends SimulatorEvent {
-
-        @Override
-        public boolean isCancelled() {
-            return super.isCancelled() || round.cancelled;
-        }
-
-        public RoundEvent(Address src) {
-            super(src);
-        }
-
-        @Override
-        public void execute(Simulator simulator) throws MicaException {
-            // do nothing here
-        }
-
-        @Override
-        public void abortRound(Simulator simulator) {
-            round.abortRound(0);
-        }
-
-        @Override
-        public void fatalErrorHalt(Simulator simulator) {
-            round.abortRound(0);
-            super.fatalErrorHalt(simulator);
-        }
+    @Override
+    public void execute(Simulator simulator) throws MicaException {
+      // do nothing here
     }
 
-    public class AcquireSrcLock extends AcquireLock {
-        public AcquireSrcLock() {
-            super(round.src, round.src, new SelectPhase(round.src), null);
-        }
-
-        @Override
-        public void onAcquireLock() {
-            haveLockSrc = true;
-        }
-
-        @Override
-        public void onTimeout() throws MicaException {
-            sim.getRuntime(getSrc()).handleError(INITIATOR_LOCK_TIMEOUT, null);
-        }
+    @Override
+    public void abortRound(Simulator simulator) {
+      round.abortRound(0);
     }
 
-    public abstract class AcquireLock extends RoundEvent {
+    @Override
+    public void fatalErrorHalt(Simulator simulator) {
+      round.abortRound(0);
+      super.fatalErrorHalt(simulator);
+    }
+  }
 
-        private TimeoutEvent timeout = null;
+  public class AcquireSrcLock extends AcquireLock {
 
-        private Address lock = null;
-        private RoundEvent continuation = null;
-        private String timeoutErrorMsg = null;
-
-        public AcquireLock(Address src, Address lock, RoundEvent continuation, String timeoutErrorMsg) {
-            super(src);
-            this.lock = lock;
-            this.continuation = continuation;
-            this.timeoutErrorMsg = timeoutErrorMsg;
-        }
-
-        public void onTimeout() throws MicaException {
-            sim.getRuntimeContextManager().setNativeRuntime(sim.getRuntime(round.src));
-            logJson(LogFlag.error, getSrc(), timeoutErrorMsg, null);
-            sim.getRuntime(getSrc()).getProtocolInstance().unreachable(lock);
-            sim.getRuntimeContextManager().clear();
-
-            /*
-             * sim.SPAM = true;
-             * System.err.printf("unreachable: %s %s.lock(%s)    [holder=%s]\n",
-             * getClass().getSimpleName(), getSrc(), lock,
-             * sim.getLockHolder(lock));
-             */
-        }
-
-        public abstract void onAcquireLock();
-
-        @Override
-        public void execute(Simulator simulator) throws MicaException {
-            if (simulator.lock(lock, getSrc())) {
-                // got the lock!
-                if (timeout != null) {
-                    timeout.cancel();
-                }
-                onAcquireLock();
-                simulator.scheduleRelative(continuation, 0);
-            } else {
-                // failed to get lock... wait for it by adding ourselves to the
-                // wait queue and scheduling a timeout event that will be
-                // triggered if we don't get the lock within the allotted time
-                simulator.addLockWaiter(lock, this);
-
-                assert (timeout == null); // weirdness is happening if timeout
-                                          // is non-null
-                if (timeout == null) {
-                    timeout = new TimeoutEvent(src, this);
-                    simulator.scheduleRelative(timeout, getTimeoutMS());
-                }
-            }
-        }
-
-        @Override
-        public String toString() {
-            return super.toString() + " " + String.format("lock:%s", lock);
-        }
+    public AcquireSrcLock() {
+      super(round.src, round.src, new SelectPhase(round.src), null);
     }
 
-    public class AcquireDstLock extends AcquireLock {
-        public AcquireDstLock() {
-            super(round.src, round.dst, new GossipPhase(round.src), "mica-error-accept-connection");
-        }
-
-        @Override
-        public void onAcquireLock() {
-            haveLockDst = true;
-        }
-
+    @Override
+    public void onAcquireLock() {
+      haveLockSrc = true;
     }
 
-    public class ReleaseDstLock extends SimulatorEvent {// not a RoundEvent ...
-        // we don't want
-        // round
-        // cancellation to
-        // cancel this
+    @Override
+    public void onTimeout() throws MicaException {
+      sim.getRuntime(getSrc()).handleError(INITIATOR_LOCK_TIMEOUT, null);
+    }
+  }
 
-        public ReleaseDstLock() {
-            super(round.dst);
-        }
+  public abstract class AcquireLock extends RoundEvent {
 
-        @Override
-        public void execute(Simulator simulator) throws MicaException {
-            if (haveLockDst) {
-                simulator.unlock(round.dst, round.src); // getSrc() is actually
-                                                        // round.dst;
-                // see
-                // constructor
-                haveLockDst = false;
-            }
-        }
+    private TimeoutEvent timeout = null;
 
-        @Override
-        public String toString() {
-            return super.toString() + " " + String.format("lock:%s", round.dst);
-        }
+    private Address lock = null;
+    private RoundEvent continuation = null;
+    private String timeoutErrorMsg = null;
+
+    public AcquireLock(Address src, Address lock, RoundEvent continuation, String timeoutErrorMsg) {
+      super(src);
+      this.lock = lock;
+      this.continuation = continuation;
+      this.timeoutErrorMsg = timeoutErrorMsg;
     }
 
-    public class ReleaseSrcLock extends SimulatorEvent { // not a RoundEvent ...
-                                                         // we don't want
-                                                         // round
-                                                         // cancellation to
-                                                         // cancel this
+    public void onTimeout() throws MicaException {
+      sim.getRuntimeContextManager().setNativeRuntime(sim.getRuntime(round.src));
+      logJson(LogFlag.error, getSrc(), timeoutErrorMsg, null);
+      sim.getRuntime(getSrc()).getProtocolInstance().unreachable(lock);
+      sim.getRuntimeContextManager().clear();
 
-        public ReleaseSrcLock() {
-            super(round.src);
-        }
-
-        @Override
-        public void execute(Simulator simulator) throws MicaException {
-            if (haveLockSrc) {
-                simulator.unlock(round.src, round.src);
-                haveLockSrc = false;
-            }
-        }
-
-        @Override
-        public String toString() {
-            return super.toString() + " " + String.format("lock:%s", round.src);
-        }
+      /*
+       * sim.SPAM = true;
+       * System.err.printf("unreachable: %s %s.lock(%s)    [holder=%s]\n",
+       * getClass().getSimpleName(), getSrc(), lock,
+       * sim.getLockHolder(lock));
+       */
     }
 
-    public class GossipPhase extends RoundEvent {
+    public abstract void onAcquireLock();
 
-        public GossipPhase(Address src) {
-            super(src);
+    @Override
+    public void execute(Simulator simulator) throws MicaException {
+      if (simulator.lock(lock, getSrc())) {
+        // got the lock!
+        if (timeout != null) {
+          timeout.cancel();
         }
+        onAcquireLock();
+        simulator.scheduleRelative(continuation, 0);
+      } else {
+        // failed to get lock... wait for it by adding ourselves to the
+        // wait queue and scheduling a timeout event that will be
+        // triggered if we don't get the lock within the allotted time
+        simulator.addLockWaiter(lock, this);
 
-        @Override
-        public void execute(Simulator simulator) throws MicaException {
-            // should have both locks by this point
-
-            SimRuntime rta = simulator.getRuntime(round.src);
-            SimRuntime rtb = simulator.getRuntime(round.dst);
-
-            stopwatch.reset();
-
-            CommunicationPatternAgent patternSend = MiCA.getCompiler().compile(rta.getProtocolInstance());
-
-            CommunicationPatternAgent patternRecv = MiCA.getCompiler().compile(rtb.getProtocolInstance());
-
-            try {
-                Serializable m1 = patternSend.f1(rta);
-
-                if (patternRecv instanceof FakeCompiler.FakeCommunicationPatternAgent) {
-                    ((FakeCompiler.FakeCommunicationPatternAgent) patternRecv).setInitiator(rta);
-                }
-
-                byte[] m1bytes = patternSend.serialize(m1);
-                assert (m1bytes != null);
-                rta.logJson(LogFlag.serialization, "mica-serialize-bytes-m1", m1bytes.length);
-
-                m1 = patternRecv.deserialize(m1bytes);
-
-                Serializable m2 = patternRecv.f2(rtb, m1);
-
-                byte[] m2bytes = patternRecv.serialize(m2);
-                rtb.logJson(LogFlag.serialization, "mica-serialize-bytes-m2", m2bytes.length);
-                m2 = patternSend.deserialize(m2bytes);
-
-                patternSend.f3(rta, m2);
-
-                simulator.getRuntimeContextManager().setNativeRuntime(rta);
-                rta.logJson(LogFlag.gossip, "mica-gossip", new Address[] { round.src, round.dst });
-                rta.logState("gossip-initiator");
-                simulator.getRuntimeContextManager().clear();
-
-                simulator.getRuntimeContextManager().setNativeRuntime(rtb);
-                rtb.logState("gossip-receiver");
-                simulator.getRuntimeContextManager().clear();
-
-            } catch (Throwable t) {
-                rta.handleError(RuntimeErrorCondition.UPDATE_EXCEPTION, t);
-            } finally {
-                sim.getRuntimeContextManager().clear();
-            }
-
-            long completionTimeRemote = (MiCA.getOptions().simUpdateDuration < 0 ? stopwatch.elapsed() : MiCA
-                    .getOptions().simUpdateDuration);
-
-            simulator.scheduleRelative(new ReleaseDstLock(), completionTimeRemote);
-
-            // run post-update
-            simulator.getRuntimeContextManager().setNativeRuntime(rta);
-            try {
-                rta.getProtocolInstance().postUpdate();
-                rta.logState("postupdate");
-            } catch (Throwable t) {
-                rta.handleError(RuntimeErrorCondition.POSTUDPATE_EXCEPTION, t);
-            } finally {
-                simulator.getRuntimeContextManager().clear();
-            }
-
-            simulator.getRuntimeContextManager().setNativeRuntime(rta);
-            double rate = 0;
-            try {
-                rate = rta.getProtocolInstance().getRate();
-            } catch (Throwable t) {
-                rta.handleError(RuntimeErrorCondition.RATE_EXCEPTION, t);
-            } finally {
-                simulator.getRuntimeContextManager().clear();
-
-            }
-
-            simulator.getRuntimeContextManager().setNativeRuntime(rta);
-            logJson(LogFlag.rate, round.src, "mica-rate", rate);
-            simulator.getRuntimeContextManager().clear();
-
-            int interval = simulator.getRuntime(round.src).getInterval();
-
-            long completionTimeLocal = stopwatch.elapsed();
-            simulator.scheduleRelative(new ReleaseSrcLock(), completionTimeLocal);
-
-            long sleepMs = (long) (((double) interval) / rate);
-
-            long adjustedSleepTime = roundStartTime + sleepMs - (sim.getClock() + completionTimeLocal);
-
-            reschedule(Math.max(0, adjustedSleepTime));
+        assert (timeout == null); // weirdness is happening if timeout
+        // is non-null
+        if (timeout == null) {
+          timeout = new TimeoutEvent(src, this);
+          simulator.scheduleRelative(timeout, getTimeoutMS());
         }
+      }
     }
 
-    protected void logJson(Object flags, Address source, String msgType, Object payload) {
-        MicaRuntime rt = sim.getRuntime(source);
-        rt.getProtocolInstance().logJson(flags, msgType, payload);
+    @Override
+    public String toString() {
+      return super.toString() + " " + String.format("lock:%s", lock);
+    }
+  }
+
+  public class AcquireDstLock extends AcquireLock {
+
+    public AcquireDstLock() {
+      super(round.src, round.dst, new GossipPhase(round.src), "mica-error-accept-connection");
     }
 
-    public void reschedule(long sleepMs) {
-        new SimRound(src, sim, sleepMs);
+    @Override
+    public void onAcquireLock() {
+      haveLockDst = true;
     }
 
-    public SelectEvent select(Protocol p) throws FatalErrorHalt, AbortRound {
-        SelectEvent se = null;
-        try {
-            se = new SelectEvent();
-            Distribution<Address> view = p.getView();
-            se.selected = (view != null ? view.sample(p.getRuntimeState().getRandom()) : null);
-            if (p.getAddress().equals(se.selected)) {
-                se.selected = null;
-            }
-        } catch (Throwable e) {
-            sim.getRuntimeContextManager().getNativeRuntime().handleError(RuntimeErrorCondition.SELECT_EXCEPTION, e);
-        }
-        return se;
+  }
+
+  public class ReleaseDstLock extends SimulatorEvent {// not a RoundEvent ...
+    // we don't want
+    // round
+    // cancellation to
+    // cancel this
+
+    public ReleaseDstLock() {
+      super(round.dst);
     }
 
-    public class SelectPhase extends RoundEvent {
-        public SelectPhase(Address src) {
-            super(src);
+    @Override
+    public void execute(Simulator simulator) throws MicaException {
+      if (haveLockDst) {
+        simulator.unlock(round.dst, round.src); // getSrc() is actually
+        // round.dst;
+        // see
+        // constructor
+        haveLockDst = false;
+      }
+    }
+
+    @Override
+    public String toString() {
+      return super.toString() + " " + String.format("lock:%s", round.dst);
+    }
+  }
+
+  public class ReleaseSrcLock extends SimulatorEvent { // not a RoundEvent ...
+    // we don't want
+    // round
+    // cancellation to
+    // cancel this
+
+    public ReleaseSrcLock() {
+      super(round.src);
+    }
+
+    @Override
+    public void execute(Simulator simulator) throws MicaException {
+      if (haveLockSrc) {
+        simulator.unlock(round.src, round.src);
+        haveLockSrc = false;
+      }
+    }
+
+    @Override
+    public String toString() {
+      return super.toString() + " " + String.format("lock:%s", round.src);
+    }
+  }
+
+  public class GossipPhase extends RoundEvent {
+
+    public GossipPhase(Address src) {
+      super(src);
+    }
+
+    @Override
+    public void execute(Simulator simulator) throws MicaException {
+      // should have both locks by this point
+
+      SimRuntime rta = simulator.getRuntime(round.src);
+      SimRuntime rtb = simulator.getRuntime(round.dst);
+
+      stopwatch.reset();
+
+      CommunicationPatternAgent patternSend = MiCA.getCompiler().compile(rta.getProtocolInstance());
+
+      CommunicationPatternAgent patternRecv = MiCA.getCompiler().compile(rtb.getProtocolInstance());
+
+      try {
+        Serializable m1 = patternSend.f1(rta);
+
+        if (patternRecv instanceof FakeCompiler.FakeCommunicationPatternAgent) {
+          ((FakeCompiler.FakeCommunicationPatternAgent) patternRecv).setInitiator(rta);
         }
 
-        @Override
-        public void execute(Simulator simulator) throws MicaException {
-            SimRuntime rta = simulator.getRuntime(getSrc());
-            simulator.getRuntimeContextManager().setNativeRuntime(rta);
+        byte[] m1bytes = patternSend.serialize(m1);
+        assert (m1bytes != null);
+        rta.logJson(LogFlag.serialization, "mica-serialize-bytes-m1", m1bytes.length);
 
-            stopwatch.reset();
-            SelectEvent se = null;
+        m1 = patternRecv.deserialize(m1bytes);
 
-            try {
-                se = select(rta.getProtocolInstance());
-                logJson(LogFlag.select, getSrc(), "mica-select", se);
-            } finally {
-                simulator.getRuntimeContextManager().clear();
+        Serializable m2 = patternRecv.f2(rtb, m1);
 
-            }
-            round.dst = se.selected;
-            long t = stopwatch.elapsed();
+        byte[] m2bytes = patternRecv.serialize(m2);
+        rtb.logJson(LogFlag.serialization, "mica-serialize-bytes-m2", m2bytes.length);
+        m2 = patternSend.deserialize(m2bytes);
 
-            if (dst != null) {
-                simulator.scheduleRelative(new AcquireDstLock(), t);
-            }
+        patternSend.f3(rta, m2);
 
-            // run pre-update
-            simulator.getRuntimeContextManager().setNativeRuntime(rta);
-            try {
-                rta.getProtocolInstance().preUpdate(round.dst);
-                rta.logState("preupdate");
-            } catch (Throwable th) {
-                rta.handleError(RuntimeErrorCondition.PREUDPATE_EXCEPTION, th);
-            } finally {
-                simulator.getRuntimeContextManager().clear();
-            }
+        simulator.getRuntimeContextManager().setNativeRuntime(rta);
+        rta.logJson(LogFlag.gossip, "mica-gossip", new Address[]{round.src, round.dst});
+        rta.logState("gossip-initiator");
+        simulator.getRuntimeContextManager().clear();
 
-        }
+        simulator.getRuntimeContextManager().setNativeRuntime(rtb);
+        rtb.logState("gossip-receiver");
+        simulator.getRuntimeContextManager().clear();
+
+      } catch (Throwable t) {
+        rta.handleError(RuntimeErrorCondition.UPDATE_EXCEPTION, t);
+      } finally {
+        sim.getRuntimeContextManager().clear();
+      }
+
+      long completionTimeRemote = (MiCA.getOptions().simUpdateDuration < 0 ? stopwatch.elapsed()
+          : MiCA
+              .getOptions().simUpdateDuration);
+
+      simulator.scheduleRelative(new ReleaseDstLock(), completionTimeRemote);
+
+      // run post-update
+      simulator.getRuntimeContextManager().setNativeRuntime(rta);
+      try {
+        rta.getProtocolInstance().postUpdate();
+        rta.logState("postupdate");
+      } catch (Throwable t) {
+        rta.handleError(RuntimeErrorCondition.POSTUDPATE_EXCEPTION, t);
+      } finally {
+        simulator.getRuntimeContextManager().clear();
+      }
+
+      simulator.getRuntimeContextManager().setNativeRuntime(rta);
+      double rate = 0;
+      try {
+        rate = rta.getProtocolInstance().getRate();
+      } catch (Throwable t) {
+        rta.handleError(RuntimeErrorCondition.RATE_EXCEPTION, t);
+      } finally {
+        simulator.getRuntimeContextManager().clear();
+
+      }
+
+      simulator.getRuntimeContextManager().setNativeRuntime(rta);
+      logJson(LogFlag.rate, round.src, "mica-rate", rate);
+      simulator.getRuntimeContextManager().clear();
+
+      int interval = simulator.getRuntime(round.src).getInterval();
+
+      long completionTimeLocal = stopwatch.elapsed();
+      simulator.scheduleRelative(new ReleaseSrcLock(), completionTimeLocal);
+
+      long sleepMs = (long) (((double) interval) / rate);
+
+      long adjustedSleepTime = roundStartTime + sleepMs - (sim.getClock() + completionTimeLocal);
+
+      reschedule(Math.max(0, adjustedSleepTime));
+    }
+  }
+
+  protected void logJson(Object flags, Address source, String msgType, Object payload) {
+    MicaRuntime rt = sim.getRuntime(source);
+    rt.getProtocolInstance().logJson(flags, msgType, payload);
+  }
+
+  public void reschedule(long sleepMs) {
+    new SimRound(src, sim, sleepMs);
+  }
+
+  public SelectEvent select(Protocol p) throws FatalErrorHalt, AbortRound {
+    SelectEvent se = null;
+    try {
+      se = new SelectEvent();
+      Distribution<Address> view = p.getView();
+      se.selected = (view != null ? view.sample(p.getRuntimeState().getRandom()) : null);
+      if (p.getAddress().equals(se.selected)) {
+        se.selected = null;
+      }
+    } catch (Throwable e) {
+      sim.getRuntimeContextManager().getNativeRuntime()
+          .handleError(RuntimeErrorCondition.SELECT_EXCEPTION, e);
+    }
+    return se;
+  }
+
+  public class SelectPhase extends RoundEvent {
+
+    public SelectPhase(Address src) {
+      super(src);
+    }
+
+    @Override
+    public void execute(Simulator simulator) throws MicaException {
+      SimRuntime rta = simulator.getRuntime(getSrc());
+      simulator.getRuntimeContextManager().setNativeRuntime(rta);
+
+      stopwatch.reset();
+      SelectEvent se = null;
+
+      try {
+        se = select(rta.getProtocolInstance());
+        logJson(LogFlag.select, getSrc(), "mica-select", se);
+      } finally {
+        simulator.getRuntimeContextManager().clear();
+
+      }
+      round.dst = se.selected;
+      long t = stopwatch.elapsed();
+
+      if (dst != null) {
+        simulator.scheduleRelative(new AcquireDstLock(), t);
+      }
+
+      // run pre-update
+      simulator.getRuntimeContextManager().setNativeRuntime(rta);
+      try {
+        rta.getProtocolInstance().preUpdate(round.dst);
+        rta.logState("preupdate");
+      } catch (Throwable th) {
+        rta.handleError(RuntimeErrorCondition.PREUDPATE_EXCEPTION, th);
+      } finally {
+        simulator.getRuntimeContextManager().clear();
+      }
 
     }
 
-    public class TimeoutEvent extends RoundEvent {
-        private AcquireLock onTimeoutCallback = null;
+  }
 
-        public TimeoutEvent(Address a, AcquireLock onTimeoutCallback) {
-            super(a);
-            this.onTimeoutCallback = onTimeoutCallback;
-        }
+  public class TimeoutEvent extends RoundEvent {
 
-        @Override
-        public void execute(Simulator simulator) throws MicaException {
-            round.abortRound(1);
-            if (onTimeoutCallback != null)
-                onTimeoutCallback.onTimeout();
-        }
+    private AcquireLock onTimeoutCallback = null;
 
+    public TimeoutEvent(Address a, AcquireLock onTimeoutCallback) {
+      super(a);
+      this.onTimeoutCallback = onTimeoutCallback;
     }
+
+    @Override
+    public void execute(Simulator simulator) throws MicaException {
+      round.abortRound(1);
+      if (onTimeoutCallback != null) {
+        onTimeoutCallback.onTimeout();
+      }
+    }
+
+  }
 
 }
