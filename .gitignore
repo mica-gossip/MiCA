@@ -1,10 +1,11 @@
 *~
-*.orig
 *.log
 *.csv
 *.gz
 *.pyc
 *.pickle
+*.iml
+.idea
 .cache
 /sootOutput
 /sootOutput-cfg

@@ -12,8 +12,8 @@ org.princehouse.mica.base.sugar.annotations
 org.princehouse.mica.example
 org.princehouse.mica.lib
 org.princehouse.mica.lib.abstractions
-org.princehouse.mica.test
-org.princehouse.mica.test.analysis
+org.princehouse.mica.more_examples
+org.princehouse.mica.more_examples.analysis
 org.princehouse.mica.util
 org.princehouse.mica.util.harness
 org.princehouse.mica.util.implementation
